@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tail Studio - アプリ一覧</title>
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.8;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+            background-color: #f5f5f7;
+        }
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        h1 {
+            color: #1a1a1a;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .app-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .app-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+        }
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #007AFF, #5856D6);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+        }
+        .app-name {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+        .app-description {
+            color: #666;
+            font-size: 0.95em;
+            margin-bottom: 16px;
+        }
+        .app-links {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+        .app-links a {
+            color: #007AFF;
+            text-decoration: none;
+            font-size: 0.9em;
+            padding: 6px 12px;
+            background: #f0f0f5;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+        .app-links a:hover {
+            background: #e5e5ea;
+        }
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        footer a {
+            color: #007AFF;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>Tail Studio</h1>
+        <p class="subtitle">アプリケーション一覧</p>
+    </header>
+
+    <main>
+        <div id="app-grid" class="app-grid"></div>
+    </main>
+
+    <footer>
+        <p>お問い合わせ: <a href="mailto:contact@tail-studio.com">contact@tail-studio.com</a></p>
+        <p>&copy; <span id="year"></span> Tail Studio</p>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        fetch('apps.json')
+            .then(res => res.json())
+            .then(apps => {
+                const grid = document.getElementById('app-grid');
+                apps.forEach(app => {
+                    const links = app.links.map(link =>
+                        `<a href="${link.url}">${link.label}</a>`
+                    ).join('');
+
+                    grid.innerHTML += `
+                        <div class="app-card">
+                            <div class="app-icon">${app.icon}</div>
+                            <div class="app-name">${app.name}</div>
+                            <p class="app-description">${app.description}</p>
+                            <div class="app-links">${links}</div>
+                        </div>
+                    `;
+                });
+            });
+    </script>
+</body>
+</html>
