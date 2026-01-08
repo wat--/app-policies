@@ -106,28 +106,7 @@
     </header>
 
     <main>
-        <div class="app-grid">
-            <div class="app-card">
-                <div class="app-icon">📅</div>
-                <div class="app-name">暦変換AI</div>
-                <p class="app-description">和暦・西暦・年齢を簡単に変換。誕生日メモ機能で大切な人の記念日を管理できます。</p>
-                <div class="app-links">
-                    <a href="apps/koyomi-ai/privacy-policy.html">プライバシーポリシー</a>
-                </div>
-            </div>
-
-            <!-- 新しいアプリを追加する場合はここにカードを追加 -->
-            <!--
-            <div class="app-card">
-                <div class="app-icon">🎯</div>
-                <div class="app-name">アプリ名</div>
-                <p class="app-description">アプリの説明</p>
-                <div class="app-links">
-                    <a href="apps/app-name/privacy-policy.html">プライバシーポリシー</a>
-                </div>
-            </div>
-            -->
-        </div>
+        <div id="app-grid" class="app-grid"></div>
     </main>
 
     <footer>
@@ -137,6 +116,26 @@
 
     <script>
         document.getElementById('year').textContent = new Date().getFullYear();
+
+        fetch('apps.json')
+            .then(res => res.json())
+            .then(apps => {
+                const grid = document.getElementById('app-grid');
+                apps.forEach(app => {
+                    const links = app.links.map(link =>
+                        `<a href="${link.url}">${link.label}</a>`
+                    ).join('');
+
+                    grid.innerHTML += `
+                        <div class="app-card">
+                            <div class="app-icon">${app.icon}</div>
+                            <div class="app-name">${app.name}</div>
+                            <p class="app-description">${app.description}</p>
+                            <div class="app-links">${links}</div>
+                        </div>
+                    `;
+                });
+            });
     </script>
 </body>
 </html>

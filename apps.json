@@ -1,0 +1,11 @@
+[
+  {
+    "id": "koyomi-ai",
+    "name": "暦変換AI",
+    "icon": "📅",
+    "description": "和暦・西暦・年齢を簡単に変換。誕生日メモ機能で大切な人の記念日を管理できます。",
+    "links": [
+      { "label": "プライバシーポリシー", "url": "apps/koyomi-ai/privacy-policy.html" }
+    ]
+  }
+]
