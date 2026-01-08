@@ -7,5 +7,14 @@
     "links": [
       { "label": "プライバシーポリシー", "url": "apps/koyomi-ai/privacy-policy.html" }
     ]
+  },
+  {
+    "id": "smart-shopping-list",
+    "name": "スマート食材リスト",
+    "icon": "🛒",
+    "description": "買い物リストを簡単に管理。食材の在庫管理や買い忘れ防止に役立ちます。",
+    "links": [
+      { "label": "プライバシーポリシー", "url": "apps/smart-shopping-list/privacy-policy.html" }
+    ]
   }
 ]
