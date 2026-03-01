@@ -16,5 +16,14 @@
     "links": [
       { "label": "プライバシーポリシー", "url": "apps/smart-shopping-list/privacy-policy.html" }
     ]
+  },
+  {
+    "id": "boardgame-ai",
+    "name": "ボードゲームAI",
+    "icon": "♟️",
+    "description": "リバーシ・チェス・将棋を1つで楽しめる対戦アプリ。AI対戦、対人戦、思考表示、カスタム配置に対応。",
+    "links": [
+      { "label": "プライバシーポリシー", "url": "apps/boardgame-ai/privacy-policy.html" }
+    ]
   }
 ]

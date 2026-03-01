@@ -1,141 +1,219 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tail Studio - アプリ一覧</title>
-    <style>
-        * {
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            line-height: 1.8;
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 20px;
-            color: #333;
-            background-color: #f5f5f7;
-        }
-        header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        h1 {
-            color: #1a1a1a;
-            font-size: 2em;
-            margin-bottom: 10px;
-        }
-        .subtitle {
-            color: #666;
-            font-size: 1.1em;
-        }
-        .app-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-        }
-        .app-card {
-            background: #fff;
-            border-radius: 16px;
-            padding: 24px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        .app-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.12);
-        }
-        .app-icon {
-            width: 80px;
-            height: 80px;
-            border-radius: 18px;
-            background: linear-gradient(135deg, #007AFF, #5856D6);
-            margin-bottom: 16px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 36px;
-        }
-        .app-name {
-            font-size: 1.3em;
-            font-weight: 600;
-            color: #1a1a1a;
-            margin-bottom: 8px;
-        }
-        .app-description {
-            color: #666;
-            font-size: 0.95em;
-            margin-bottom: 16px;
-        }
-        .app-links {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-        }
-        .app-links a {
-            color: #007AFF;
-            text-decoration: none;
-            font-size: 0.9em;
-            padding: 6px 12px;
-            background: #f0f0f5;
-            border-radius: 8px;
-            transition: background 0.2s;
-        }
-        .app-links a:hover {
-            background: #e5e5ea;
-        }
-        footer {
-            margin-top: 60px;
-            text-align: center;
-            color: #666;
-            font-size: 0.9em;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-        }
-        footer a {
-            color: #007AFF;
-            text-decoration: none;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ボードゲームAI | 公式ページ</title>
+  <meta name="description" content="リバーシ・チェス・将棋を1つで楽しめる対戦アプリ。AI対戦、対人戦、思考表示、カスタム配置に対応。">
+  <style>
+    :root {
+      --bg: #f6f8fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --brand: #0b6e4f;
+      --brand-soft: #dff4ec;
+      --shadow: 0 10px 28px rgba(17, 24, 39, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: radial-gradient(circle at top right, #ebf5ff 0%, var(--bg) 45%);
+      color: var(--text);
+      line-height: 1.7;
+    }
+
+    .container {
+      width: min(980px, calc(100% - 32px));
+      margin: 0 auto;
+    }
+
+    header {
+      padding: 52px 0 28px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--brand-soft);
+      color: var(--brand);
+      font-weight: 700;
+      font-size: 13px;
+      letter-spacing: 0.02em;
+      padding: 6px 10px;
+      border-radius: 999px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(30px, 4.6vw, 44px);
+      line-height: 1.2;
+    }
+
+    .lead {
+      color: var(--muted);
+      max-width: 700px;
+      margin: 14px 0 0;
+      font-size: 17px;
+    }
+
+    .buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 22px;
+    }
+
+    .btn {
+      display: inline-block;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: 600;
+      padding: 11px 14px;
+      border: 1px solid transparent;
+    }
+
+    .btn.primary {
+      background: var(--brand);
+      color: #fff;
+    }
+
+    .btn.secondary {
+      background: #fff;
+      color: var(--text);
+      border-color: var(--line);
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-top: 16px;
+    }
+
+    h2 {
+      margin: 0 0 10px;
+      font-size: 24px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      margin-top: 12px;
+    }
+
+    .feature {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .feature h3 {
+      margin: 0 0 6px;
+      font-size: 16px;
+    }
+
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+    }
+
+    li { margin: 6px 0; }
+
+    .muted { color: var(--muted); }
+
+    footer {
+      padding: 20px 0 42px;
+      color: var(--muted);
+      font-size: 14px;
+      text-align: center;
+    }
+
+    a { color: var(--brand); }
+
+    @media (max-width: 720px) {
+      .grid { grid-template-columns: 1fr; }
+      .card { padding: 18px; }
+    }
+  </style>
 </head>
 <body>
-    <header>
-        <h1>Tail Studio</h1>
-        <p class="subtitle">アプリケーション一覧</p>
-    </header>
+  <header class="container">
+    <span class="badge">BoardGameAI</span>
+    <h1>リバーシ・チェス・将棋を、1つのアプリで。</h1>
+    <p class="lead">AI対戦、対人戦、AIの思考表示、自然言語でのカスタム配置に対応。初心者から経験者まで、手軽に上達できるボードゲーム対戦アプリです。</p>
+    <div class="buttons">
+      <a class="btn primary" href="#support">サポートを見る</a>
+      <a class="btn secondary" href="privacy-policy.html">プライバシーポリシー</a>
+    </div>
+  </header>
 
-    <main>
-        <div id="app-grid" class="app-grid"></div>
-    </main>
+  <main class="container">
+    <section class="card" id="overview">
+      <h2>アプリ概要</h2>
+      <p class="muted">ボードゲームAIは、リバーシ・チェス・将棋の3種類でAIや友だちと対戦できるiOSアプリです。短時間の1局からじっくりした対局まで、好みに合わせて楽しめます。</p>
+      <div class="grid">
+        <article class="feature">
+          <h3>3種類のゲームに対応</h3>
+          <p>リバーシ / チェス / 将棋を切り替えてプレイ可能。</p>
+        </article>
+        <article class="feature">
+          <h3>AI対戦 + 対人戦</h3>
+          <p>難易度を選んでAI戦、または対人戦で遊べます。</p>
+        </article>
+        <article class="feature">
+          <h3>AIの思考表示</h3>
+          <p>次の一手の意図がわかり、学習にも使えます。</p>
+        </article>
+        <article class="feature">
+          <h3>カスタム配置</h3>
+          <p>自然言語で初期配置を指示して特殊局面を再現。</p>
+        </article>
+      </div>
+    </section>
 
-    <footer>
-        <p>お問い合わせ: <a href="mailto:contact@tail-studio.com">contact@tail-studio.com</a></p>
-        <p>&copy; <span id="year"></span> Tail Studio</p>
-    </footer>
+    <section class="card" id="support">
+      <h2>サポート</h2>
+      <p class="muted">不具合報告・ご要望は以下までご連絡ください。</p>
+      <ul>
+        <li>お問い合わせ: <a href="mailto:contact@tail-studio.com">contact@tail-studio.com</a></li>
+        <li>対応言語: 日本語</li>
+        <li>返信目安: 3〜5営業日</li>
+      </ul>
+    </section>
 
-    <script>
-        document.getElementById('year').textContent = new Date().getFullYear();
+    <section class="card" id="faq">
+      <h2>よくある質問</h2>
+      <ul>
+        <li><strong>Q. AIの強さは変更できますか？</strong><br> A. ゲーム内設定から難易度を変更できます。</li>
+        <li><strong>Q. 対人戦はできますか？</strong><br> A. できます。対局設定から対人モードを選択してください。</li>
+        <li><strong>Q. AIの思考表示は何に使えますか？</strong><br> A. 着手の理由を確認できるため、対局の振り返りや上達に役立ちます。</li>
+      </ul>
+    </section>
+  </main>
 
-        fetch('apps.json')
-            .then(res => res.json())
-            .then(apps => {
-                const grid = document.getElementById('app-grid');
-                apps.forEach(app => {
-                    const links = app.links.map(link =>
-                        `<a href="${link.url}">${link.label}</a>`
-                    ).join('');
+  <footer>
+    <div class="container">
+      &copy; <span id="year"></span> Tail Studio
+    </div>
+  </footer>
 
-                    grid.innerHTML += `
-                        <div class="app-card">
-                            <div class="app-icon">${app.icon}</div>
-                            <div class="app-name">${app.name}</div>
-                            <p class="app-description">${app.description}</p>
-                            <div class="app-links">${links}</div>
-                        </div>
-                    `;
-                });
-            });
-    </script>
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
 </body>
 </html>
