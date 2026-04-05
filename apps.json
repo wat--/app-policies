@@ -25,5 +25,14 @@
     "links": [
       { "label": "プライバシーポリシー", "url": "apps/boardgame-ai/privacy-policy.html" }
     ]
+  },
+  {
+    "id": "wild-bird-voice-search",
+    "name": "野鳥鳴き声サーチ",
+    "icon": "🐦",
+    "description": "鳥の鳴き声を識別し、図鑑で特徴を確認して記録できるアプリです。日本で見られる鳥を中心に、観察メモ・写真・音声ファイル付きの記録に対応しています。",
+    "links": [
+      { "label": "お問い合わせ", "url": "mailto:contact@tail-studio.com" }
+    ]
   }
 ]
