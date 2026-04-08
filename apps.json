@@ -34,5 +34,14 @@
     "links": [
       { "label": "プライバシーポリシー", "url": "apps/wild-bird-voice-search/privacy-policy.html" }
     ]
+  },
+  {
+    "id": "localmahjong",
+    "name": "スマホで麻雀",
+    "icon": "🀄",
+    "description": "同じWi-Fiネットワーク内で2〜4人のローカル対戦が楽しめる麻雀アプリです。",
+    "links": [
+      { "label": "プライバシーポリシー", "url": "apps/localmahjong/privacy-policy.html" }
+    ]
   }
 ]
