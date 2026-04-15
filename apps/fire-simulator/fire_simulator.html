@@ -163,6 +163,23 @@
     appearance: textfield;
   }
 
+  .unit-toggle {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    background: transparent;
+    border: 0.5px solid var(--border2);
+    border-radius: 4px;
+    color: var(--text3);
+    cursor: pointer;
+    padding: 2px 7px;
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  .unit-toggle .active {
+    color: var(--accent);
+  }
+
   input[type="range"] {
     -webkit-appearance: none;
     appearance: none;
@@ -440,9 +457,10 @@
     <div class="card">
       <div class="card-title">支出・運用</div>
       <div class="slider-row">
-        <span class="slider-label">年間生活費</span>
+        <span class="slider-label">生活費</span>
         <input type="range" min="120" max="720" step="12" value="360" id="expenses">
-        <span class="slider-val"><input type="number" class="num-input" id="expenses-out" value="360">万</span>
+        <button class="unit-toggle" id="expenses-toggle" onclick="toggleMode('expenses')"><span id="expenses-toggle-year" class="active">年</span>/<span id="expenses-toggle-month">月</span></button>
+        <span class="slider-val"><input type="number" class="num-input" id="expenses-out" value="360"><span id="expenses-unit">万</span></span>
       </div>
       <div class="slider-row">
         <span class="slider-label">運用利回り（%）</span>
@@ -450,9 +468,10 @@
         <span class="slider-val"><input type="number" class="num-input" id="rate-out" value="3.0">%</span>
       </div>
       <div class="slider-row">
-        <span class="slider-label">年金（年・受給後）</span>
+        <span class="slider-label">年金（65歳基準）</span>
         <input type="range" min="0" max="250" step="10" value="80" id="pension">
-        <span class="slider-val"><input type="number" class="num-input" id="pension-out" value="80">万</span>
+        <button class="unit-toggle" id="pension-toggle" onclick="toggleMode('pension')"><span id="pension-toggle-year" class="active">年</span>/<span id="pension-toggle-month">月</span></button>
+        <span class="slider-val"><input type="number" class="num-input" id="pension-out" value="80"><span id="pension-unit">万</span></span>
       </div>
       <div class="slider-row">
         <span class="slider-label">年金受給開始年齢</span>
@@ -544,18 +563,27 @@ function calc() {
   const currentAge = +document.getElementById('currentage').value;
   // シミュレーション（退職金は退職年に加算）
   const retireAge = currentAge + sideyears;
-  const endAge = currentAge + 55;
+  const endAge = 100;
+  const simYears = endAge - currentAge;
+
+  // 繰り上げ(-0.4%/月)・繰り下げ(+0.7%/月)による受給額調整
+  const pensionMonths = (pensionage - 65) * 12;
+  const pensionFactor = pensionMonths < 0
+    ? 1 + 0.004 * pensionMonths   // 繰り上げ（マイナス方向）
+    : 1 + 0.007 * pensionMonths;  // 繰り下げ
+  const adjustedPension = Math.round(pension * pensionFactor);
+
   const labels = [], data = [];
   let a = assets0;
   let depleted = null;
-  for (let y = 0; y <= 55; y++) {
+  for (let y = 0; y <= simYears; y++) {
     const age = currentAge + y;
     if (y === sideyears) a += severance;  // 退職時点で退職金を加算
     labels.push(age + '歳');
     data.push(Math.round(a));
     if (a <= 0 && depleted === null) depleted = age;
     const sideInc = y < sideyears ? sideincome : 0;
-    const pens = age >= pensionage ? pension : 0;
+    const pens = age >= pensionage ? adjustedPension : 0;
     const net = sideInc + pens - expenses;
     a = a * (1 + rate) + net;
   }
@@ -567,9 +595,8 @@ function calc() {
   const shortfall = assetsAtRetire < fireRule;
 
   // 判定はシミュレーション結果ベース
-  // 85歳を基準とするが、シミュレーション終端が85未満の場合は
-  // 終端の5年前をWARN下限にして常にWARNが出現できるようにする
-  const warnThreshold = Math.min(endAge - 5, 85);
+  // 終端が100歳固定なので85歳をWARN/NGの分岐点とする
+  const warnThreshold = 85;
   const statusOk   = depleted === null;
   const statusWarn = depleted !== null && depleted >= warnThreshold;
 
@@ -600,9 +627,9 @@ function calc() {
       <div class="metric-sub">退職時 年間 +${fmt(Math.round(assetsAtRetire * rate))}万</div>
     </div>
     <div class="metric">
-      <div class="metric-label">年金収入</div>
-      <div class="metric-value neutral">${fmt(pension)}万</div>
-      <div class="metric-sub">月 ${fmt(Math.round(pension / 12))}万 / ${pensionage}歳から</div>
+      <div class="metric-label">年金 受給総額（〜100歳）</div>
+      <div class="metric-value neutral">${fmt(adjustedPension * Math.max(0, 100 - pensionage))}万</div>
+      <div class="metric-sub">${fmt(adjustedPension)}万/年 × ${Math.max(0, 100 - pensionage)}年${pensionage !== 65 ? `（${pensionMonths > 0 ? '+' : ''}${Math.round((pensionFactor - 1) * 100)}%調整済）` : ''}</div>
     </div>
   `;
 
@@ -622,11 +649,11 @@ function calc() {
   }
 
   // 収入・支出データ（右軸用）
-  const incomeData = Array.from({ length: 56 }, (_, y) => {
+  const incomeData = Array.from({ length: simYears + 1 }, (_, y) => {
     const age = currentAge + y;
-    return (y < sideyears ? sideincome : 0) + (age >= pensionage ? pension : 0);
+    return (y < sideyears ? sideincome : 0) + (age >= pensionage ? adjustedPension : 0);
   });
-  const expenseData = Array(56).fill(expenses);
+  const expenseData = Array(simYears + 1).fill(expenses);
 
   const ctx = document.getElementById('chart').getContext('2d');
   if (chartInst) chartInst.destroy();
@@ -648,7 +675,7 @@ function calc() {
         },
         {
           label: '4%ルール必要額',
-          data: Array(56).fill(fireRule),
+          data: Array(simYears + 1).fill(fireRule),
           borderColor: '#f5c842',
           borderWidth: 1.5,
           borderDash: [6, 4],
@@ -732,9 +759,32 @@ function calc() {
 
 const ids = ['currentage','assets','sideincome','sideyears','severance','expenses','rate','pension','pensionage'];
 
-function syncDisplay(id, v) {
-  const out = document.getElementById(id + '-out');
-  out.value = id === 'rate' ? v.toFixed(1) : String(v);
+// 年/月トグルの状態管理（expenses と pension が対象）
+const modes = { expenses: 'year', pension: 'year' };
+
+function toggleMode(id) {
+  modes[id] = modes[id] === 'year' ? 'month' : 'year';
+  const isMonth = modes[id] === 'month';
+  document.getElementById(`${id}-toggle-year`).classList.toggle('active', !isMonth);
+  document.getElementById(`${id}-toggle-month`).classList.toggle('active', isMonth);
+  document.getElementById(`${id}-unit`).textContent = isMonth ? '万/月' : '万';
+  syncDisplay(id, +document.getElementById(id).value);
+}
+
+// スライダー値（年額）→ 表示値へ変換
+function toDisplay(id, annualVal) {
+  if (id === 'rate') return annualVal.toFixed(1);
+  if (modes[id] === 'month') return Math.round(annualVal / 12);
+  return annualVal;
+}
+
+// 入力値 → スライダー値（年額）へ変換
+function toAnnual(id, inputVal) {
+  return modes[id] === 'month' ? inputVal * 12 : inputVal;
+}
+
+function syncDisplay(id, annualVal) {
+  document.getElementById(id + '-out').value = toDisplay(id, annualVal);
 }
 
 ids.forEach(id => {
@@ -751,19 +801,19 @@ ids.forEach(id => {
   numInput.addEventListener('input', () => {
     const v = parseFloat(numInput.value);
     if (isNaN(v)) return;
-    const clamped = Math.max(+slider.min, Math.min(+slider.max, v));
-    slider.value = clamped;
+    const annual = toAnnual(id, v);
+    slider.value = Math.max(+slider.min, Math.min(+slider.max, annual));
     calc();
   });
 
   // フォーカスが外れたときに範囲外値を補正
   numInput.addEventListener('blur', () => {
     const v = parseFloat(numInput.value);
-    const clamped = isNaN(v)
+    const annual = isNaN(v)
       ? +slider.value
-      : Math.max(+slider.min, Math.min(+slider.max, v));
-    slider.value = clamped;
-    syncDisplay(id, clamped);
+      : Math.max(+slider.min, Math.min(+slider.max, toAnnual(id, v)));
+    slider.value = annual;
+    syncDisplay(id, annual);
     calc();
   });
 });
