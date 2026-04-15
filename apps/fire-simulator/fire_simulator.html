@@ -127,6 +127,40 @@
     color: var(--text);
     min-width: 72px;
     text-align: right;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+  }
+
+  .num-input {
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid var(--border2);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    text-align: right;
+    width: 52px;
+    outline: none;
+    padding: 1px 0;
+  }
+
+  .num-input:focus {
+    border-bottom-color: var(--accent);
+  }
+
+  .num-input::-webkit-inner-spin-button,
+  .num-input::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    appearance: none;
+    margin: 0;
+  }
+
+  .num-input[type=number] {
+    -moz-appearance: textfield;
+    appearance: textfield;
   }
 
   input[type="range"] {
@@ -377,24 +411,29 @@
     <div class="card">
       <div class="card-title">資産・収入</div>
       <div class="slider-row">
+        <span class="slider-label">現在の年齢</span>
+        <input type="range" min="20" max="70" step="1" value="40" id="currentage">
+        <span class="slider-val"><input type="number" class="num-input" id="currentage-out" value="40">歳</span>
+      </div>
+      <div class="slider-row">
         <span class="slider-label">現在の総資産</span>
         <input type="range" min="1000" max="30000" step="100" value="8000" id="assets">
-        <span class="slider-val" id="assets-out">8,000万</span>
+        <span class="slider-val"><input type="number" class="num-input" id="assets-out" value="8000">万</span>
       </div>
       <div class="slider-row">
         <span class="slider-label">本業＋副業収入（年）</span>
         <input type="range" min="0" max="800" step="10" value="300" id="sideincome">
-        <span class="slider-val" id="sideincome-out">300万</span>
+        <span class="slider-val"><input type="number" class="num-input" id="sideincome-out" value="300">万</span>
       </div>
       <div class="slider-row">
         <span class="slider-label">本業＋副業継続年数</span>
         <input type="range" min="0" max="20" step="1" value="5" id="sideyears">
-        <span class="slider-val" id="sideyears-out">5年</span>
+        <span class="slider-val"><input type="number" class="num-input" id="sideyears-out" value="5">年</span>
       </div>
       <div class="slider-row">
         <span class="slider-label">退職金（一時金）</span>
         <input type="range" min="0" max="3000" step="50" value="300" id="severance">
-        <span class="slider-val" id="severance-out">300万</span>
+        <span class="slider-val"><input type="number" class="num-input" id="severance-out" value="300">万</span>
       </div>
     </div>
 
@@ -403,22 +442,22 @@
       <div class="slider-row">
         <span class="slider-label">年間生活費</span>
         <input type="range" min="120" max="720" step="12" value="360" id="expenses">
-        <span class="slider-val" id="expenses-out">360万</span>
+        <span class="slider-val"><input type="number" class="num-input" id="expenses-out" value="360">万</span>
       </div>
       <div class="slider-row">
         <span class="slider-label">運用利回り（%）</span>
         <input type="range" min="0.5" max="8" step="0.5" value="4" id="rate">
-        <span class="slider-val" id="rate-out">4.0%</span>
+        <span class="slider-val"><input type="number" class="num-input" id="rate-out" value="4.0">%</span>
       </div>
       <div class="slider-row">
         <span class="slider-label">年金（年・受給後）</span>
         <input type="range" min="0" max="250" step="10" value="80" id="pension">
-        <span class="slider-val" id="pension-out">80万</span>
+        <span class="slider-val"><input type="number" class="num-input" id="pension-out" value="80">万</span>
       </div>
       <div class="slider-row">
         <span class="slider-label">年金受給開始年齢</span>
         <input type="range" min="60" max="70" step="1" value="65" id="pensionage">
-        <span class="slider-val" id="pensionage-out">65歳</span>
+        <span class="slider-val"><input type="number" class="num-input" id="pensionage-out" value="65">歳</span>
       </div>
     </div>
   </div>
@@ -429,7 +468,7 @@
 
   <div class="chart-wrap">
     <div class="chart-title">
-      資산推移シミュレーション
+      資産推移シミュレーション
       <span class="legend-item"><span class="legend-dot" style="background:#2ee89a;"></span>資産残高</span>
       <span class="legend-item"><span class="legend-dot" style="background:#f5c842; border-top: 2px dashed #f5c842; height:0; background:none; width:14px;"></span>4%ルール必要額</span>
     </div>
@@ -500,16 +539,16 @@ function calc() {
   const pension = +document.getElementById('pension').value;
   const pensionage = +document.getElementById('pensionage').value;
 
-  const assets = assets0 + severance;
-  const fireRule = expenses * 25;
-  const withdrawable = Math.round(assets * 0.04);
-  const currentAge = 40;
-
+  const currentAge = +document.getElementById('currentage').value;
+  // シミュレーション（退職金は退職年に加算）
+  const retireAge = currentAge + sideyears;
+  const endAge = currentAge + 55;
   const labels = [], data = [];
-  let a = assets;
+  let a = assets0;
   let depleted = null;
   for (let y = 0; y <= 55; y++) {
     const age = currentAge + y;
+    if (y === sideyears) a += severance;  // 退職時点で退職金を加算
     labels.push(age + '歳');
     data.push(Math.round(a));
     if (a <= 0 && depleted === null) depleted = age;
@@ -519,16 +558,24 @@ function calc() {
     a = a * (1 + rate) + net;
   }
 
-  const shortfall = assets < fireRule;
-  const overDraw = expenses > withdrawable;
-  const statusOk = !shortfall && !overDraw;
-  const statusWarn = !shortfall && overDraw;
+  // 退職時点の実績資産（シミュレーション値）で4%ルールを評価
+  const assetsAtRetire = data[sideyears] ?? data[data.length - 1];
+  const fireRule = expenses * 25;
+  const withdrawable = Math.round(assetsAtRetire * 0.04);
+  const shortfall = assetsAtRetire < fireRule;
+
+  // 判定はシミュレーション結果ベース
+  // 85歳を基準とするが、シミュレーション終端が85未満の場合は
+  // 終端の5年前をWARN下限にして常にWARNが出現できるようにする
+  const warnThreshold = Math.min(endAge - 5, 85);
+  const statusOk   = depleted === null;
+  const statusWarn = depleted !== null && depleted >= warnThreshold;
 
   document.getElementById('metrics').innerHTML = `
     <div class="metric">
-      <div class="metric-label">現在資産（退職金込）</div>
-      <div class="metric-value neutral">${fmt(assets)}万</div>
-      <div class="metric-sub">退職金 +${fmt(severance)}万 含む</div>
+      <div class="metric-label">退職時資産（シミュレーション）</div>
+      <div class="metric-value neutral">${fmt(assetsAtRetire)}万</div>
+      <div class="metric-sub">${retireAge}歳時点の試算値</div>
     </div>
     <div class="metric">
       <div class="metric-label">4%ルール 必要額</div>
@@ -537,24 +584,39 @@ function calc() {
     </div>
     <div class="metric">
       <div class="metric-label">年間取崩し可能額</div>
-      <div class="metric-value ${overDraw ? 'warn' : 'ok'}">${fmt(withdrawable)}万</div>
-      <div class="metric-sub">資産 × 4%</div>
+      <div class="metric-value ${shortfall ? 'warn' : 'ok'}">${fmt(withdrawable)}万</div>
+      <div class="metric-sub">退職時資産 × 4%</div>
     </div>
     <div class="metric">
       <div class="metric-label">年間生活費</div>
       <div class="metric-value neutral">${fmt(expenses)}万</div>
       <div class="metric-sub">月 ${fmt(Math.round(expenses / 12))}万 相当</div>
     </div>
+    <div class="metric">
+      <div class="metric-label">運用利回り</div>
+      <div class="metric-value neutral">${(rate * 100).toFixed(1)}%</div>
+      <div class="metric-sub">退職時 年間 +${fmt(Math.round(assetsAtRetire * rate))}万</div>
+    </div>
+    <div class="metric">
+      <div class="metric-label">年金収入</div>
+      <div class="metric-value neutral">${fmt(pension)}万</div>
+      <div class="metric-sub">月 ${fmt(Math.round(pension / 12))}万 / ${pensionage}歳から</div>
+    </div>
   `;
+
+  // 枯渇時期の文言（退職前・退職後で分ける）
+  function depletedLabel(age) {
+    if (age < retireAge) return `就労中（${age}歳時点）に資産が枯渇`;
+    return `${age}歳（退職後${age - retireAge}年）で資産が枯渇`;
+  }
 
   const vEl = document.getElementById('verdict');
   if (statusOk) {
-    vEl.innerHTML = `<div class="verdict ok"><span class="verdict-icon">✓</span>資産${fmt(assets)}万円は4%ルールの必要額（${fmt(fireRule)}万円）を超えており、年間取崩し可能額（${fmt(withdrawable)}万円）も生活費を上回っています。副業収入${fmt(sideincome)}万円 × ${sideyears}年のバッファも加わり、<strong>FIRE達成の条件は十分に満たされています</strong>。</div>`;
+    vEl.innerHTML = `<div class="verdict ok"><span class="verdict-icon">✓</span>シミュレーション期間（${currentAge}〜${endAge}歳）を通じて資産は枯渇しません。${shortfall ? '4%ルールの必要額には届いていませんが、副業収入・年金・運用益が補完しています。' : '4%ルールの必要額もクリアしており、<strong>FIREの条件を十分に満たしています</strong>。'}</div>`;
   } else if (statusWarn) {
-    vEl.innerHTML = `<div class="verdict warn"><span class="verdict-icon">△</span>資産は4%ルールをクリアしていますが、年間取崩し可能額（${fmt(withdrawable)}万円）が生活費（${fmt(expenses)}万円）を下回っています。副業収入や生活費の圧縮で安全マージンを高めることをおすすめします。</div>`;
+    vEl.innerHTML = `<div class="verdict warn"><span class="verdict-icon">△</span>現在の条件では<strong>${depletedLabel(depleted)}</strong>見込みです。長寿リスクに備え、生活費の削減・運用利回りの改善・副業継続年数の延長を検討してください。</div>`;
   } else {
-    const gap = fireRule - assets;
-    vEl.innerHTML = `<div class="verdict ng"><span class="verdict-icon">✕</span>4%ルールの必要額（${fmt(fireRule)}万円）に対して<strong>${fmt(gap)}万円不足</strong>しています。副業収入の延長・生活費削減・運用利回りの改善などを組み合わせて検討してください。</div>`;
+    vEl.innerHTML = `<div class="verdict ng"><span class="verdict-icon">✕</span>現在の条件では<strong>${depletedLabel(depleted)}</strong>します。副業収入の延長・生活費削減・運用利回りの改善などを早急に検討してください。</div>`;
   }
 
   const ctx = document.getElementById('chart').getContext('2d');
@@ -626,16 +688,40 @@ function calc() {
   });
 }
 
-const ids = ['assets','sideincome','sideyears','severance','expenses','rate','pension','pensionage'];
+const ids = ['currentage','assets','sideincome','sideyears','severance','expenses','rate','pension','pensionage'];
+
+function syncDisplay(id, v) {
+  const out = document.getElementById(id + '-out');
+  out.value = id === 'rate' ? v.toFixed(1) : String(v);
+}
+
 ids.forEach(id => {
-  document.getElementById(id).addEventListener('input', () => {
-    const el = document.getElementById(id);
-    const out = document.getElementById(id + '-out');
-    const v = +el.value;
-    if (id === 'rate') out.textContent = v.toFixed(1) + '%';
-    else if (id === 'sideyears') out.textContent = v + '年';
-    else if (id === 'pensionage') out.textContent = v + '歳';
-    else out.textContent = v.toLocaleString('ja-JP') + '万';
+  const slider = document.getElementById(id);
+  const numInput = document.getElementById(id + '-out');
+
+  // スライダー → 数値入力欄
+  slider.addEventListener('input', () => {
+    syncDisplay(id, +slider.value);
+    calc();
+  });
+
+  // 数値入力欄 → スライダー
+  numInput.addEventListener('input', () => {
+    const v = parseFloat(numInput.value);
+    if (isNaN(v)) return;
+    const clamped = Math.max(+slider.min, Math.min(+slider.max, v));
+    slider.value = clamped;
+    calc();
+  });
+
+  // フォーカスが外れたときに範囲外値を補正
+  numInput.addEventListener('blur', () => {
+    const v = parseFloat(numInput.value);
+    const clamped = isNaN(v)
+      ? +slider.value
+      : Math.max(+slider.min, Math.min(+slider.max, v));
+    slider.value = clamped;
+    syncDisplay(id, clamped);
     calc();
   });
 });
