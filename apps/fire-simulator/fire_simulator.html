@@ -446,8 +446,8 @@
       </div>
       <div class="slider-row">
         <span class="slider-label">運用利回り（%）</span>
-        <input type="range" min="0.5" max="8" step="0.5" value="4" id="rate">
-        <span class="slider-val"><input type="number" class="num-input" id="rate-out" value="4.0">%</span>
+        <input type="range" min="0.5" max="8" step="0.5" value="3" id="rate">
+        <span class="slider-val"><input type="number" class="num-input" id="rate-out" value="3.0">%</span>
       </div>
       <div class="slider-row">
         <span class="slider-label">年金（年・受給後）</span>
@@ -470,7 +470,9 @@
     <div class="chart-title">
       資産推移シミュレーション
       <span class="legend-item"><span class="legend-dot" style="background:#2ee89a;"></span>資産残高</span>
-      <span class="legend-item"><span class="legend-dot" style="background:#f5c842; border-top: 2px dashed #f5c842; height:0; background:none; width:14px;"></span>4%ルール必要額</span>
+      <span class="legend-item"><span class="legend-dot" style="border-top: 2px dashed #f5c842; height:0; width:14px;"></span>4%ルール必要額</span>
+      <span class="legend-item"><span class="legend-dot" style="background:#7b8fff;"></span>収入</span>
+      <span class="legend-item"><span class="legend-dot" style="border-top: 2px dashed #ff5f6d; height:0; width:14px;"></span>支出</span>
     </div>
     <div class="chart-container">
       <canvas id="chart" role="img" aria-label="年齢別資産推移グラフ"></canvas>
@@ -481,7 +483,7 @@
     <div class="notes-title">注意事項</div>
     <ul>
       <li>本シミュレーターは参考目的であり、投資・財務アドバイスではありません。</li>
-      <li>4%ルール（トリニティ・スタディ）は米国株ベースの研究で、日本市場では乖離する可能性があります。</li>
+      <li>4%ルール（トリニティ・スタディ）は米国株ベースの研究で、日本市場では乖離する可能性があります。元の研究は年率リターン約7%・インフレ3%を前提とした実質4%の取り崩し率です。このシミュレーターの「運用利回り」は税引後の名目リターンを指します。<strong>運用利回りが「(生活費−年金)÷資産」を上回ると資産は増加に転じ、下回ると減少します</strong>。例：生活費360万・年金80万・資産8,000万の場合、分岐点は (360−80)÷8,000 ≒ 3.5%。つまり3%では資産は減少し続け、4%では増加に転じます。</li>
       <li>インフレ・税金・社会保険料（国民健康保険・国民年金）は簡略化しています。実際には生活費に上乗せが必要です。</li>
       <li>暗号資産などボラティリティの高い資産は、FIRE直後の急落リスクに特に注意が必要です。</li>
       <li>正確な試算は税理士・ファイナンシャルプランナーにご相談ください。</li>
@@ -619,6 +621,13 @@ function calc() {
     vEl.innerHTML = `<div class="verdict ng"><span class="verdict-icon">✕</span>現在の条件では<strong>${depletedLabel(depleted)}</strong>します。副業収入の延長・生活費削減・運用利回りの改善などを早急に検討してください。</div>`;
   }
 
+  // 収入・支出データ（右軸用）
+  const incomeData = Array.from({ length: 56 }, (_, y) => {
+    const age = currentAge + y;
+    return (y < sideyears ? sideincome : 0) + (age >= pensionage ? pension : 0);
+  });
+  const expenseData = Array(56).fill(expenses);
+
   const ctx = document.getElementById('chart').getContext('2d');
   if (chartInst) chartInst.destroy();
   chartInst = new Chart(ctx, {
@@ -634,7 +643,8 @@ function calc() {
           borderWidth: 2,
           pointRadius: 0,
           fill: true,
-          tension: 0.4
+          tension: 0.4,
+          yAxisID: 'y'
         },
         {
           label: '4%ルール必要額',
@@ -643,7 +653,28 @@ function calc() {
           borderWidth: 1.5,
           borderDash: [6, 4],
           pointRadius: 0,
-          fill: false
+          fill: false,
+          yAxisID: 'y'
+        },
+        {
+          label: '収入（副業＋年金）',
+          data: incomeData,
+          borderColor: '#7b8fff',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          fill: false,
+          tension: 0.3,
+          yAxisID: 'y1'
+        },
+        {
+          label: '年間支出',
+          data: expenseData,
+          borderColor: '#ff5f6d',
+          borderWidth: 1.5,
+          borderDash: [4, 3],
+          pointRadius: 0,
+          fill: false,
+          yAxisID: 'y1'
         }
       ]
     },
@@ -671,6 +702,17 @@ function calc() {
             callback: v => fmt(v) + '万'
           },
           grid: { color: 'rgba(255,255,255,0.04)' },
+          border: { color: 'rgba(255,255,255,0.06)' }
+        },
+        y1: {
+          type: 'linear',
+          position: 'right',
+          ticks: {
+            color: '#555b72',
+            font: { size: 11, family: 'DM Mono' },
+            callback: v => fmt(v) + '万'
+          },
+          grid: { display: false },
           border: { color: 'rgba(255,255,255,0.06)' }
         },
         x: {
