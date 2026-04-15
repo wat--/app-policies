@@ -2,7 +2,9 @@
   {
     "id": "koyomi-ai",
     "name": "暦変換AI",
+    "type": "ios",
     "icon": "📅",
+    "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
     "description": "和暦・西暦・年齢を簡単に変換。誕生日メモ機能で大切な人の記念日を管理できます。",
     "links": [
       { "label": "プライバシーポリシー", "url": "apps/koyomi-ai/privacy-policy.html" }
@@ -11,7 +13,9 @@
   {
     "id": "smart-shopping-list",
     "name": "スマート食材リスト",
+    "type": "ios",
     "icon": "🛒",
+    "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
     "description": "買い物リストを簡単に管理。食材の在庫管理や買い忘れ防止に役立ちます。",
     "links": [
       { "label": "プライバシーポリシー", "url": "apps/smart-shopping-list/privacy-policy.html" }
@@ -20,7 +24,9 @@
   {
     "id": "boardgame-ai",
     "name": "ボードゲームAI",
+    "type": "ios",
     "icon": "♟️",
+    "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
     "description": "リバーシ・チェス・将棋を1つで楽しめる対戦アプリ。AI対戦、対人戦、思考表示、カスタム配置に対応。",
     "links": [
       { "label": "プライバシーポリシー", "url": "apps/boardgame-ai/privacy-policy.html" }
@@ -29,7 +35,9 @@
   {
     "id": "wild-bird-voice-search",
     "name": "野鳥鳴き声サーチ",
+    "type": "ios",
     "icon": "🐦",
+    "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
     "description": "鳥の鳴き声を識別し、図鑑で特徴を確認して記録できるアプリです。日本で見られる鳥を中心に、観察メモ・写真・音声ファイル付きの記録に対応しています。",
     "links": [
       { "label": "プライバシーポリシー", "url": "apps/wild-bird-voice-search/privacy-policy.html" }
@@ -38,10 +46,23 @@
   {
     "id": "localmahjong",
     "name": "スマホで麻雀",
+    "type": "ios",
     "icon": "🀄",
+    "appStoreUrl": "",
     "description": "同じWi-Fiネットワーク内で2〜4人のローカル対戦が楽しめる麻雀アプリです。",
     "links": [
       { "label": "プライバシーポリシー", "url": "apps/localmahjong/privacy-policy.html" }
+    ]
+  },
+  {
+    "id": "fire-simulator",
+    "name": "FIREシミュレーター",
+    "type": "web",
+    "icon": "🔥",
+    "webUrl": "apps/fire-simulator/fire_simulator.html",
+    "description": "資産・収支のパラメーターを調整して、経済的自立（FIRE）の達成可能性を試算するシミュレーターです。",
+    "links": [
+      { "label": "プライバシーポリシー", "url": "apps/fire-simulator/fire_simulator.html#privacy-policy" }
     ]
   }
 ]
