@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>複利感覚トレーナー</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0d0f14;
+    --bg2: #141720;
+    --bg3: #1c2030;
+    --border: rgba(255,255,255,0.07);
+    --border2: rgba(255,255,255,0.12);
+    --text: #e8eaf0;
+    --text2: #8a8fa8;
+    --text3: #555b72;
+    --green: #2ee89a;
+    --amber: #f5c842;
+    --red: #ff5f6d;
+    --accent: #7b8fff;
+    --accent-dim: rgba(123,143,255,0.1);
+    --radius: 10px;
+    --radius-lg: 16px;
+  }
+
+  body {
+    font-family: 'Noto Sans JP', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 2rem 1rem 4rem;
+  }
+
+  .page { max-width: 680px; margin: 0 auto; }
+
+  /* ヘッダー */
+  header { margin-bottom: 2rem; }
+  .tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 0.5px solid rgba(123,143,255,0.3);
+    padding: 4px 10px;
+    border-radius: 4px;
+    margin-bottom: 14px;
+  }
+  h1 {
+    font-size: clamp(22px, 4vw, 34px);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+    margin-bottom: 8px;
+    background: linear-gradient(135deg, #e8eaf0 0%, #8a8fa8 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  .subtitle { font-size: 13px; color: var(--text2); line-height: 1.7; }
+
+  /* 進捗バー */
+  .progress-wrap { margin-bottom: 1.5rem; }
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .progress-bar {
+    height: 3px;
+    background: var(--bg3);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* 問題カード */
+  .card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .card-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.25rem;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .category-badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    background: var(--bg3);
+    border: 0.5px solid var(--border2);
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  .reliability {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text3);
+  }
+
+  .rel-dots { display: flex; gap: 3px; }
+  .rel-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bg3);
+    border: 1px solid var(--border2);
+  }
+  .rel-dot.on { background: var(--accent); border-color: var(--accent); }
+
+  .question-text {
+    font-size: 17px;
+    font-weight: 500;
+    line-height: 1.7;
+    margin-bottom: 1.75rem;
+    color: var(--text);
+  }
+
+  /* 選択肢 */
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+
+  .choice-btn {
+    background: var(--bg3);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    text-align: left;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+    line-height: 1.5;
+  }
+
+  .choice-btn:hover:not(:disabled) {
+    border-color: var(--accent);
+    background: rgba(123,143,255,0.07);
+  }
+
+  .choice-btn.correct {
+    border-color: var(--green);
+    background: rgba(46,232,154,0.08);
+    color: #a8f5d5;
+  }
+
+  .choice-btn.wrong {
+    border-color: var(--red);
+    background: rgba(255,95,109,0.08);
+    color: #ffb3b8;
+  }
+
+  .choice-btn.dim {
+    opacity: 0.4;
+  }
+
+  .choice-btn:disabled { cursor: default; }
+
+  /* 解説カード */
+  .explain-card {
+    background: var(--bg2);
+    border: 0.5px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    display: none;
+  }
+
+  .explain-card.show { display: block; }
+
+  .result-banner {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 1.25rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 0.5px solid var(--border);
+  }
+
+  .result-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    flex-shrink: 0;
+  }
+  .result-icon.ok { background: rgba(46,232,154,0.15); color: var(--green); }
+  .result-icon.ng { background: rgba(255,95,109,0.15); color: var(--red); }
+
+  .result-label { font-size: 13px; color: var(--text2); }
+  .result-answer { font-size: 20px; font-weight: 700; color: var(--text); margin-top: 2px; }
+  .result-answer.ok { color: var(--green); }
+  .result-answer.ng { color: var(--red); }
+
+  .explain-section { margin-bottom: 1.25rem; }
+  .explain-section:last-child { margin-bottom: 0; }
+
+  .explain-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 8px;
+  }
+
+  .explain-body {
+    font-size: 13px;
+    color: var(--text2);
+    line-height: 1.8;
+  }
+
+  .calc-block {
+    background: var(--bg3);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    color: var(--text2);
+    line-height: 1.9;
+  }
+
+  .calc-highlight { color: var(--green); font-weight: 500; }
+
+  /* 信頼度が低い場合の警告 */
+  .caveat-box {
+    background: rgba(245,200,66,0.06);
+    border: 0.5px solid rgba(245,200,66,0.25);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #f5e4a0;
+    line-height: 1.7;
+  }
+
+  /* チェックリスト（賃貸vs購入など） */
+  .checklist { list-style: none; }
+  .checklist li {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text2);
+    padding: 7px 0;
+    border-bottom: 0.5px solid var(--border);
+    gap: 12px;
+  }
+  .checklist li:last-child { border-bottom: none; }
+  .check-favor {
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .check-favor.buy { background: rgba(123,143,255,0.15); color: var(--accent); }
+  .check-favor.rent { background: rgba(46,232,154,0.12); color: var(--green); }
+
+  /* 次へボタン */
+  .next-btn {
+    width: 100%;
+    background: var(--accent);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 14px;
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 1rem;
+  }
+  .next-btn:hover { opacity: 0.85; }
+
+  /* 結果画面 */
+  .result-screen {
+    display: none;
+    text-align: center;
+  }
+  .result-screen.show { display: block; }
+
+  .score-circle {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: conic-gradient(var(--accent) calc(var(--pct) * 1%), var(--bg3) 0);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 2rem auto;
+    position: relative;
+  }
+  .score-circle::before {
+    content: '';
+    width: 88px;
+    height: 88px;
+    border-radius: 50%;
+    background: var(--bg2);
+    position: absolute;
+  }
+  .score-number {
+    position: relative;
+    z-index: 1;
+    font-family: 'DM Mono', monospace;
+    font-size: 28px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .score-number span { font-size: 14px; color: var(--text3); }
+
+  .result-message {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--text);
+  }
+  .result-sub {
+    font-size: 14px;
+    color: var(--text2);
+    line-height: 1.7;
+    margin-bottom: 2rem;
+  }
+
+  .restart-btn {
+    background: var(--bg3);
+    border: 0.5px solid var(--border2);
+    border-radius: var(--radius);
+    padding: 12px 28px;
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    font-size: 14px;
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .restart-btn:hover { border-color: var(--accent); }
+
+  footer {
+    margin-top: 3rem;
+    text-align: center;
+    font-size: 12px;
+    color: var(--text3);
+    font-family: 'DM Mono', monospace;
+  }
+  footer a { color: var(--text3); text-decoration: none; }
+  footer a:hover { color: var(--text2); }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <div class="tag">Money Intuition Quiz</div>
+    <h1>複利感覚トレーナー</h1>
+    <p class="subtitle">2択で直感を試して、お金の「意外な真実」を体感する。</p>
+  </header>
+
+  <!-- クイズ本体 -->
+  <div id="quiz-wrap">
+    <div class="progress-wrap">
+      <div class="progress-label">
+        <span id="prog-label">問 1 / 20</span>
+        <span id="score-label">正解 0</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="prog-fill" style="width:0%"></div></div>
+    </div>
+
+    <div class="card" id="q-card">
+      <div class="card-meta">
+        <span class="category-badge" id="q-category"></span>
+        <div class="reliability">
+          <div class="rel-dots" id="rel-dots"></div>
+          <span id="rel-label"></span>
+        </div>
+      </div>
+      <div class="question-text" id="q-text"></div>
+      <div class="choices" id="q-choices"></div>
+    </div>
+
+    <div class="explain-card" id="explain-card">
+      <div class="result-banner" id="result-banner"></div>
+      <div id="explain-body"></div>
+      <button class="next-btn" id="next-btn">次の問題 →</button>
+    </div>
+  </div>
+
+  <!-- 結果画面 -->
+  <div class="result-screen" id="result-screen">
+    <div class="score-circle" id="score-circle">
+      <div class="score-number" id="score-final"></div>
+    </div>
+    <div class="result-message" id="result-msg"></div>
+    <div class="result-sub" id="result-sub"></div>
+    <button class="restart-btn" onclick="restart()">もう一度挑戦する</button>
+  </div>
+
+  <footer>
+    Money Quiz — educational only, not financial advice<br>
+    <a href="../../index.html">← アプリ一覧に戻る</a>
+  </footer>
+</div>
+
+<script>
+// ─── 問題データ ───────────────────────────────────────────────
+// reliability: 3=確定計算, 2=条件依存, 1=参考値
+// relLabel:    表示テキスト
+
+const REL = {
+  3: { label: '確定計算', dots: 3 },
+  2: { label: '条件依存', dots: 2 },
+  1: { label: '参考値',   dots: 1 },
+};
+
+function fmt(v) { return Math.round(v).toLocaleString('ja-JP'); }
+
+// 各問題の計算値はここで一度だけ計算
+const Q = (() => {
+  // ── 共通パラメーター ──
+  const fv = (pv, r, n) => pv * Math.pow(1 + r, n);
+  const fvAnnuity = (pmt, r, n) => pmt * (Math.pow(1 + r, n) - 1) / r;
+  const monthlyPayment = (pv, annualR, months) => {
+    const r = annualR / 12;
+    return pv * r * Math.pow(1 + r, months) / (Math.pow(1 + r, months) - 1);
+  };
+
+  // Q1: 信託報酬
+  const q1_low  = Math.round(fv(1000, 0.05 - 0.001, 30));
+  const q1_high = Math.round(fv(1000, 0.05 - 0.015, 30));
+  const q1_diff = q1_low - q1_high;
+
+  // Q2: 積立タイミング（月次）
+  const fvMonthly = (pmt, annualR, years) => fvAnnuity(pmt, annualR / 12, years * 12);
+  const q2_early = Math.round(fvMonthly(3, 0.05, 35));
+  const q2_late  = Math.round(fvMonthly(3, 0.05, 25));
+
+  // Q3: 72の法則
+  const q3_years = (72 / 3).toFixed(0);
+
+  // Q4: 10年だけ積立→放置 vs 30年積立
+  const q4_a_at10 = fvMonthly(3, 0.05, 10);
+  const q4_a_final = Math.round(fv(q4_a_at10, 0.05, 30));
+  const q4_b = Math.round(fvMonthly(3, 0.05, 30));
+
+  // Q5: 信託報酬（シンプル版・100万）
+  const q5_low  = Math.round(fv(100, 0.05 - 0.001, 20));
+  const q5_high = Math.round(fv(100, 0.05 - 0.020, 20));
+  const q5_diff = q5_low - q5_high;
+
+  // Q6: ローン金利差
+  const q6_monthly1 = monthlyPayment(3000, 0.01, 420);
+  const q6_total1   = Math.round(q6_monthly1 * 420);
+  const q6_monthly2 = monthlyPayment(3000, 0.02, 420);
+  const q6_total2   = Math.round(q6_monthly2 * 420);
+  const q6_diff     = q6_total2 - q6_total1;
+
+  // Q7: iDeCo節税（月2万・30年・税率20%）
+  const q7_tax = 2 * 12 * 0.20 * 30;
+
+  // Q8: 年金繰下げ損益分岐
+  // 65歳: 80万/年  70歳: 80*(1+0.007*60)万/年
+  const q8_base    = 80;
+  const q8_delayed = Math.round(80 * (1 + 0.007 * 60));
+  // 65x = 80*(x-65) = 113*(x-70) → x
+  const q8_break = Math.round(
+    (q8_delayed * 70 - q8_base * 65) / (q8_delayed - q8_base)
+  );
+
+  // Q9: コーヒー節約（500円/日→月1.5万・年利4%・30年）
+  const q9 = Math.round(fvMonthly(1.5, 0.04, 30));
+
+  // Q10: インフレ2%・30年
+  const q10 = Math.round(100 / Math.pow(1.02, 30));
+
+  // Q11: リボ払い（10万・金利15%・最低返済5,000円/月）
+  let q11_bal = 10, q11_total = 0, q11_months = 0;
+  while (q11_bal > 0 && q11_months < 600) {
+    const interest = q11_bal * 0.15 / 12;
+    const payment = Math.min(0.5, q11_bal + interest);
+    q11_bal = q11_bal + interest - payment;
+    q11_total += payment;
+    q11_months++;
+  }
+  q11_total = Math.round(q11_total * 10) / 10;
+
+  // Q12: ローン繰上返済（3000万・1%・35年→10年後に100万繰上）
+  // 10年後の残高
+  const q12_r = 0.01 / 12;
+  const q12_n = 420;
+  const q12_mp = monthlyPayment(3000, 0.01, 420);
+  const q12_bal10 = fv(3000, 0.01 / 12, 120) - q12_mp * (Math.pow(1 + 0.01/12, 120) - 1) / (0.01/12);
+  // 繰上前の残存利息（残250回）
+  const q12_remaining_total = q12_mp * 300;
+  const q12_new_mp = monthlyPayment(q12_bal10 - 100, 0.01, 300);
+  const q12_new_total = q12_new_mp * 300;
+  const q12_saving = Math.round(q12_remaining_total - q12_new_total);
+
+  // Q13: 年払い割引（月1万 vs 年払い10.8万）
+  // 月払い年12万 vs 年払い10.8万 → 差1.2万
+  // 年払いするなら年初に10.8万払う。その1.2万を年4%で運用したら？
+  // 実質割引率: 1.2/10.8 = 11.1%
+
+  // Q14: 賃貸vs購入（40年・月10万 vs 3500万購入）
+  const q14_rent = 10 * 12 * 40;   // 4800万
+  const q14_buy  = 3500 + 320 + 600 + 800 + 100; // 5320万（初期費用・税・修繕等）
+
+  // Q15: 後払い（翌月）vs 即時払い
+  // 月20万の支出を1ヶ月遅らせて年利4%運用
+  const q15_gain = Math.round(20 * 0.04 / 12 * 12); // 約8,000円/年
+  // ポイント0.5%: 20*12*0.005 = 1.2万/年 → ポイントの方が大きい
+
+  return {
+    q1_low, q1_high, q1_diff,
+    q2_early, q2_late,
+    q3_years,
+    q4_a_final, q4_b,
+    q5_low, q5_high, q5_diff,
+    q6_total1, q6_total2, q6_diff,
+    q7_tax,
+    q8_base, q8_delayed, q8_break,
+    q9,
+    q10,
+    q11_months, q11_total,
+    q12_saving,
+    q14_rent, q14_buy,
+    q15_gain,
+  };
+})();
+
+const QUESTIONS = [
+  {
+    category: '複利・運用',
+    reliability: 3,
+    text: `信託報酬 0.1% と 1.5%。\n1,000万円を年率5%（税引前）で30年運用すると、最終資産の差はいくら？`,
+    choices: [`約${fmt(Math.round(Q.q1_diff/100)*100)}万円の差がある`, '数十万円の差（誤差程度）'],
+    correct: 0,
+    answer: `差は約${fmt(Q.q1_diff)}万円`,
+    calc: `0.1%手数料（実質4.9%）: 1,000万 × 1.049³⁰ ≒ ${fmt(Q.q1_low)}万円\n1.5%手数料（実質3.5%）: 1,000万 × 1.035³⁰ ≒ ${fmt(Q.q1_high)}万円\n差: ${fmt(Q.q1_diff)}万円`,
+    assumption: `年率5%（グロス）・複利計算・税引前。実際は売却時に約20%課税されます。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '積立タイミング',
+    reliability: 3,
+    text: `25歳から毎月3万円を35年積立（年利5%）と、35歳から毎月3万円を25年積立（年利5%）。老後資産の差は？`,
+    choices: [`10年早い方が約${fmt(Q.q2_early - Q.q2_late)}万円多い`, '10年分の元本（360万円）程度の差'],
+    correct: 0,
+    answer: `早期開始が約${fmt(Q.q2_early - Q.q2_late)}万円多い`,
+    calc: `25歳スタート（35年）: 3万 × 月複利5% ≒ ${fmt(Q.q2_early)}万円\n35歳スタート（25年）: 3万 × 月複利5% ≒ ${fmt(Q.q2_late)}万円\n差: ${fmt(Q.q2_early - Q.q2_late)}万円`,
+    assumption: `毎月末積立・年利5%・月次複利。税引前。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '複利・運用',
+    reliability: 3,
+    text: `「72の法則」：年利3%で運用した場合、元本が2倍になるのはおよそ何年？`,
+    choices: [`約${Q.q3_years}年`, '約33年（1/0.03）'],
+    correct: 0,
+    answer: `約${Q.q3_years}年`,
+    calc: `72 ÷ 利率(%) = 倍増年数\n72 ÷ 3 = ${Q.q3_years}年\n1,000万 → 2,000万 になる年数`,
+    assumption: `72の法則は近似式。正確な値は log(2)/log(1.03) = 23.4年。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '積立タイミング',
+    reliability: 3,
+    text: `25歳から10年だけ積立（月3万・年利5%）してその後放置 vs 35歳から30年間積立（月3万・年利5%）。65歳時点でどちらが多い？`,
+    choices: ['10年だけ積立して放置した方が多い', '30年間積立し続けた方が当然多い'],
+    correct: 0,
+    answer: `早期10年積立が約${fmt(Q.q4_a_final - Q.q4_b)}万円多い`,
+    calc: `25歳から10年積立: 35歳時点で${fmt(Math.round(Q.q4_a_final / Math.pow(1.05, 30)))}万円\nそこから30年放置（複利）: ≒ ${fmt(Q.q4_a_final)}万円\n35歳から30年積立: ≒ ${fmt(Q.q4_b)}万円`,
+    assumption: `月次複利・年利5%・税引前。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '複利・運用',
+    reliability: 3,
+    text: `年利5%（グロス）で100万円を20年運用。信託報酬0.1% と 2.0% の最終資産の差は？`,
+    choices: [`約${fmt(Q.q5_diff)}万円の差`, '数万円の差'],
+    correct: 0,
+    answer: `差は約${fmt(Q.q5_diff)}万円`,
+    calc: `0.1%（実質4.9%）: 100万 × 1.049²⁰ ≒ ${fmt(Q.q5_low)}万円\n2.0%（実質3.0%）: 100万 × 1.030²⁰ ≒ ${fmt(Q.q5_high)}万円\n差: ${fmt(Q.q5_diff)}万円`,
+    assumption: `税引前・複利計算。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: 'ローン・借金',
+    reliability: 3,
+    text: `3,000万円の住宅ローン35年。金利1% と 2% で総支払い額はいくら違う？`,
+    choices: [`約${fmt(Q.q6_diff)}万円の差`, '約100〜200万円の差'],
+    correct: 0,
+    answer: `差は約${fmt(Q.q6_diff)}万円`,
+    calc: `金利1%: 月${(Q.q6_monthly1).toFixed(1)}万 × 420回 = ${fmt(Q.q6_total1)}万円\n金利2%: 月${(Q.q6_total2/420).toFixed(1)}万 × 420回 = ${fmt(Q.q6_total2)}万円\n差: ${fmt(Q.q6_diff)}万円`,
+    assumption: `元利均等返済・35年・ボーナス払いなし。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: 'ローン・借金',
+    reliability: 3,
+    text: `リボ払い：10万円の買い物を金利15%・最低返済5,000円/月で返済すると、完済まで何ヶ月かかる？`,
+    choices: [`約${Q.q11_months}ヶ月（総支払 ${Q.q11_total}万円）`, '約20ヶ月（元本÷返済額）'],
+    correct: 0,
+    answer: `約${Q.q11_months}ヶ月・総支払${Q.q11_total}万円`,
+    calc: `毎月: 残高 × 15% ÷ 12 = 利息分\n返済額5,000円のうち利息を引いた分だけ元本減少\n最初の1ヶ月: 利息1,250円 → 元本減少3,750円のみ`,
+    assumption: `金利15%（年率）・最低返済5,000円/月・残高スライド方式。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: 'ローン・借金',
+    reliability: 3,
+    text: `3,000万円・金利1%・35年ローンの10年後に100万円繰上返済。利息軽減効果は？`,
+    choices: [`約${fmt(Q.q12_saving)}万円の利息削減`, '約10〜20万円の利息削減'],
+    correct: 0,
+    answer: `約${fmt(Q.q12_saving)}万円の利息軽減`,
+    calc: `繰上前の残存支払い総額と\n繰上後の残存支払い総額の差分\n元本100万円の削減が残り25年複利で効く`,
+    assumption: `金利1%固定・元利均等・繰上後は返済額軽減型。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '年金・老後',
+    reliability: 3,
+    text: `年金65歳受給（年80万）vs 70歳繰下受給（+42%増額）。累計受給額が逆転するのは何歳？`,
+    choices: [`約${Q.q8_break}歳`, '約75歳'],
+    correct: 0,
+    answer: `約${Q.q8_break}歳で逆転`,
+    calc: `70歳受給額: 80万 × 1.42 = ${Q.q8_delayed}万円/年\n65歳受給の累計 = 80 × (x-65)\n70歳受給の累計 = ${Q.q8_delayed} × (x-70)\n連立方程式を解くと x ≒ ${Q.q8_break}歳`,
+    assumption: `繰下受給 +0.7%/月（法定）。インフレ・物価スライド未考慮。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '年金・老後',
+    reliability: 3,
+    text: `iDeCo 月2万円・30年間・所得税率20%の場合、節税総額はいくら？`,
+    choices: [`約${fmt(Q.q7_tax)}万円`, '約30〜50万円'],
+    correct: 0,
+    answer: `約${fmt(Q.q7_tax)}万円の節税`,
+    calc: `年間掛け金: 2万 × 12 = 24万円\n年間節税額: 24万 × 20% = 4.8万円\n30年間合計: 4.8万 × 30 = ${fmt(Q.q7_tax)}万円`,
+    assumption: `所得税率20%固定・住民税10%は別途節税あり（合計なら約216万）。受取時課税あり。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '節約・消費',
+    reliability: 2,
+    text: `毎日500円のコーヒーを節約し、年利4%で積立（月1.5万円）。30年後にいくら？`,
+    choices: [`約${fmt(Q.q9)}万円`, '元本の2倍程度（約540万円）'],
+    correct: 0,
+    answer: `約${fmt(Q.q9)}万円`,
+    calc: `月1.5万 × 月次複利4% × 30年\n元本合計: 1.5 × 360 = 540万円\n複利効果で ${fmt(Q.q9)}万円`,
+    assumption: `500円/日×30日=1.5万/月と仮定。年利4%・税引前。`,
+    caveat: `節約したお金を「必ず運用に回す」前提です。行動変容のコストは含まれていません。`,
+    checklist: null,
+  },
+  {
+    category: '節約・消費',
+    reliability: 3,
+    text: `インフレ2%が続くと、今の100万円は30年後に実質いくらの価値？`,
+    choices: [`約${Q.q10}万円`, '約80万円'],
+    correct: 0,
+    answer: `実質約${Q.q10}万円`,
+    calc: `購買力 = 100万 ÷ (1.02)³⁰\n(1.02)³⁰ = 1.811\n100万 ÷ 1.811 ≒ ${Q.q10}万円`,
+    assumption: `日本のインフレ目標2%が30年継続すると仮定。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '支払い・タイミング',
+    reliability: 3,
+    text: `保険料：月払い（年12万円）vs 年払い（10.8万円・10%割引）。年払い割引を年利換算すると？`,
+    choices: ['年利10%以上に相当するお得さ', '年利5%程度'],
+    correct: 0,
+    answer: `実質年利 約11%相当`,
+    calc: `年払い節約額: 12万 - 10.8万 = 1.2万円\n年初に10.8万払って1.2万得る\n1.2万 ÷ 10.8万 ≒ 11.1%\n（10%割引＝他の運用より圧倒的に有利）`,
+    assumption: `元本保証型の比較。変動型保険は別途リスク評価が必要。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '支払い・タイミング',
+    reliability: 2,
+    text: `クレカ後払い（翌月・金利ゼロ）+ ポイント0.5%還元 vs 即時払い。月20万の支出なら年間どちらが得？`,
+    choices: ['ポイント還元の方が得（後払い優位）', '即時払いの方が手元資金を運用できて得'],
+    correct: 0,
+    answer: `後払い＋ポイントが年約${fmt(20 * 12 * 0.005 * 10000)}円お得`,
+    calc: `ポイント: 20万 × 12 × 0.5% = 1.2万円/年\n後払い運用益: 20万 × 4% ÷ 12 × 12 ≒ 0.8万円/年\n合計: ポイント＋運用 > 即時払い`,
+    assumption: `年利4%で即日運用できる前提。ポイント0.5%還元。金利ゼロのカード限定。`,
+    caveat: `リボ払い・分割払いは金利15%前後が発生し逆転します。`,
+    checklist: null,
+  },
+  {
+    category: '支払い・タイミング',
+    reliability: 2,
+    text: `「今すぐ80万円」vs「1年後に100万円」。年利何%以上なら「今すぐ80万円」の方が得？`,
+    choices: ['25%以上なら今すぐが得', '5%以上なら今すぐが得'],
+    correct: 0,
+    answer: `年利25%が損益分岐`,
+    calc: `80万 × (1 + r) = 100万\n1 + r = 100/80 = 1.25\nr = 25%\n通常の運用（5%前後）では1年後の100万が有利`,
+    assumption: `1年間の単純利回り比較。`,
+    caveat: `現実の運用利回りは4〜7%程度のため、通常は「1年後の100万」を選ぶ方が合理的です。`,
+    checklist: null,
+  },
+  {
+    category: '賃貸・住宅',
+    reliability: 1,
+    text: `月10万円の賃貸を40年 vs 3,500万円の戸建て購入（修繕費・税込）。この条件での生涯コストは？`,
+    choices: ['購入の方が生涯コストは高い', '賃貸の方が生涯コストは高い'],
+    correct: 0,
+    answer: `この条件では購入が約${fmt(Q.q14_buy - Q.q14_rent)}万円高い`,
+    calc: `賃貸: 10万 × 12 × 40年 = ${fmt(Q.q14_rent)}万円\n購入: 物件3,500万＋初期費用320万＋固定資産税600万\n    ＋修繕費800万＋保険等100万 = ${fmt(Q.q14_buy)}万円`,
+    assumption: `初期費用（仲介・登記・不動産取得税等）320万。固定資産税15万/年×40年。修繕費800万。売却益・ローン利息は未考慮。`,
+    caveat: `立地・金利・売却価格・管理費・インフレによって結果は大きく変わります。都市部では賃貸有利になるケースも多くあります。`,
+    checklist: [
+      { text: '転勤・転職の可能性がある',     favor: 'rent',  label: '賃貸有利' },
+      { text: '老後も同じ地域に住む予定',       favor: 'buy',   label: '購入有利' },
+      { text: '近隣トラブル時に逃げ出したい',   favor: 'rent',  label: '賃貸有利' },
+      { text: 'ペット・リフォームの自由が欲しい', favor: 'buy',   label: '購入有利' },
+      { text: '自然災害リスクの高い立地',       favor: 'rent',  label: '賃貸有利' },
+      { text: '定年後の家賃支払いが不安',       favor: 'buy',   label: '購入有利' },
+      { text: '高齢になると借りにくくなることが心配', favor: 'buy', label: '購入有利' },
+    ],
+  },
+  {
+    category: '賃貸・住宅',
+    reliability: 1,
+    text: `頭金1,000万円を用意して住宅を購入した場合、その1,000万円を年利4%で40年運用した場合の機会損失はいくら？`,
+    choices: [`約${fmt(Math.round(fvCalc(1000, 0.04, 40)))}万円（元本の約${(fvCalc(1000, 0.04, 40)/1000).toFixed(1)}倍）`, '約2,000〜3,000万円'],
+    correct: 0,
+    answer: `約${fmt(Math.round(fvCalc(1000, 0.04, 40)))}万円の機会損失`,
+    calc: `1,000万 × (1.04)⁴⁰ ≒ ${fmt(Math.round(fvCalc(1000, 0.04, 40)))}万円\n（元本の約${(fvCalc(1000, 0.04, 40)/1000).toFixed(1)}倍）\n頭金を入れた「実感コスト削減」との比較が重要`,
+    assumption: `年利4%・複利40年。頭金分のローン利息削減効果は未差引。`,
+    caveat: `頭金を入れるとローン利息が減ります。その削減額と機会損失を比較して判断が必要です。`,
+    checklist: null,
+  },
+  {
+    category: '年金・老後',
+    reliability: 2,
+    text: `老後2,000万円問題。月々いくら不足すると想定されている？`,
+    choices: ['月約5〜6万円の不足', '月約15〜20万円の不足'],
+    correct: 0,
+    answer: `月約5.5万円の不足`,
+    calc: `金融審議会報告（2019年）の試算:\n夫65歳・妻60歳の無職世帯\n月収入: 約20.9万円（年金等）\n月支出: 約26.4万円\n月不足: 約5.5万円\n× 30年 ≒ 約2,000万円`,
+    assumption: `2019年金融審議会の試算モデル。現在の物価・年金水準とは異なります。`,
+    caveat: `この試算は特定モデル世帯のもの。単身・共働き・高支出世帯では大きく異なります。`,
+    checklist: null,
+  },
+  {
+    category: '節約・消費',
+    reliability: 2,
+    text: `格安SIMへの乗り換えで月3,000円節約、年利4%で20年間運用すると？`,
+    choices: [`約${fmt(Math.round(fvMonthlyCalc(0.3, 0.04, 20)))}万円`, '約72万円（元本のみ）'],
+    correct: 0,
+    answer: `約${fmt(Math.round(fvMonthlyCalc(0.3, 0.04, 20)))}万円`,
+    calc: `月0.3万 × 月次複利4% × 20年\n元本: 0.3 × 240 = 72万円\n複利で ${fmt(Math.round(fvMonthlyCalc(0.3, 0.04, 20)))}万円`,
+    assumption: `節約額を全額運用。年利4%・税引前。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '複利・運用',
+    reliability: 3,
+    text: `毎月3万円を年利2%（国内債券想定）と年利6%（株式想定）で30年積立。差はいくら？`,
+    choices: [`約${fmt(Math.round(fvMonthlyCalc(3, 0.06, 30) - fvMonthlyCalc(3, 0.02, 30)))}万円の差`, '数百万円の差'],
+    correct: 0,
+    answer: `約${fmt(Math.round(fvMonthlyCalc(3, 0.06, 30) - fvMonthlyCalc(3, 0.02, 30)))}万円の差`,
+    calc: `年利2%: ${fmt(Math.round(fvMonthlyCalc(3, 0.02, 30)))}万円\n年利6%: ${fmt(Math.round(fvMonthlyCalc(3, 0.06, 30)))}万円\n差: ${fmt(Math.round(fvMonthlyCalc(3, 0.06, 30) - fvMonthlyCalc(3, 0.02, 30)))}万円`,
+    assumption: `月次複利・税引前・積立額一定。`,
+    caveat: null,
+    checklist: null,
+  },
+
+  // ─── Q21〜Q45 追加 ─────────────────────────────────────────
+
+  {
+    category: '節約・消費',
+    reliability: 2,
+    text: `月2万円のサブスク・外食を解約して年利4%で20年間運用すると？`,
+    choices: [`約${fmt(Math.round(fvMonthlyCalc(2, 0.04, 20)))}万円`, '元本の2倍程度（約480万円）'],
+    correct: 0,
+    answer: `約${fmt(Math.round(fvMonthlyCalc(2, 0.04, 20)))}万円`,
+    calc: `月2万 × 月次複利4% × 20年\n元本合計: 2 × 240 = 480万円\n複利で ${fmt(Math.round(fvMonthlyCalc(2, 0.04, 20)))}万円`,
+    assumption: `節約額を全額運用。年利4%・税引前。`,
+    caveat: `節約を「必ず運用する」前提。目的のある消費まで削ることは推奨しません。`,
+    checklist: null,
+  },
+  {
+    category: '節約・消費',
+    reliability: 2,
+    text: `禁煙で月1万円節約し、年利4%で30年間運用すると？`,
+    choices: [`約${fmt(Math.round(fvMonthlyCalc(1, 0.04, 30)))}万円`, '約360万円（元本のみ）'],
+    correct: 0,
+    answer: `約${fmt(Math.round(fvMonthlyCalc(1, 0.04, 30)))}万円`,
+    calc: `月1万 × 月次複利4% × 30年\n元本: 360万円 → 複利で ${fmt(Math.round(fvMonthlyCalc(1, 0.04, 30)))}万円`,
+    assumption: `禁煙コストの個人差は未考慮。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '節約・消費',
+    reliability: 2,
+    text: `生命保険の見直しで月5,000円削減し、年利4%で25年間運用すると？`,
+    choices: [`約${fmt(Math.round(fvMonthlyCalc(0.5, 0.04, 25)))}万円`, '約150万円（元本のみ）'],
+    correct: 0,
+    answer: `約${fmt(Math.round(fvMonthlyCalc(0.5, 0.04, 25)))}万円`,
+    calc: `月0.5万 × 月次複利4% × 25年\n元本: 150万円 → 複利で ${fmt(Math.round(fvMonthlyCalc(0.5, 0.04, 25)))}万円`,
+    assumption: `保障内容を維持した上での削減を前提。`,
+    caveat: `保険の削減は保障の低下を伴う場合があります。保障内容を十分確認してから判断してください。`,
+    checklist: null,
+  },
+  {
+    category: '積立タイミング',
+    reliability: 3,
+    text: `積立を1年先延ばしにすると（月3万・年利5%・残り30年→29年）、老後資産はいくら減る？`,
+    choices: [`約${fmt(Math.round(fvMonthlyCalc(3, 0.05, 30) - fvMonthlyCalc(3, 0.05, 29)))}万円減`, '36万円（1年分の元本）しか減らない'],
+    correct: 0,
+    answer: `約${fmt(Math.round(fvMonthlyCalc(3, 0.05, 30) - fvMonthlyCalc(3, 0.05, 29)))}万円の損失`,
+    calc: `30年積立: ${fmt(Math.round(fvMonthlyCalc(3, 0.05, 30)))}万円\n29年積立: ${fmt(Math.round(fvMonthlyCalc(3, 0.05, 29)))}万円\n差: ${fmt(Math.round(fvMonthlyCalc(3, 0.05, 30) - fvMonthlyCalc(3, 0.05, 29)))}万円`,
+    assumption: `月次複利・年利5%・税引前。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '積立タイミング',
+    reliability: 3,
+    text: `今から積立を始めるのと5年早く始めていた場合（月3万・年利5%・30年 vs 35年）の差は？`,
+    choices: [`約${fmt(Math.round(fvMonthlyCalc(3, 0.05, 35) - fvMonthlyCalc(3, 0.05, 30)))}万円の差`, '180万円（5年分の元本）程度の差'],
+    correct: 0,
+    answer: `約${fmt(Math.round(fvMonthlyCalc(3, 0.05, 35) - fvMonthlyCalc(3, 0.05, 30)))}万円の差`,
+    calc: `35年積立: ${fmt(Math.round(fvMonthlyCalc(3, 0.05, 35)))}万円\n30年積立: ${fmt(Math.round(fvMonthlyCalc(3, 0.05, 30)))}万円\n差: ${fmt(Math.round(fvMonthlyCalc(3, 0.05, 35) - fvMonthlyCalc(3, 0.05, 30)))}万円`,
+    assumption: `月次複利・年利5%・税引前。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: 'ローン・借金',
+    reliability: 3,
+    text: `クレカ分割12回払い。店頭で「月々4,800円×12回」と表示された場合の実質年利はおよそ？`,
+    choices: ['年利13〜15%程度', '年利3〜5%程度'],
+    correct: 0,
+    answer: `実質年利 約13〜15%`,
+    calc: `分割手数料率（実質年率）の目安:\n3回払い: 11〜13% / 6回払い: 13〜15%\n12回払い: 13〜15%\n「実質年率」は必ず申込書に記載されています`,
+    assumption: `カード会社・分割回数により異なります。手数料ゼロキャンペーン除く。`,
+    caveat: `分割回数が多いほど総手数料も増加。必ず明細の「実質年率」を確認してください。`,
+    checklist: null,
+  },
+  {
+    category: 'ローン・借金',
+    reliability: 3,
+    text: `車200万円ローン・金利3%。3年返済 vs 5年返済で総支払いの差は？`,
+    choices: [
+      '約1〜2万円の差（金利が低いので大差ない）',
+      '約6万円の差（期間が長い分だけ利息が増える）',
+    ],
+    correct: 1,
+    answer: `約6万円の差（利息分）`,
+    calc: `3年（36回）: 月${(200*0.03/12*Math.pow(1+0.03/12,36)/(Math.pow(1+0.03/12,36)-1)).toFixed(2)}万 × 36 ≒ ${fmt(Math.round(200*0.03/12*Math.pow(1+0.03/12,36)/(Math.pow(1+0.03/12,36)-1)*36))}万円\n5年（60回）: 月${(200*0.03/12*Math.pow(1+0.03/12,60)/(Math.pow(1+0.03/12,60)-1)).toFixed(2)}万 × 60 ≒ ${fmt(Math.round(200*0.03/12*Math.pow(1+0.03/12,60)/(Math.pow(1+0.03/12,60)-1)*60))}万円\n差（利息）: 約6万円`,
+    assumption: `金利3%（固定）・元利均等返済。残価設定ローンは除く。`,
+    caveat: `月々の返済額は5年の方が約3万円安く、家計の余裕は増えます。どちらが良いかは返済能力次第。`,
+    checklist: null,
+  },
+  {
+    category: '年金・老後',
+    reliability: 2,
+    text: `厚生年金（平均的な会社員）と国民年金（満額）の生涯受給総額の差は？（65歳〜85歳・20年間）`,
+    choices: ['約1,800〜2,400万円の差', '約500〜800万円の差'],
+    correct: 0,
+    answer: `約1,800〜2,400万円の差`,
+    calc: `厚生年金（平均）: 約14〜15万円/月 ≒ 168〜180万円/年\n国民年金（満額）: 約6.8万円/月 ≒ 81万円/年\n差: 約87〜99万円/年 × 20年 = 約1,740〜1,980万円`,
+    assumption: `2024年度の標準的な受給額。報酬比例部分は平均的な賃金を仮定。`,
+    caveat: `実際の受給額は在職期間・標準報酬月額により大幅に異なります。ねんきん定期便で確認を。`,
+    checklist: null,
+  },
+  {
+    category: '年金・老後',
+    reliability: 2,
+    text: `65歳から年金80万円（月約6.7万）を受給する場合、「老後30年間の年金総受給額」はいくら？`,
+    choices: ['2,400万円', '約800〜1,000万円'],
+    correct: 0,
+    answer: `2,400万円`,
+    calc: `80万円/年 × 30年 = 2,400万円\n月換算: 約6.7万円/月\n老後の「収入柱」として見ると相当な総額`,
+    assumption: `物価スライドなし・95歳まで受給の単純計算。`,
+    caveat: `インフレ・物価スライドにより実質価値は変動します。長生きするほど受給額が増えます。`,
+    checklist: null,
+  },
+  {
+    category: '支払い・タイミング',
+    reliability: 2,
+    text: `賃貸契約の「敷金2ヶ月」と「礼金2ヶ月」。家賃10万円の場合、2年住むと実質的なコスト差は？`,
+    choices: ['礼金の方が約20万円以上損', '大差ない（どちらも2ヶ月分）'],
+    correct: 0,
+    answer: `礼金の方が約20万円以上の損失`,
+    calc: `敷金20万: 退去時に戻ってくる（修繕費差引後）\n礼金20万: 戻ってこない\n加えて敷金の機会損失: 20万 × 4% × 2年 ≒ 1.6万円\n差額: 礼金の方が約18〜20万円の損失`,
+    assumption: `退去時に敷金が全額返金される前提。実際は修繕費が差し引かれることが多い。`,
+    caveat: `敷金も退去清算で減額される場合があります。礼金ゼロ物件は増えていますが、家賃や立地条件を総合評価してください。`,
+    checklist: null,
+  },
+  {
+    category: '支払い・タイミング',
+    reliability: 2,
+    text: `サブスクリプション：月払い年12万円 vs 年払い10万円（2ヶ月分割引）。年払いの割引率を年利換算すると？`,
+    choices: ['年利20%以上に相当', '年利5〜10%程度'],
+    correct: 0,
+    answer: `実質年利 約20%相当`,
+    calc: `節約額: 12万 - 10万 = 2万円\n年払い額: 10万円\n2万 ÷ 10万 = 20%\nほとんどの運用・投資を上回るお得さ`,
+    assumption: `年払い額を年初に支払うと仮定した機会損失込みの計算。`,
+    caveat: `サービスが途中で終了・改悪するリスクがあります。長期利用が確実なサービスに限り有効な戦略です。`,
+    checklist: null,
+  },
+  {
+    category: '支払い・タイミング',
+    reliability: 2,
+    text: `電気・水道・ガスなどの固定費をクレカ払いに変更（ポイント還元1%）。月10万円の固定費で年間いくら得？`,
+    choices: ['約1.2万円', '数百円程度'],
+    correct: 0,
+    answer: `約1.2万円/年`,
+    calc: `月10万 × 12ヶ月 × 1% = 1.2万円\n30年間継続すると: 1.2万 × 30 = 36万円\n（さらに運用すれば50万円超）`,
+    assumption: `固定費の全てがクレカ払い可能で還元率1%の場合。公共料金は会社により還元率が異なります。`,
+    caveat: `カードの年会費やポイント失効に注意。還元率は改定されることがあります。`,
+    checklist: null,
+  },
+  {
+    category: '支払い・タイミング',
+    reliability: 2,
+    text: `住宅ローンのボーナス払い併用（月々8万＋ボーナス時50万×年2回）vs 均等返済（月々約16万）。どちらがリスクが高い？`,
+    choices: ['ボーナス払い併用の方がリスクが高い', '均等返済の方がリスクが高い'],
+    correct: 0,
+    answer: `ボーナス払い併用の方がリスク大`,
+    calc: `ボーナス月の支払い: 8万＋50万 = 58万円\n年収の変動リスクが直接家計を直撃\n均等払いは月16万と計算しやすく安定`,
+    assumption: `同じ借入額・金利の場合の比較。`,
+    caveat: `転職・育休・給与カットでボーナスが減少した場合、返済が急に苦しくなります。ボーナス依存度は最大でも返済額の25%以下が推奨されています。`,
+    checklist: null,
+  },
+  {
+    category: '賃貸・住宅',
+    reliability: 1,
+    text: `マンション vs 戸建て。一般的に30年後の資産価値が残りやすいのはどちら？`,
+    choices: ['立地次第でどちらも変わらない（土地の価値が重要）', 'マンションの方が管理されて価値が残りやすい'],
+    correct: 0,
+    answer: `立地・管理状態が最重要`,
+    calc: `戸建て: 建物価値は20〜25年で概ねゼロに近づくが土地が残る\nマンション: 建物の区分所有権＋土地持分\n共通点: 駅近・利便性の高い立地は価値が下がりにくい`,
+    assumption: `一般的な傾向。例外は多数あります。`,
+    caveat: `どちらが得かは「立地」「管理状態」「購入価格」で決まります。相場より高く買えばどちらも損になります。`,
+    checklist: [
+      { text: '土地を持ちたい・増改築したい', favor: 'buy', label: '戸建て有利' },
+      { text: '駅近・都市部への立地を重視', favor: 'rent', label: 'マンション有利' },
+      { text: '修繕・管理を自分でやりたくない', favor: 'rent', label: 'マンション有利' },
+      { text: '庭・駐車場が必要', favor: 'buy', label: '戸建て有利' },
+      { text: 'セキュリティを重視', favor: 'rent', label: 'マンション有利' },
+    ],
+  },
+  {
+    category: '賃貸・住宅',
+    reliability: 1,
+    text: `持ち家を転勤で空けることになり「賃貸に出す」場合、家賃収入からローン返済・管理費・税金を引くと手残りはどのくらい？`,
+    choices: ['多くの場合ほぼトントン〜赤字になりやすい', '家賃収入がそのまま利益になる'],
+    correct: 0,
+    answer: `多くの場合トントン〜赤字`,
+    calc: `家賃収入 10万円/月 の場合の概算:\n管理委託費: −1万（10%）\n固定資産税: −1.25万（年15万÷12）\n修繕積立: −1万\nローン返済（残）: −8万前後\n実質手残り: 約−1〜0万円`,
+    assumption: `ローン残高・金利・管理費・空室リスクにより大きく変わります。`,
+    caveat: `空室時もローン返済は続きます。「家賃でローンが払える」は正確ではないことが多いです。`,
+    checklist: null,
+  },
+  {
+    category: '複利・運用',
+    reliability: 3,
+    text: `「毎月1万円を30年間タンス預金（0%）」vs「毎月1万円を年利3%で30年積立」。差はいくら？`,
+    choices: [`約${fmt(Math.round(fvMonthlyCalc(1, 0.03, 30) - 1*12*30))}万円の差`, '数十万円程度の差'],
+    correct: 0,
+    answer: `約${fmt(Math.round(fvMonthlyCalc(1, 0.03, 30) - 1*12*30))}万円の差`,
+    calc: `タンス預金（0%）: 1万 × 360ヶ月 = 360万円\n年利3%複利: ${fmt(Math.round(fvMonthlyCalc(1, 0.03, 30)))}万円\n差: ${fmt(Math.round(fvMonthlyCalc(1, 0.03, 30) - 360))}万円`,
+    assumption: `月次複利・税引前。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '複利・運用',
+    reliability: 3,
+    text: `100万円を年利5%で運用した場合、10年・20年・30年後の「増加額（利息分のみ）」の比はおよそ？`,
+    choices: ['1：3：7（加速度的に増える）', '1：2：3（線形に増える）'],
+    correct: 0,
+    answer: `おおよそ 1：3：7 の比率`,
+    calc: `10年後: ${fmt(Math.round(fvCalc(100,0.05,10)))}万（増加 ${fmt(Math.round(fvCalc(100,0.05,10)-100))}万）\n20年後: ${fmt(Math.round(fvCalc(100,0.05,20)))}万（増加 ${fmt(Math.round(fvCalc(100,0.05,20)-100))}万）\n30年後: ${fmt(Math.round(fvCalc(100,0.05,30)))}万（増加 ${fmt(Math.round(fvCalc(100,0.05,30)-100))}万）\n増加比: 1 : ${(Math.round(fvCalc(100,0.05,20)-100)/Math.round(fvCalc(100,0.05,10)-100)).toFixed(1)} : ${(Math.round(fvCalc(100,0.05,30)-100)/Math.round(fvCalc(100,0.05,10)-100)).toFixed(1)}`,
+    assumption: `年利5%・複利。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '複利・運用',
+    reliability: 3,
+    text: `毎月3万円の積立。年利5%で積立てると、元本が「利息分を上回る」のはいつ？`,
+    choices: ['積立開始から約18〜20年後', '最後まで元本の方が多い'],
+    correct: 0,
+    answer: `約18〜20年後に利息分が元本を超える`,
+    calc: `元本: 3万 × 12 × 年数\n複利FV − 元本 = 利息分\n約18年時点で元本216万 ≒ 利息分\nその後は利息分が急加速`,
+    assumption: `月次複利・年利5%。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '年金・老後',
+    reliability: 3,
+    text: `65歳でFIRE（資産8,000万・運用3%・生活費360万）。資産が「増える」か「減る」かの分岐点はどの利率？`,
+    choices: ['生活費÷資産 = 4.5%が分岐点', '常に取り崩すので増えることはない'],
+    correct: 0,
+    answer: `360÷8000 = 4.5%が損益分岐`,
+    calc: `利率 > 生活費÷資産 なら増加\n360 ÷ 8000 = 0.045 = 4.5%\n運用3%の場合: 8000×3% = 240万 < 360万 → 減少\n運用5%の場合: 8000×5% = 400万 > 360万 → 増加`,
+    assumption: `年金・副収入なし・税引後3%で運用の場合。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '複利・運用',
+    reliability: 2,
+    text: `NISAの「成長投資枠」（年240万円・最大1,200万円）を満額使い年利5%で10年運用すると？`,
+    choices: [`約${fmt(Math.round(fvCalc(1200, 0.05, 5)))}万円以上`, '約1,600万円'],
+    correct: 0,
+    answer: `約${fmt(Math.round(fvCalc(1200, 0.05, 5)))}万円（非課税）`,
+    calc: `5年で1,200万円を満額投資し\nその後さらに5年運用（合計10年）:\n1,200万 × 1.05⁵ ≒ ${fmt(Math.round(fvCalc(1200, 0.05, 5)))}万円\n通常口座なら売却益に20%課税されるが\nNISAなら全額手元に`,
+    assumption: `年利5%・一括投資の簡略計算。実際は積立になるため試算値。`,
+    caveat: `NISA制度は法改正により変更される場合があります（2024年制度に基づく）。`,
+    checklist: null,
+  },
+  {
+    category: '支払い・タイミング',
+    reliability: 2,
+    text: `「先払い家賃」で6ヶ月分を一括払いした場合、大家側の資金コストは年利換算でどのくらい？`,
+    choices: ['交渉次第だが年利5〜10%相当の提示が合理的', '先払いは借主に得がない'],
+    correct: 0,
+    answer: `年利5〜10%相当の家賃値引きが合理的`,
+    calc: `6ヶ月分（例:60万円）を先払い\n大家は60万円を早期取得 → 年利5%で運用すると: 約1.5万円の利益\nこれを家賃値引きとして交渉: 1.5万÷60万×12/6 ≒ 6%相当`,
+    assumption: `大家の資金運用コストを4〜7%と仮定した場合。`,
+    caveat: `大家が先払いを好む条件（キャッシュフロー改善）がある場合のみ交渉成立。断られる場合も多い。`,
+    checklist: null,
+  },
+  {
+    category: '支払い・タイミング',
+    reliability: 3,
+    text: `「今すぐ500万円」vs「5年後に700万円」。年利何%以上なら「今の500万」の方が得？`,
+    choices: [
+      `年利約${(Math.pow(700/500, 1/5)*100-100).toFixed(1)}%以上なら今すぐが得`,
+      '年利5%以上なら今すぐが得',
+    ],
+    correct: 0,
+    answer: `年利約${(Math.pow(700/500, 1/5)*100-100).toFixed(1)}%が損益分岐`,
+    calc: `500万 × (1+r)⁵ = 700万\n(1+r)⁵ = 700/500 = 1.4\n1+r = 1.4^(1/5) = ${Math.pow(1.4, 0.2).toFixed(4)}\nr ≒ ${((Math.pow(700/500, 1/5)-1)*100).toFixed(1)}%\n通常の運用（4〜6%）では「5年後の700万」が有利`,
+    assumption: `単純な時間価値の計算。税・リスクは未考慮。`,
+    caveat: null,
+    checklist: null,
+  },
+  {
+    category: '節約・消費',
+    reliability: 2,
+    text: `時給1,100円のアルバイト vs Uber Eats配達（時間あたり1,500円）。実際の「手取り時間単価」は？`,
+    choices: ['諸経費・税を引くとほぼ同等か下回ることも', '常にUber Eatsの方が高い'],
+    correct: 0,
+    answer: `経費・税引後はほぼ同等〜下回るケースも`,
+    calc: `Uber Eats（個人事業主扱い）の控除:\n社会保険料（国保＋国民年金）: 約月2〜4万円\n確定申告・消費税: 年数万円\n自転車・スマホ・雨具等の経費\n実質時給: 1,100〜1,300円程度になることも`,
+    assumption: `稼働状況・地域・確定申告の取り扱いにより大きく変わります。`,
+    caveat: `副業収入が年20万円を超えると確定申告が必要です。社会保険の扶養から外れる可能性もあります。`,
+    checklist: null,
+  },
+  {
+    category: '節約・消費',
+    reliability: 1,
+    text: `「会議コスト」：10人・平均時給5,000円の1時間会議のコストは？`,
+    choices: ['約5万円', '約5,000円'],
+    correct: 0,
+    answer: `約5万円`,
+    calc: `参加者10名 × 時給5,000円 × 1時間\n= 5万円\n月4回なら: 20万円/月\n年間: 240万円（人件費コストとして）`,
+    assumption: `時給は給与÷月稼働時間で計算。実際は交通費・会議室コストも加わる。`,
+    caveat: `「会議が必要かどうか」の判断材料として。意思決定・関係構築の価値は数値化できません。`,
+    checklist: null,
+  },
+];
+
+// ヘルパー（問題データ生成で使用）
+function fvCalc(pv, r, n) { return pv * Math.pow(1 + r, n); }
+function fvMonthlyCalc(pmt, r, years) {
+  const mr = r / 12, n = years * 12;
+  return pmt * (Math.pow(1 + mr, n) - 1) / mr;
+}
+
+// ─── ゲームロジック ───────────────────────────────────────────
+let order = [], current = 0, score = 0, answered = false;
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function start() {
+  order = shuffle(QUESTIONS.map((_, i) => i));
+  current = 0;
+  score = 0;
+  answered = false;
+  document.getElementById('quiz-wrap').style.display = 'block';
+  document.getElementById('result-screen').classList.remove('show');
+  renderQuestion();
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[order[current]];
+  const total = QUESTIONS.length;
+
+  document.getElementById('prog-label').textContent = `問 ${current + 1} / ${total}`;
+  document.getElementById('score-label').textContent = `正解 ${score}`;
+  document.getElementById('prog-fill').style.width = `${(current / total) * 100}%`;
+
+  document.getElementById('q-category').textContent = q.category;
+  document.getElementById('q-text').textContent = q.text;
+
+  // 信頼度
+  const r = REL[q.reliability];
+  const dots = Array.from({ length: 3 }, (_, i) =>
+    `<div class="rel-dot${i < r.dots ? ' on' : ''}"></div>`
+  ).join('');
+  document.getElementById('rel-dots').innerHTML = dots;
+  document.getElementById('rel-label').textContent = r.label;
+
+  // 選択肢
+  const choicesEl = document.getElementById('q-choices');
+  choicesEl.innerHTML = q.choices.map((c, i) =>
+    `<button class="choice-btn" onclick="answer(${i})">${c}</button>`
+  ).join('');
+
+  // 解説を隠す
+  document.getElementById('explain-card').classList.remove('show');
+  answered = false;
+}
+
+function answer(idx) {
+  if (answered) return;
+  answered = true;
+  const q = QUESTIONS[order[current]];
+  const isCorrect = idx === q.correct;
+  if (isCorrect) score++;
+
+  // 選択肢の色付け
+  const btns = document.querySelectorAll('.choice-btn');
+  btns.forEach((btn, i) => {
+    btn.disabled = true;
+    if (i === q.correct) btn.classList.add('correct');
+    else if (i === idx && !isCorrect) btn.classList.add('wrong');
+    else btn.classList.add('dim');
+  });
+
+  // 解説を表示
+  buildExplain(q, isCorrect);
+  document.getElementById('explain-card').classList.add('show');
+
+  // 最終問題はボタンラベル変更
+  const isLast = current === QUESTIONS.length - 1;
+  document.getElementById('next-btn').textContent = isLast ? '結果を見る' : '次の問題 →';
+}
+
+function buildExplain(q, isCorrect) {
+  // 結果バナー
+  const banner = document.getElementById('result-banner');
+  banner.innerHTML = `
+    <div class="result-icon ${isCorrect ? 'ok' : 'ng'}">${isCorrect ? '✓' : '✕'}</div>
+    <div>
+      <div class="result-label">${isCorrect ? '正解！' : '不正解'}</div>
+      <div class="result-answer ${isCorrect ? 'ok' : 'ng'}">${q.answer}</div>
+    </div>`;
+
+  // 本文
+  let html = '';
+
+  html += `<div class="explain-section">
+    <div class="explain-title">計算</div>
+    <div class="calc-block">${q.calc.replace(/\n/g, '<br>')}</div>
+  </div>`;
+
+  html += `<div class="explain-section">
+    <div class="explain-title">前提条件</div>
+    <div class="explain-body">${q.assumption}</div>
+  </div>`;
+
+  if (q.caveat) {
+    html += `<div class="explain-section">
+      <div class="explain-title">注意</div>
+      <div class="caveat-box">${q.caveat}</div>
+    </div>`;
+  }
+
+  if (q.checklist) {
+    html += `<div class="explain-section">
+      <div class="explain-title">あなたの状況は？</div>
+      <ul class="checklist">
+        ${q.checklist.map(item => `
+          <li>
+            <span>${item.text}</span>
+            <span class="check-favor ${item.favor}">${item.label}</span>
+          </li>`).join('')}
+      </ul>
+    </div>`;
+  }
+
+  document.getElementById('explain-body').innerHTML = html;
+}
+
+document.getElementById('next-btn').addEventListener('click', () => {
+  current++;
+  if (current >= QUESTIONS.length) {
+    showResult();
+  } else {
+    renderQuestion();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+});
+
+function showResult() {
+  document.getElementById('quiz-wrap').style.display = 'none';
+  const screen = document.getElementById('result-screen');
+  screen.classList.add('show');
+
+  const pct = Math.round(score / QUESTIONS.length * 100);
+  document.getElementById('score-circle').style.setProperty('--pct', pct);
+  document.getElementById('score-final').innerHTML =
+    `${score}<span>/${QUESTIONS.length}</span>`;
+
+  let msg, sub;
+  if (pct >= 80) {
+    msg = '素晴らしい！複利の感覚が身についています';
+    sub = '直感と計算が一致している問題が多く、お金の本質的な動きを理解できています。';
+  } else if (pct >= 50) {
+    msg = 'まずまず。意外な問題もあったのでは？';
+    sub = '複利・タイミングの問題は人間の直感を外しやすい設計です。間違えた問題を振り返ってみましょう。';
+  } else {
+    msg = '直感は鍛えられます';
+    sub = '複利の効果は体感しにくく、多くの人が過小評価します。もう一度挑戦して感覚を養いましょう。';
+  }
+
+  document.getElementById('result-msg').textContent = msg;
+  document.getElementById('result-sub').textContent = sub;
+}
+
+function restart() {
+  start();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+start();
+</script>
+
+<section id="privacy-policy" style="max-width:680px;margin:4rem auto 2rem;padding:2rem;background:var(--bg2);border:0.5px solid var(--border2);border-radius:var(--radius-lg);color:var(--text2);font-size:0.9rem;line-height:1.8;">
+  <h2 style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:0.25rem;">プライバシーポリシー</h2>
+  <p style="font-size:0.8rem;color:var(--text3);margin-bottom:1.25rem;">最終更新日: 2026年4月16日</p>
+
+  <p style="margin-bottom:1rem;">本プライバシーポリシーは、「複利感覚トレーナー」（以下「本アプリ」）における個人情報の取り扱いについて説明します。</p>
+
+  <h3 style="font-size:0.9rem;font-weight:700;color:var(--text);margin:1.25rem 0 0.4rem;">1. 収集する情報</h3>
+  <p>本アプリは、ユーザーの個人情報を一切収集しません。クイズの回答・スコアはブラウザ内のみで処理され、外部サーバーへ送信されることはありません。</p>
+
+  <h3 style="font-size:0.9rem;font-weight:700;color:var(--text);margin:1.25rem 0 0.4rem;">2. 外部サービスの利用</h3>
+  <p style="margin-bottom:0.5rem;">本アプリは以下の外部リソースを読み込んでいます：</p>
+  <ul style="padding-left:1.4rem;">
+    <li><strong>Google Fonts</strong>（fonts.googleapis.com）— フォントの配信のみに使用</li>
+  </ul>
+  <p style="margin-top:0.5rem;">これらのサービスは、リクエスト時にIPアドレスなどの基本的な接続情報をそれぞれのサーバーに送信する場合があります。</p>
+
+  <h3 style="font-size:0.9rem;font-weight:700;color:var(--text);margin:1.25rem 0 0.4rem;">3. Cookie・ローカルストレージ</h3>
+  <p>本アプリはCookieおよびローカルストレージを使用していません。スコアはページを閉じると保持されません。</p>
+
+  <h3 style="font-size:0.9rem;font-weight:700;color:var(--text);margin:1.25rem 0 0.4rem;">4. 広告・アナリティクス</h3>
+  <p>本アプリは広告の掲載およびアクセス解析ツールを使用していません。</p>
+
+  <h3 style="font-size:0.9rem;font-weight:700;color:var(--text);margin:1.25rem 0 0.4rem;">5. プライバシーポリシーの変更</h3>
+  <p>本プライバシーポリシーは必要に応じて更新される場合があります。</p>
+
+  <h3 style="font-size:0.9rem;font-weight:700;color:var(--text);margin:1.25rem 0 0.4rem;">6. お問い合わせ</h3>
+  <p>本プライバシーポリシーに関するご質問は <a href="mailto:contact@tail-studio.com" style="color:var(--accent);">contact@tail-studio.com</a> までお問い合わせください。</p>
+</section>
+
+<div style="max-width:680px;margin:0 auto 3rem;text-align:center;">
+  <a href="../../index.html" style="color:var(--text3);font-size:0.85rem;text-decoration:none;">← アプリ一覧に戻る</a>
+</div>
+</body>
+</html>

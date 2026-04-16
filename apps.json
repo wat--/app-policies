@@ -64,5 +64,16 @@
     "links": [
       { "label": "プライバシーポリシー", "url": "apps/fire-simulator/fire_simulator.html#privacy-policy" }
     ]
+  },
+  {
+    "id": "money-quiz",
+    "name": "複利感覚トレーナー",
+    "type": "web",
+    "icon": "💰",
+    "webUrl": "apps/money-quiz/money_quiz.html",
+    "description": "2択クイズで複利・ローン・賃貸vs購入などお金の「意外な真実」を体感。信頼度インジケーター付きで根拠も確認できます。",
+    "links": [
+      { "label": "プライバシーポリシー", "url": "apps/money-quiz/money_quiz.html#privacy-policy" }
+    ]
   }
 ]
