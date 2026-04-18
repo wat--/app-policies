@@ -104,7 +104,8 @@
     }
 
     input[type="file"],
-    textarea {
+    textarea,
+    select {
       width: 100%;
       border: 1px solid var(--line);
       border-radius: 10px;
@@ -112,6 +113,37 @@
       background: #fff;
       color: var(--text);
       font: inherit;
+    }
+
+    .style-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: end;
+    }
+
+    .style-col {
+      min-width: 0;
+    }
+
+    .color-col input[type="color"] {
+      width: 56px;
+      height: 40px;
+      padding: 2px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      cursor: pointer;
+    }
+
+    input[type="range"] {
+      width: 100%;
+    }
+
+    #fontSizeValue {
+      color: var(--sub);
+      font-weight: 500;
+      margin-left: 4px;
     }
 
     textarea {
@@ -262,7 +294,7 @@
   <div class="container">
     <section class="panel">
       <h1>App Store スクリーンショットメーカー</h1>
-      <p class="lead">画像を読み込み、上部テキストを重ねてApp Store提出用のサイズでPNG保存できます。</p>
+      <p class="lead">画像を読み込み、上部にテキストを配置したApp Store提出用サイズのPNGを作成できます。テキストはキャプチャに重ねず、上部の領域に表示されます。</p>
 
       <div class="field">
         <label class="label">出力サイズ</label>
@@ -286,6 +318,32 @@
       <div class="field">
         <label class="label" for="titleInput">上部テキスト</label>
         <textarea id="titleInput" placeholder="例: 毎日の支出をひと目で管理"></textarea>
+      </div>
+
+      <div class="field style-row">
+        <div class="style-col">
+          <label class="label" for="fontSelect">フォント</label>
+          <select id="fontSelect">
+            <option value='"Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif'>ヒラギノ角ゴ (Sans-serif)</option>
+            <option value='"Hiragino Mincho ProN", "Yu Mincho", "Noto Serif JP", serif'>ヒラギノ明朝 (Serif)</option>
+            <option value='"Yu Gothic", "YuGothic", "Noto Sans JP", sans-serif'>游ゴシック</option>
+            <option value='"Yu Mincho", "YuMincho", "Noto Serif JP", serif'>游明朝</option>
+            <option value='"Meiryo", "Noto Sans JP", sans-serif'>メイリオ</option>
+            <option value='"Noto Sans JP", sans-serif'>Noto Sans JP</option>
+            <option value='"Noto Serif JP", serif'>Noto Serif JP</option>
+            <option value='Helvetica, Arial, sans-serif'>Helvetica / Arial</option>
+            <option value='Georgia, "Times New Roman", serif'>Georgia</option>
+          </select>
+        </div>
+        <div class="style-col color-col">
+          <label class="label" for="textColorInput">文字色</label>
+          <input id="textColorInput" type="color" value="#ffffff">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label" for="fontSizeInput">フォントサイズ <span id="fontSizeValue">6.0%</span></label>
+        <input id="fontSizeInput" type="range" min="3" max="10" step="0.1" value="6">
       </div>
 
       <div class="actions">
@@ -351,6 +409,10 @@
     const ctx = canvas.getContext("2d");
     const imageInput = document.getElementById("imageInput");
     const titleInput = document.getElementById("titleInput");
+    const fontSelect = document.getElementById("fontSelect");
+    const textColorInput = document.getElementById("textColorInput");
+    const fontSizeInput = document.getElementById("fontSizeInput");
+    const fontSizeValue = document.getElementById("fontSizeValue");
     const downloadBtn = document.getElementById("downloadBtn");
     const clearBtn = document.getElementById("clearBtn");
     const status = document.getElementById("status");
@@ -405,12 +467,12 @@
       return hasSpace ? wrapText(text, maxWidth, font) : wrapJapaneseText(text, maxWidth, font);
     }
 
-    function drawImageCover(img, outW, outH) {
-      const ratio = Math.max(outW / img.width, outH / img.height);
+    function drawImageContain(img, x, y, boxW, boxH) {
+      const ratio = Math.min(boxW / img.width, boxH / img.height);
       const drawW = img.width * ratio;
       const drawH = img.height * ratio;
-      const offsetX = (outW - drawW) / 2;
-      const offsetY = (outH - drawH) / 2;
+      const offsetX = x + (boxW - drawW) / 2;
+      const offsetY = y + (boxH - drawH) / 2;
       ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
     }
 
@@ -423,33 +485,39 @@
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, size.width, size.height);
 
-      if (sourceImage) {
-        drawImageCover(sourceImage, size.width, size.height);
-      }
-
+      const textBandHeight = Math.round(size.height * 0.22);
       const text = titleInput.value.trim();
-      if (text) {
-        const topPadding = Math.round(size.height * 0.06);
-        const bandHeight = Math.round(size.height * 0.24);
-        const grad = ctx.createLinearGradient(0, 0, 0, bandHeight);
-        grad.addColorStop(0, "rgba(0,0,0,0.55)");
-        grad.addColorStop(1, "rgba(0,0,0,0.05)");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, size.width, bandHeight);
 
-        const fontSize = Math.round(size.width * 0.06);
-        const font = `700 ${fontSize}px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
-        const lines = getLines(text, size.width * 0.86, font).slice(0, 3);
+      ctx.fillStyle = "#1f6fff";
+      ctx.fillRect(0, 0, size.width, textBandHeight);
+
+      if (text) {
+        const fontScale = parseFloat(fontSizeInput.value) / 100;
+        const fontSize = Math.round(size.width * fontScale);
+        const fontFamily = fontSelect.value;
+        const font = `700 ${fontSize}px ${fontFamily}`;
         const lineHeight = Math.round(fontSize * 1.23);
+        const maxLines = 3;
+        const lines = getLines(text, size.width * 0.86, font).slice(0, maxLines);
+        const blockHeight = lines.length * lineHeight;
+        const startY = Math.round((textBandHeight - blockHeight) / 2);
 
         ctx.font = font;
         ctx.textAlign = "center";
         ctx.textBaseline = "top";
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = textColorInput.value;
 
         lines.forEach((line, i) => {
-          ctx.fillText(line, size.width / 2, topPadding + i * lineHeight);
+          ctx.fillText(line, size.width / 2, startY + i * lineHeight);
         });
+      }
+
+      if (sourceImage) {
+        const imageAreaY = textBandHeight;
+        const imageAreaH = size.height - textBandHeight;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, imageAreaY, size.width, imageAreaH);
+        drawImageContain(sourceImage, 0, imageAreaY, size.width, imageAreaH);
       }
 
       previewMeta.textContent = `現在: ${size.label} (${size.width} x ${size.height})`;
@@ -484,6 +552,12 @@
     });
 
     titleInput.addEventListener("input", render);
+    fontSelect.addEventListener("change", render);
+    textColorInput.addEventListener("input", render);
+    fontSizeInput.addEventListener("input", () => {
+      fontSizeValue.textContent = `${parseFloat(fontSizeInput.value).toFixed(1)}%`;
+      render();
+    });
 
     targetButtons.forEach((button) => {
       button.addEventListener("click", () => setTarget(button.dataset.key));
