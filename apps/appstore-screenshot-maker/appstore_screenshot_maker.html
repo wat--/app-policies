@@ -262,7 +262,7 @@
   <div class="container">
     <section class="panel">
       <h1>App Store スクリーンショットメーカー</h1>
-      <p class="lead">画像を読み込み、上部テキストを重ねてApp Store提出用のサイズでPNG保存できます。</p>
+      <p class="lead">画像を読み込み、上部にテキストを配置したApp Store提出用サイズのPNGを作成できます。テキストはキャプチャに重ねず、上部の領域に表示されます。</p>
 
       <div class="field">
         <label class="label">出力サイズ</label>
@@ -405,12 +405,12 @@
       return hasSpace ? wrapText(text, maxWidth, font) : wrapJapaneseText(text, maxWidth, font);
     }
 
-    function drawImageCover(img, outW, outH) {
-      const ratio = Math.max(outW / img.width, outH / img.height);
+    function drawImageContain(img, x, y, boxW, boxH) {
+      const ratio = Math.min(boxW / img.width, boxH / img.height);
       const drawW = img.width * ratio;
       const drawH = img.height * ratio;
-      const offsetX = (outW - drawW) / 2;
-      const offsetY = (outH - drawH) / 2;
+      const offsetX = x + (boxW - drawW) / 2;
+      const offsetY = y + (boxH - drawH) / 2;
       ctx.drawImage(img, offsetX, offsetY, drawW, drawH);
     }
 
@@ -423,24 +423,20 @@
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, size.width, size.height);
 
-      if (sourceImage) {
-        drawImageCover(sourceImage, size.width, size.height);
-      }
-
+      const textBandHeight = Math.round(size.height * 0.22);
       const text = titleInput.value.trim();
-      if (text) {
-        const topPadding = Math.round(size.height * 0.06);
-        const bandHeight = Math.round(size.height * 0.24);
-        const grad = ctx.createLinearGradient(0, 0, 0, bandHeight);
-        grad.addColorStop(0, "rgba(0,0,0,0.55)");
-        grad.addColorStop(1, "rgba(0,0,0,0.05)");
-        ctx.fillStyle = grad;
-        ctx.fillRect(0, 0, size.width, bandHeight);
 
+      ctx.fillStyle = "#1f6fff";
+      ctx.fillRect(0, 0, size.width, textBandHeight);
+
+      if (text) {
         const fontSize = Math.round(size.width * 0.06);
         const font = `700 ${fontSize}px "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif`;
-        const lines = getLines(text, size.width * 0.86, font).slice(0, 3);
         const lineHeight = Math.round(fontSize * 1.23);
+        const maxLines = 3;
+        const lines = getLines(text, size.width * 0.86, font).slice(0, maxLines);
+        const blockHeight = lines.length * lineHeight;
+        const startY = Math.round((textBandHeight - blockHeight) / 2);
 
         ctx.font = font;
         ctx.textAlign = "center";
@@ -448,8 +444,16 @@
         ctx.fillStyle = "#ffffff";
 
         lines.forEach((line, i) => {
-          ctx.fillText(line, size.width / 2, topPadding + i * lineHeight);
+          ctx.fillText(line, size.width / 2, startY + i * lineHeight);
         });
+      }
+
+      if (sourceImage) {
+        const imageAreaY = textBandHeight;
+        const imageAreaH = size.height - textBandHeight;
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, imageAreaY, size.width, imageAreaH);
+        drawImageContain(sourceImage, 0, imageAreaY, size.width, imageAreaH);
       }
 
       previewMeta.textContent = `現在: ${size.label} (${size.width} x ${size.height})`;
