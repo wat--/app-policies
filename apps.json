@@ -75,5 +75,16 @@
     "links": [
       { "label": "プライバシーポリシー", "url": "apps/money-quiz/money_quiz.html#privacy-policy" }
     ]
+  },
+  {
+    "id": "appstore-screenshot-maker",
+    "name": "App Store画像メーカー",
+    "type": "web",
+    "icon": "🖼️",
+    "webUrl": "apps/appstore-screenshot-maker/appstore_screenshot_maker.html",
+    "description": "App Store公開用の6.5インチ/13インチスクリーンショットを作成。画像アップロード、上部テキスト追加、プレビュー確認、PNGダウンロードに対応。",
+    "links": [
+      { "label": "プライバシーポリシー", "url": "apps/appstore-screenshot-maker/appstore_screenshot_maker.html#privacy-policy" }
+    ]
   }
 ]
