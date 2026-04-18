@@ -10,6 +10,7 @@
     <link rel="shortcut icon" href="/favicon/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
     <link rel="manifest" href="/favicon/site.webmanifest" />
+    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1127768628418295" crossorigin="anonymous"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -247,6 +248,22 @@
             background: #e6f4ea;
             color: #1a8a40;
         }
+
+        .ad-wrap {
+            margin-top: 28px;
+            background: #fff;
+            border: 1px solid #e5e5ea;
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .ad-label {
+            margin: 0 0 8px;
+            color: #8b8b95;
+            font-size: 0.72em;
+            letter-spacing: 0.04em;
+        }
     </style>
 </head>
 
@@ -286,6 +303,17 @@
         <div id="web-grid" class="app-grid"></div>
     </main>
 
+    <section class="ad-wrap" aria-label="広告枠">
+        <p class="ad-label">Advertisement</p>
+        <ins
+            class="adsbygoogle"
+            style="display:block"
+            data-ad-client="ca-pub-1127768628418295"
+            data-ad-slot="8000243702"
+            data-ad-format="auto"
+            data-full-width-responsive="true"></ins>
+    </section>
+
     <footer>
         <p>お問い合わせ: <a href="mailto:contact@tail-studio.com">contact@tail-studio.com</a></p>
         <p>&copy; <span id="year"></span> Tail Studio</p>
@@ -293,6 +321,21 @@
 
     <script>
         document.getElementById('year').textContent = new Date().getFullYear();
+
+        function initAds() {
+            document.querySelectorAll('.adsbygoogle').forEach((adElement) => {
+                if (adElement.dataset.adInit === 'done') return;
+                try {
+                    (window.adsbygoogle = window.adsbygoogle || []).push({});
+                    adElement.dataset.adInit = 'done';
+                } catch (error) {
+                    // Keep page usable even if ads fail to initialize.
+                }
+            });
+        }
+
+        initAds();
+        window.addEventListener('load', initAds);
 
         fetch('apps.json')
             .then(res => res.json())
