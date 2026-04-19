@@ -73,6 +73,10 @@
       margin-bottom: 16px;
     }
 
+    .targets.orientation {
+      grid-template-columns: 1fr 1fr;
+    }
+
     .target-btn {
       border: 1.5px solid var(--line);
       background: #fff;
@@ -208,8 +212,9 @@
     }
 
     #previewCanvas {
-      max-width: min(100%, 480px);
-      width: 100%;
+      max-width: 100%;
+      max-height: 70vh;
+      width: auto;
       height: auto;
       border: 1px solid var(--line);
       border-radius: 14px;
@@ -301,11 +306,25 @@
         <div class="targets">
           <button id="target65" class="target-btn active" type="button" data-key="iphone65">
             <strong>6.5インチ ディスプレイ画像</strong>
-            <span>1242 x 2688 px</span>
+            <span id="target65Size">1242 x 2688 px</span>
           </button>
           <button id="target13" class="target-btn" type="button" data-key="ipad13">
             <strong>13インチ ディスプレイ画像</strong>
-            <span>2048 x 2732 px</span>
+            <span id="target13Size">2048 x 2732 px</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="label">向き</label>
+        <div class="targets orientation">
+          <button id="orientPortrait" class="target-btn active" type="button" data-orient="portrait">
+            <strong>縦向き</strong>
+            <span>Portrait</span>
+          </button>
+          <button id="orientLandscape" class="target-btn" type="button" data-orient="landscape">
+            <strong>横向き</strong>
+            <span>Landscape</span>
           </button>
         </div>
       </div>
@@ -417,11 +436,35 @@
     const clearBtn = document.getElementById("clearBtn");
     const status = document.getElementById("status");
     const previewMeta = document.getElementById("previewMeta");
-    const targetButtons = Array.from(document.querySelectorAll(".target-btn"));
+    const targetButtons = Array.from(document.querySelectorAll(".target-btn[data-key]"));
+    const orientationButtons = Array.from(document.querySelectorAll(".target-btn[data-orient]"));
+    const target65Size = document.getElementById("target65Size");
+    const target13Size = document.getElementById("target13Size");
 
     let targetKey = "iphone65";
+    let orientation = "portrait";
     let sourceImage = null;
     let sourceName = "screenshot";
+
+    function getOutputSize() {
+      const base = SIZES[targetKey];
+      if (orientation === "landscape") {
+        return { label: base.label, width: base.height, height: base.width };
+      }
+      return { label: base.label, width: base.width, height: base.height };
+    }
+
+    function updateSizeLabels() {
+      const a = SIZES.iphone65;
+      const b = SIZES.ipad13;
+      if (orientation === "landscape") {
+        target65Size.textContent = `${a.height} x ${a.width} px`;
+        target13Size.textContent = `${b.height} x ${b.width} px`;
+      } else {
+        target65Size.textContent = `${a.width} x ${a.height} px`;
+        target13Size.textContent = `${b.width} x ${b.height} px`;
+      }
+    }
 
     function wrapText(text, maxWidth, font) {
       ctx.font = font;
@@ -477,7 +520,7 @@
     }
 
     function render() {
-      const size = SIZES[targetKey];
+      const size = getOutputSize();
       canvas.width = size.width;
       canvas.height = size.height;
 
@@ -485,7 +528,8 @@
       ctx.fillStyle = "#ffffff";
       ctx.fillRect(0, 0, size.width, size.height);
 
-      const textBandHeight = Math.round(size.height * 0.22);
+      const fontBase = Math.min(size.width, size.height);
+      const textBandHeight = Math.round(size.height * (orientation === "landscape" ? 0.26 : 0.22));
       const text = titleInput.value.trim();
 
       ctx.fillStyle = "#1f6fff";
@@ -493,11 +537,11 @@
 
       if (text) {
         const fontScale = parseFloat(fontSizeInput.value) / 100;
-        const fontSize = Math.round(size.width * fontScale);
+        const fontSize = Math.round(fontBase * fontScale);
         const fontFamily = fontSelect.value;
         const font = `700 ${fontSize}px ${fontFamily}`;
         const lineHeight = Math.round(fontSize * 1.23);
-        const maxLines = 3;
+        const maxLines = orientation === "landscape" ? 2 : 3;
         const lines = getLines(text, size.width * 0.86, font).slice(0, maxLines);
         const blockHeight = lines.length * lineHeight;
         const startY = Math.round((textBandHeight - blockHeight) / 2);
@@ -520,7 +564,7 @@
         drawImageContain(sourceImage, 0, imageAreaY, size.width, imageAreaH);
       }
 
-      previewMeta.textContent = `現在: ${size.label} (${size.width} x ${size.height})`;
+      previewMeta.textContent = `現在: ${size.label} ${orientation === "landscape" ? "横" : "縦"} (${size.width} x ${size.height})`;
       downloadBtn.disabled = !sourceImage;
     }
 
@@ -529,6 +573,15 @@
       targetButtons.forEach((button) => {
         button.classList.toggle("active", button.dataset.key === nextKey);
       });
+      render();
+    }
+
+    function setOrientation(nextOrient) {
+      orientation = nextOrient;
+      orientationButtons.forEach((button) => {
+        button.classList.toggle("active", button.dataset.orient === nextOrient);
+      });
+      updateSizeLabels();
       render();
     }
 
@@ -563,6 +616,10 @@
       button.addEventListener("click", () => setTarget(button.dataset.key));
     });
 
+    orientationButtons.forEach((button) => {
+      button.addEventListener("click", () => setOrientation(button.dataset.orient));
+    });
+
     clearBtn.addEventListener("click", () => {
       sourceImage = null;
       imageInput.value = "";
@@ -573,9 +630,11 @@
 
     downloadBtn.addEventListener("click", () => {
       if (!sourceImage) return;
-      const size = SIZES[targetKey];
+      const size = getOutputSize();
       const link = document.createElement("a");
-      const suffix = targetKey === "iphone65" ? "6_5inch_1242x2688" : "13inch_2048x2732";
+      const deviceTag = targetKey === "iphone65" ? "6_5inch" : "13inch";
+      const orientTag = orientation === "landscape" ? "landscape" : "portrait";
+      const suffix = `${deviceTag}_${orientTag}_${size.width}x${size.height}`;
       link.href = canvas.toDataURL("image/png");
       link.download = `${sourceName || "screenshot"}_${suffix}.png`;
       link.click();
