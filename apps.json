@@ -7,7 +7,10 @@
     "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
     "description": "和暦と西暦、そして年齢をまとめて相互変換できる iOS アプリ。誕生日や記念日をメモとして登録しておけば、元号またぎの年齢計算や節目の年の把握もすぐに確認できます。",
     "links": [
-      { "label": "プライバシーポリシー", "url": "apps/koyomi-ai/privacy-policy.html" }
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/koyomi-ai/privacy-policy.html"
+      }
     ]
   },
   {
@@ -18,7 +21,10 @@
     "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
     "description": "買い物リストと冷蔵庫の在庫管理をひとつにまとめた iOS アプリ。よく買う食材をワンタップで追加でき、在庫の残量から次に買うものを思い出せるので、買い忘れと二重買いを減らせます。",
     "links": [
-      { "label": "プライバシーポリシー", "url": "apps/smart-shopping-list/privacy-policy.html" }
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/smart-shopping-list/privacy-policy.html"
+      }
     ]
   },
   {
@@ -29,7 +35,10 @@
     "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
     "description": "リバーシ・チェス・将棋の 3 タイトルを 1 本にまとめた対戦アプリ。AI との対局だけでなく、同じ端末での対人戦や、思考ログの表示、駒の初期配置カスタムまで対応し、序盤の研究や詰みの練習に使えます。",
     "links": [
-      { "label": "プライバシーポリシー", "url": "apps/boardgame-ai/privacy-policy.html" }
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/boardgame-ai/privacy-policy.html"
+      }
     ]
   },
   {
@@ -40,7 +49,10 @@
     "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
     "description": "録音した野鳥の鳴き声から候補を推定し、図鑑的に特徴を確認できる iOS アプリ。観察ノートに写真・音声・メモを添えて保存できるので、日本で出会える野鳥の観察記録を一箇所にまとめられます。",
     "links": [
-      { "label": "プライバシーポリシー", "url": "apps/wild-bird-voice-search/privacy-policy.html" }
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/wild-bird-voice-search/privacy-policy.html"
+      }
     ]
   },
   {
@@ -48,10 +60,13 @@
     "name": "スマホで麻雀",
     "type": "ios",
     "icon": "🀄",
-    "appStoreUrl": "",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E3%82%B9%E3%83%9E%E3%83%9B%E3%81%A7%E9%BA%BB%E9%9B%80-%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E5%AF%BE%E6%88%A6/id6761806803",
     "description": "同じ Wi-Fi ネットワーク内の 2〜4 台で遊べるローカル対戦麻雀アプリ。インターネット接続がなくても仲間内ですぐ卓を囲めるので、旅行先や通信の弱い場所でも対局を楽しめます。",
     "links": [
-      { "label": "プライバシーポリシー", "url": "apps/localmahjong/privacy-policy.html" }
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/localmahjong/privacy-policy.html"
+      }
     ]
   },
   {
@@ -62,7 +77,10 @@
     "webUrl": "apps/fire-simulator/fire_simulator.html",
     "description": "現在の資産・毎月の収支・期待利回り・想定物価上昇率などを入力し、何歳で FIRE（経済的自立）が達成できそうかを試算する Web シミュレーター。80 年先までの資産推移をグラフで確認でき、年金の繰上げ・繰下げ条件も調整できます。",
     "links": [
-      { "label": "プライバシーポリシー", "url": "apps/fire-simulator/fire_simulator.html#privacy-policy" }
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/fire-simulator/fire_simulator.html#privacy-policy"
+      }
     ]
   },
   {
@@ -73,7 +91,10 @@
     "webUrl": "apps/money-quiz/money_quiz.html",
     "description": "複利・ローン・賃貸 vs 購入・税金など、お金にまつわる「意外な真実」を 2 択クイズ形式で体感できる Web アプリ。各問に計算根拠と前提条件、信頼度インジケーターが添えられるので、学習教材としても使えます。",
     "links": [
-      { "label": "プライバシーポリシー", "url": "apps/money-quiz/money_quiz.html#privacy-policy" }
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/money-quiz/money_quiz.html#privacy-policy"
+      }
     ]
   },
   {
@@ -84,7 +105,10 @@
     "webUrl": "apps/appstore-screenshot-maker/appstore_screenshot_maker.html",
     "description": "App Store 申請に必要な 6.5 インチと 13 インチのスクリーンショットを、ブラウザ上で作成できる Web ツール。画像のアップロード、上部テキストの追加、プレビュー確認、PNG 書き出しにワンストップで対応します。",
     "links": [
-      { "label": "プライバシーポリシー", "url": "apps/appstore-screenshot-maker/appstore_screenshot_maker.html#privacy-policy" }
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/appstore-screenshot-maker/appstore_screenshot_maker.html#privacy-policy"
+      }
     ]
   }
 ]
