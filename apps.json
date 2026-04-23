@@ -4,7 +4,7 @@
     "name": "暦変換AI",
     "type": "ios",
     "icon": "📅",
-    "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E6%9A%A6%E5%A4%89%E6%8F%9Bai/id6756545072",
     "description": "和暦と西暦、そして年齢をまとめて相互変換できる iOS アプリ。誕生日や記念日をメモとして登録しておけば、元号またぎの年齢計算や節目の年の把握もすぐに確認できます。",
     "links": [
       {
@@ -18,7 +18,7 @@
     "name": "スマート食材リスト",
     "type": "ios",
     "icon": "🛒",
-    "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E3%82%B9%E3%83%9E%E3%83%BC%E3%83%88%E9%A3%9F%E6%9D%90%E3%83%AA%E3%82%B9%E3%83%88/id6757102546",
     "description": "買い物リストと冷蔵庫の在庫管理をひとつにまとめた iOS アプリ。よく買う食材をワンタップで追加でき、在庫の残量から次に買うものを思い出せるので、買い忘れと二重買いを減らせます。",
     "links": [
       {
@@ -32,7 +32,7 @@
     "name": "ボードゲームAI",
     "type": "ios",
     "icon": "♟️",
-    "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
+    "appStoreUrl": "https://apps.apple.com/jp/app/boardgameai/id6759185448",
     "description": "リバーシ・チェス・将棋の 3 タイトルを 1 本にまとめた対戦アプリ。AI との対局だけでなく、同じ端末での対人戦や、思考ログの表示、駒の初期配置カスタムまで対応し、序盤の研究や詰みの練習に使えます。",
     "links": [
       {
@@ -46,7 +46,7 @@
     "name": "野鳥鳴き声サーチ",
     "type": "ios",
     "icon": "🐦",
-    "appStoreUrl": "https://apps.apple.com/jp/developer/t-studio/id1861302137",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E9%87%8E%E9%B3%A5%E9%B3%B4%E3%81%8D%E5%A3%B0%E3%82%B5%E3%83%BC%E3%83%81/id6761675286",
     "description": "録音した野鳥の鳴き声から候補を推定し、図鑑的に特徴を確認できる iOS アプリ。観察ノートに写真・音声・メモを添えて保存できるので、日本で出会える野鳥の観察記録を一箇所にまとめられます。",
     "links": [
       {
