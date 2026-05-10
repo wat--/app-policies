@@ -110,5 +110,19 @@
         "url": "apps/appstore-screenshot-maker/appstore_screenshot_maker.html#privacy-policy"
       }
     ]
+  },
+  {
+    "id": "kumasuzu",
+    "name": "熊よけベル",
+    "type": "ios",
+    "icon": "🐻",
+    "appStoreUrl": "",
+    "description": "登山やハイキング中にクマとの遭遇を防ぐための熊鈴アプリ。歩行の振動を検知して自動で鈴を鳴らす機能や、威嚇音の再生、定期的な時報、省電力モードを備え、安心して山歩きを楽しめます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/kumasuzu/privacy-policy.html"
+      }
+    ]
   }
 ]
