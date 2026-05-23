@@ -1,0 +1,58 @@
+---
+layout: default
+---
+<article>
+  <nav class="breadcrumb">
+    <a href="{{ '/' | relative_url }}">トップ</a>
+    <span>›</span>
+    <a href="{{ '/blog/' | relative_url }}">ブログ</a>
+    <span>›</span>
+    <span>{{ page.title }}</span>
+  </nav>
+
+  <header class="article-header">
+    <h1>{{ page.title }}</h1>
+    <div class="article-meta">
+      <span class="post-date">{{ page.date | date: "%Y年%m月%d日" }}</span>
+      {% if page.tags %}
+        {% for tag in page.tags %}
+          <span class="post-tag">{{ tag }}</span>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </header>
+
+  <div class="article-body">
+    {{ content }}
+  </div>
+
+  <div class="author-card">
+    <div class="author-card-info">
+      <h3>Tail Studio</h3>
+      <p>開発・生成AIにまつわるノート。アプリ一覧は <a href="{{ '/' | relative_url }}">トップページ</a> をどうぞ。</p>
+    </div>
+  </div>
+
+  <section class="ad-wrap" aria-label="広告枠">
+    <p class="ad-label">Advertisement</p>
+    <ins
+        class="adsbygoogle"
+        style="display:block"
+        data-ad-client="ca-pub-1127768628418295"
+        data-ad-slot="8000243702"
+        data-ad-format="auto"
+        data-full-width-responsive="true"></ins>
+  </section>
+
+  <script>
+    (function () {
+      document.querySelectorAll('.adsbygoogle').forEach((adElement) => {
+        if (adElement.dataset.adInit === 'done') return;
+        try {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+          adElement.dataset.adInit = 'done';
+        } catch (error) {}
+      });
+    })();
+  </script>
+</article>

@@ -1,0 +1,29 @@
+title: Tail Studio
+description: Tail Studio の開発・生成AIにまつわるノート
+url: "https://tail-studio.com"
+baseurl: ""
+author:
+  name: Tail Studio
+  bio: 開発・生成AIにまつわるノート。
+lang: ja
+timezone: Asia/Tokyo
+
+# Build
+markdown: kramdown
+highlighter: rouge
+permalink: /blog/:year/:month/:day/:title/
+
+# Plugins
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
+  - jekyll-seo-tag
+
+# Jekyll は YAML フロントマター無しの既存 HTML/JSON はそのまま静的ファイルとして配信する。
+# 以下は出力に含めたくないファイル/ディレクトリ。
+exclude:
+  - README.md
+  - Gemfile
+  - Gemfile.lock
+  - .claude
+  - .DS_Store

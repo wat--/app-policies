@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if page.title %}{{ page.title }} | {{ site.title }} Blog{% else %}{{ site.title }} Blog{% endif %}</title>
+  <meta name="description" content="{% if page.description %}{{ page.description }}{% else %}{{ site.description }}{% endif %}">
+  <link rel="stylesheet" href="{{ '/assets/css/blog.css' | relative_url }}">
+  <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+  <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+  <link rel="shortcut icon" href="/favicon/favicon.ico" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1127768628418295" crossorigin="anonymous"></script>
+  {% feed_meta %}
+  {% seo %}
+</head>
+<body>
+  <header>
+    <div class="header-inner">
+      <a href="{{ '/blog/' | relative_url }}" class="site-title">{{ site.title }} Blog</a>
+      <nav>
+        <a href="{{ '/' | relative_url }}">アプリ一覧</a>
+        <a href="{{ '/blog/' | relative_url }}">ブログ</a>
+        <a href="{{ '/blog/about/' | relative_url }}">このブログについて</a>
+        <a href="{{ '/blog/contact/' | relative_url }}">お問い合わせ</a>
+      </nav>
+    </div>
+  </header>
+
+  <main>
+    {{ content }}
+  </main>
+
+  <footer>
+    <p>
+      <a href="{{ '/' | relative_url }}">アプリ一覧</a>
+      <a href="{{ '/about.html' | relative_url }}">運営者情報</a>
+      <a href="{{ '/privacy-policy.html' | relative_url }}">プライバシーポリシー</a>
+      <a href="{{ '/terms.html' | relative_url }}">利用規約</a>
+      <a href="{{ '/blog/contact/' | relative_url }}">お問い合わせ</a>
+    </p>
+    <p style="margin-top:0.5rem">&copy; {{ 'now' | date: '%Y' }} Tail Studio</p>
+  </footer>
+</body>
+</html>

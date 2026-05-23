@@ -1,0 +1,26 @@
+---
+layout: default
+title: ブログ
+description: Tail Studio の開発・生成AIにまつわるノート。アプリ開発の体験記やローカルLLMの検証メモなど。
+permalink: /blog/
+---
+<div class="hero">
+  <h1>Tail Studio Blog</h1>
+  <p>開発・生成AIにまつわるノート</p>
+</div>
+
+<ul class="post-list">
+  {% for post in site.posts %}
+  <li class="post-item">
+    <div class="post-meta">
+      <span class="post-date">{{ post.date | date: "%Y年%m月%d日" }}</span>
+      {% for tag in post.tags %}
+        <span class="post-tag">{{ tag }}</span>
+      {% endfor %}
+    </div>
+    <h2><a href="{{ post.url | relative_url }}">{{ post.title }}</a></h2>
+    <p class="post-excerpt">{{ post.excerpt | strip_html | truncate: 100 }}</p>
+    <a href="{{ post.url | relative_url }}" class="read-more">続きを読む →</a>
+  </li>
+  {% endfor %}
+</ul>
