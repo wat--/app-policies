@@ -39,5 +39,17 @@
     </p>
     <p style="margin-top:0.5rem">&copy; {{ 'now' | date: '%Y' }} Tail Studio</p>
   </footer>
+
+  <script>
+    (function () {
+      document.querySelectorAll('.adsbygoogle').forEach((adElement) => {
+        if (adElement.dataset.adInit === 'done') return;
+        try {
+          (window.adsbygoogle = window.adsbygoogle || []).push({});
+          adElement.dataset.adInit = 'done';
+        } catch (error) {}
+      });
+    })();
+  </script>
 </body>
 </html>
