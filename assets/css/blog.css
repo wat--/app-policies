@@ -155,18 +155,35 @@ main {
 }
 .toc-list {
   margin: 0;
-  padding-left: 1.25rem;
+  padding-left: 0;
   font-size: 0.875rem;
-  list-style-type: decimal;
+  list-style: none;
+  counter-reset: toc-h2;
 }
 .toc-list li {
   margin: 0.25rem 0;
   line-height: 1.6;
+  position: relative;
+}
+.toc-list .toc-item-h2 {
+  counter-increment: toc-h2;
+  padding-left: 1.75rem;
+}
+.toc-list .toc-item-h2::before {
+  content: counter(toc-h2) ".";
+  position: absolute;
+  left: 0;
+  color: var(--text-muted);
 }
 .toc-list .toc-item-h3 {
-  margin-left: 1rem;
-  list-style-type: disc;
+  padding-left: 2.75rem;
   font-size: 0.82rem;
+  color: var(--text-muted);
+}
+.toc-list .toc-item-h3::before {
+  content: "・";
+  position: absolute;
+  left: 1.5rem;
   color: var(--text-muted);
 }
 .toc-list a {
