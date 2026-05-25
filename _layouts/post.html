@@ -14,6 +14,9 @@ layout: default
     <h1>{{ page.title }}</h1>
     <div class="article-meta">
       <span class="post-date">{{ page.date | date: "%Y年%m月%d日" }}</span>
+      {% assign chars = content | strip_html | size %}
+      {% assign reading_time = chars | divided_by: 500 | plus: 1 %}
+      <span class="reading-time">約{{ reading_time }}分</span>
       {% if page.tags %}
         {% for tag in page.tags %}
           <span class="post-tag">{{ tag }}</span>
@@ -21,6 +24,11 @@ layout: default
       {% endif %}
     </div>
   </header>
+
+  <aside class="toc" id="toc" hidden>
+    <p class="toc-title">目次</p>
+    <ol class="toc-list"></ol>
+  </aside>
 
   <div class="article-body">
     {{ content }}
@@ -44,3 +52,26 @@ layout: default
         data-full-width-responsive="true"></ins>
   </section>
 </article>
+
+<script>
+  (function () {
+    var article = document.querySelector('.article-body');
+    if (!article) return;
+    var headings = article.querySelectorAll('h2, h3');
+    if (headings.length < 3) return;
+    var toc = document.getElementById('toc');
+    if (!toc) return;
+    var list = toc.querySelector('.toc-list');
+    headings.forEach(function (h) {
+      if (!h.id) return;
+      var li = document.createElement('li');
+      li.className = 'toc-item-' + h.tagName.toLowerCase();
+      var a = document.createElement('a');
+      a.href = '#' + h.id;
+      a.textContent = h.textContent.replace(/^[◆・\s]+/, '');
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+    toc.hidden = false;
+  })();
+</script>
