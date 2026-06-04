@@ -113,6 +113,20 @@
     ]
   },
   {
+    "id": "bird-audio-extractor",
+    "name": "鳴き声・音声抽出ツール",
+    "type": "web",
+    "icon": "🐦",
+    "webUrl": "apps/bird-audio-extractor/bird_audio_extractor.html",
+    "description": "録音した音声ファイルから特定の周波数帯域だけを抽出・再生・ダウンロードできる Web ツール。小鳥・大型鳥・人の声などのプリセットを選ぶだけで帯域を絞れ、波形上のオンセット（音の立ち上がり）を赤〜黄でハイライト表示するので、鳴き声の発生タイミングを視覚的に確認できます。100MB を超える大きなファイルも概算波形で表示します。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/bird-audio-extractor/bird_audio_extractor.html#privacy-policy"
+      }
+    ]
+  },
+  {
     "id": "kumasuzu",
     "name": "熊よけベル",
     "type": "ios",
