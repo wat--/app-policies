@@ -17,11 +17,33 @@ h1{text-align:center;font-size:16px;color:#93c5fd;margin-bottom:16px;letter-spac
 .drop-zone .loaded{color:#34d399;font-size:13px;font-weight:600;margin-top:6px;}
 
 .waveform-wrap{position:relative;background:#080c14;border-radius:10px;
-  margin-bottom:12px;overflow:hidden;border:1px solid #1e2535;cursor:col-resize;}
+  margin-bottom:4px;overflow:hidden;border:1px solid #1e2535;cursor:col-resize;}
 #waveformCanvas{display:block;width:100%;}
 #waveTip{position:absolute;right:8px;bottom:5px;font-size:10px;color:#fbbf24;
   font-family:monospace;pointer-events:none;background:rgba(8,12,20,.78);
   padding:2px 4px;border-radius:4px;}
+#zoomCtrl{position:absolute;left:6px;top:5px;display:flex;align-items:center;gap:4px;}
+#zoomCtrl button{background:#1f2937;border:1px solid #374151;color:#9ca3af;
+  border-radius:5px;width:20px;height:20px;cursor:pointer;font-size:13px;line-height:1;
+  display:flex;align-items:center;justify-content:center;padding:0;}
+#zoomCtrl button:hover{background:#374151;color:#e5e7eb;}
+#zoomLabel{font-size:10px;color:#6b7280;font-family:monospace;min-width:24px;text-align:center;}
+#waveProgress{position:absolute;bottom:0;left:0;height:3px;background:#3b82f6;
+  width:0%;transition:width .2s;pointer-events:none;display:none;border-radius:0 2px 0 0;}
+/* スクロールバー */
+#waveScrollWrap{height:16px;background:#080c14;border:1px solid #1e2535;
+  border-top:none;border-radius:0 0 10px 10px;margin-bottom:10px;
+  position:relative;cursor:pointer;display:block;}
+#waveScrollTrack{position:absolute;top:3px;left:0;right:0;bottom:3px;margin:0 4px;}
+#waveScrollThumb{position:absolute;top:0;height:100%;background:#374151;
+  border-radius:4px;cursor:grab;min-width:16px;display:none;}
+#waveScrollThumb:hover{background:#4b5563;}
+#waveScrollThumb.dragging{background:#6b7280;cursor:grabbing;}
+/* スキャン進捗バー */
+#bgScanBar{position:absolute;top:0;left:0;height:100%;background:rgba(59,130,246,0.25);
+  width:0%;pointer-events:none;border-radius:0 0 0 10px;transition:width .5s;}
+#bgScanLabel{position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  font-size:9px;color:#6b7280;font-family:monospace;pointer-events:none;white-space:nowrap;}
 
 .spectrum-wrap{position:relative;background:#080c14;border-radius:10px;
   margin-bottom:14px;overflow:hidden;border:1px solid #1e2535;}
@@ -81,6 +103,19 @@ h1{text-align:center;font-size:16px;color:#93c5fd;margin-bottom:16px;letter-spac
 <div class="waveform-wrap">
   <canvas id="waveformCanvas" height="90"></canvas>
   <div id="waveTip"></div>
+  <div id="waveProgress"></div>
+  <div id="zoomCtrl">
+    <button onclick="zoomIn()"  title="拡大">＋</button>
+    <span id="zoomLabel">1×</span>
+    <button onclick="zoomOut()" title="縮小">－</button>
+  </div>
+</div>
+<div id="waveScrollWrap">
+  <div id="bgScanBar"></div>
+  <div id="bgScanLabel"></div>
+  <div id="waveScrollTrack">
+    <div id="waveScrollThumb"></div>
+  </div>
 </div>
 
 <div class="spectrum-wrap">
@@ -154,6 +189,10 @@ let mediaAudio = null;   // ストリーミングモード用 <audio>
 let streamMode = false;  // true = ストリーミングモード
 let audioDuration = 0;   // 両モード共通の長さ
 let recordingStart = null; // ファイル名 YYMMDD-HHMM / YYMMDD_HH'MM'SS などから推定した録音開始時刻
+
+// ズーム状態
+let zoomLevel  = 1;      // 1=全体表示、2=2倍、4=4倍…
+let zoomStart  = 0;      // 表示開始時刻（秒）
 
 let playing = false;
 let startAt = 0, pauseAt = 0;
@@ -230,6 +269,7 @@ function applyPreset(lo, hi, btn) {
   btn.classList.add('active');
   applyFilters();
   rerenderWaveformIfLoaded();
+  reScanIfStreaming();
   if (playing) setStatus(`▶ 再生中: ${fmtFreq(lo)} 〜 ${fmtFreq(hi)}`);
 }
 
@@ -241,6 +281,7 @@ function applyPresetFull(btn) {
   btn.classList.add('active');
   applyFilters();
   rerenderWaveformIfLoaded();
+  reScanIfStreaming();
   if (playing) setStatus('▶ 再生中: 全帯域');
 }
 
@@ -254,7 +295,20 @@ function onBandChange() {
   setBandDisplay(fmtFreq(bandLow), fmtFreq(bandHigh));
   applyFilters();
   rerenderWaveformIfLoaded();
+  reScanIfStreaming();
   if (playing) setStatus(`▶ 再生中: ${fmtFreq(bandLow)} 〜 ${fmtFreq(bandHigh)}`);
+}
+
+// ストリーミングモードの帯域変更時に再スキャン（スロットリング）
+let reScanTimer = null;
+function reScanIfStreaming() {
+  if (!streamMode || !bgScanUrl) return;
+  clearTimeout(reScanTimer);
+  reScanTimer = setTimeout(() => {
+    wvCache = null; wvOnset = null;
+    prerenderTimeline();
+    startBgScan(bgScanUrl);
+  }, 600);
 }
 
 // 帯域変更時に波形を再描画（スロットリングで連続操作中は間引く）
@@ -290,6 +344,123 @@ setBandDisplay('20 Hz', '20 kHz');
 document.getElementById('presetFull').classList.add('active');
 
 // ════════════════════════════════════════════
+//  ズーム
+// ════════════════════════════════════════════
+const ZOOM_STEPS = [1, 2, 4, 8, 16, 32];
+
+function getCurrentTime() {
+  if (!audioDuration) return 0;
+  if (playing) return streamMode ? mediaAudio.currentTime : Math.min(actx.currentTime - startAt, audioDuration);
+  return pauseAt;
+}
+
+function applyZoom(newLevel, centerTime) {
+  zoomLevel = newLevel;
+  if (zoomLevel <= 1) { zoomLevel = 1; zoomStart = 0; }
+  else {
+    const visibleDur = audioDuration / zoomLevel;
+    zoomStart = Math.max(0, Math.min(audioDuration - visibleDur, centerTime - visibleDur / 2));
+  }
+  id('zoomLabel').textContent = zoomLevel + '×';
+}
+
+function zoomIn() {
+  const idx = ZOOM_STEPS.indexOf(zoomLevel);
+  if (idx < ZOOM_STEPS.length - 1) { applyZoom(ZOOM_STEPS[idx + 1], getCurrentTime()); updateScrollbar(); }
+}
+function zoomOut() {
+  const idx = ZOOM_STEPS.indexOf(zoomLevel);
+  if (idx > 0) { applyZoom(ZOOM_STEPS[idx - 1], getCurrentTime()); updateScrollbar(); }
+}
+
+// ── スクロールバー ──
+function updateScrollbar() {
+  const thumb = id('waveScrollThumb');
+  // thumbはズーム時のみ表示、ラップは常時表示
+  if (zoomLevel <= 1 || !audioDuration) {
+    thumb.style.display = 'none';
+    return;
+  }
+  thumb.style.display = 'block';
+  const trackW = id('waveScrollTrack').offsetWidth;
+  const thumbW = Math.max(16, Math.round(trackW / zoomLevel));
+  const maxLeft = trackW - thumbW;
+  const leftRatio = audioDuration > audioDuration / zoomLevel
+    ? zoomStart / (audioDuration - audioDuration / zoomLevel) : 0;
+  const thumbLeft = Math.round(Math.max(0, Math.min(maxLeft, leftRatio * maxLeft)));
+  thumb.style.width = thumbW + 'px';
+  thumb.style.left  = thumbLeft + 'px';
+}
+
+function updateBgScanProgress() {
+  if (!audioDuration || !bgWorkers.length) return;
+  // 全workerの蓄積済み秒数を合算
+  const coveredSec = rtCovered ? Array.from(rtCovered).filter(v => v).length : 0;
+  const pct = Math.min(100, coveredSec / audioDuration * 100);
+  id('bgScanBar').style.width = pct + '%';
+  if (pct < 100) {
+    const rate = bgWorkers[0].audio.playbackRate || 16;
+    const remaining = (audioDuration - coveredSec) / (rate * BG_WORKERS);
+    id('bgScanLabel').textContent = `波形読み込み中… ${Math.round(pct)}%（${rate}×${BG_WORKERS}並列　残り約${fmtTime(Math.max(0,remaining))}）`;
+  }
+}
+
+// スクロールバーのドラッグ
+let sbDragging = false, sbDragStartX = 0, sbDragStartLeft = 0;
+const thumb = id('waveScrollThumb');
+thumb.addEventListener('mousedown', e => {
+  sbDragging = true;
+  sbDragStartX = e.clientX;
+  sbDragStartLeft = parseInt(thumb.style.left) || 0;
+  thumb.classList.add('dragging');
+  e.stopPropagation();
+});
+document.addEventListener('mousemove', e => {
+  if (!sbDragging || !audioDuration) return;
+  const trackW = id('waveScrollTrack').offsetWidth;
+  const thumbW = thumb.offsetWidth;
+  const maxLeft = trackW - thumbW;
+  const newLeft = Math.max(0, Math.min(maxLeft, sbDragStartLeft + e.clientX - sbDragStartX));
+  thumb.style.left = newLeft + 'px';
+  const ratio = maxLeft > 0 ? newLeft / maxLeft : 0;
+  const visibleDur = audioDuration / zoomLevel;
+  zoomStart = ratio * (audioDuration - visibleDur);
+});
+document.addEventListener('mouseup', () => {
+  if (sbDragging) { sbDragging = false; thumb.classList.remove('dragging'); }
+});
+// トラッククリックでジャンプ
+id('waveScrollWrap').addEventListener('click', e => {
+  if (e.target === thumb) return;
+  const trackW = id('waveScrollTrack').offsetWidth;
+  const thumbW = thumb.offsetWidth;
+  const maxLeft = trackW - thumbW;
+  const rect = id('waveScrollTrack').getBoundingClientRect();
+  const newLeft = Math.max(0, Math.min(maxLeft, e.clientX - rect.left - thumbW / 2));
+  thumb.style.left = newLeft + 'px';
+  const ratio = maxLeft > 0 ? newLeft / maxLeft : 0;
+  const visibleDur = audioDuration / zoomLevel;
+  zoomStart = ratio * (audioDuration - visibleDur);
+});
+
+// マウスホイールでもズーム
+document.getElementById('waveformCanvas').addEventListener('wheel', e => {
+  if (!audioDuration) return;
+  e.preventDefault();
+  const r = document.getElementById('waveformCanvas').getBoundingClientRect();
+  const ratio = (e.clientX - r.left) / wvW;
+  const centerTime = zoomStart + ratio * (audioDuration / zoomLevel);
+  if (e.deltaY < 0) {
+    const idx = ZOOM_STEPS.indexOf(zoomLevel);
+    if (idx < ZOOM_STEPS.length - 1) applyZoom(ZOOM_STEPS[idx + 1], centerTime);
+  } else {
+    const idx = ZOOM_STEPS.indexOf(zoomLevel);
+    if (idx > 0) applyZoom(ZOOM_STEPS[idx - 1], centerTime);
+  }
+  updateScrollbar();
+}, { passive: false });
+
+// ════════════════════════════════════════════
 //  再生 / 一時停止 / 停止
 // ════════════════════════════════════════════
 function startFrom(t) {
@@ -314,8 +485,13 @@ function play() {
   if (actx.state === 'suspended') actx.resume();
   if (streamMode) {
     mediaAudio.currentTime = pauseAt;
-    mediaAudio.play();
-    playing = true;
+    mediaAudio.play().then(() => {
+      playing = true;
+      if (actx.state === 'suspended') actx.resume();
+    }).catch(err => {
+      playing = false;
+      setStatus('❌ 再生失敗: ' + err.message);
+    });
   } else {
     startFrom(pauseAt);
   }
@@ -405,64 +581,134 @@ function resizeWaveform() {
   wvCanvas.style.width = wvW + 'px'; wvCanvas.style.height = wvH + 'px';
   wvCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   if (audioBuf) prerenderWaveform();
+  else if (rtOnset) redrawRtCache();
   else if (streamSamples) prerenderStreamWaveform(streamSamples);
   else if (audioDuration) prerenderTimeline();
 }
 
-// ストリーミング時：先頭・中間・末尾を分割デコードして波形を生成
-// MP3/M4A/WAV の中間バイト列は単体ではデコードできないため、
-// WAVのみ完全な分割デコードが可能。MP3/M4Aは先頭チャンクを全体に引き伸ばして表示。
+// ストリーミング時：先頭から順に1MBずつデコードして波形を左から順次描画
+// 先頭から読むことでMP3/M4Aでもフレーム依存性の問題を回避できる
 async function buildStreamWaveform(file) {
-  const CHUNK_SIZE = 5 * 1024 * 1024; // 各チャンク5MB
-  const NUM_CHUNKS = 6; // 先頭〜末尾を6分割でサンプリング
-  const totalSize = file.size;
-  const samples = [];
+  const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB ずつ
+  const totalSize  = file.size;
+  const numChunks  = Math.ceil(totalSize / CHUNK_SIZE);
 
-  for (let i = 0; i < NUM_CHUNKS; i++) {
-    const offset = Math.floor((totalSize - CHUNK_SIZE) * (i / Math.max(1, NUM_CHUNKS - 1)));
-    const start = Math.max(0, Math.min(offset, totalSize - CHUNK_SIZE));
-    const slice = file.slice(start, start + CHUNK_SIZE);
-    let peaks;
-    try {
-      const ab = await slice.arrayBuffer();
-      let decoded;
-      try {
-        decoded = await actx.decodeAudioData(ab.slice(0));
-        const ch = decoded.getChannelData(0);
-        const BUCKETS = 60;
-        const spp = Math.max(1, Math.floor(ch.length / BUCKETS));
-        peaks = [];
-        for (let b = 0; b < BUCKETS; b++) {
-          let mn = 1, mx = -1;
-          const s = b * spp, e = Math.min(ch.length, s + spp);
-          for (let j = s; j < e; j++) { if (ch[j] < mn) mn = ch[j]; if (ch[j] > mx) mx = ch[j]; }
-          peaks.push({ mn, mx });
-        }
-      } catch (e) {
-        // 中間チャンクはデコード失敗が多い（MP3/M4Aは先頭フレームが必要）
-        peaks = null;
-      }
-    } catch (e) {
-      peaks = null;
+  // キャンバスを初期化（タイムラインだけ先に描く）
+  prerenderTimeline();
+  const progEl = id('waveProgress');
+  progEl.style.display = 'block'; progEl.style.width = '0%';
+
+  // onset蓄積用（全体ピクセル幅）
+  const onsetFull = new Float32Array(wvW);
+  let decodedSamples = 0; // これまでにデコードできたサンプル数（時刻推定用）
+  let lastPeakDb = null;  // チャンク間のonset連続性のため前チャンク末尾dbを保持
+  let failStreak = 0;     // 連続デコード失敗数（M4Aで後半失敗したら打ち切り）
+
+  for (let ci = 0; ci < numChunks; ci++) {
+    const start = ci * CHUNK_SIZE;
+    const ab = await file.slice(start, start + CHUNK_SIZE).arrayBuffer();
+    let decoded = null;
+    try { decoded = await actx.decodeAudioData(ab.slice(0)); } catch (e) {}
+
+    if (!decoded) {
+      failStreak++;
+      // 先頭チャンクが失敗 or 5連続失敗したら打ち切り
+      if (ci === 0 || failStreak >= 5) break;
+      continue;
     }
-    samples.push({ offset: start, peaks });
+    failStreak = 0;
+
+    const ch  = decoded.getChannelData(0);
+    const sr  = decoded.sampleRate;
+    // このチャンクが全体のどの時間帯に対応するかを推定
+    // （先頭から順に読んでいるのでデコード済みサンプル数で計算）
+    const chunkDurSec = ch.length / sr;
+    const tStart = audioDuration > 0 ? (decodedSamples / (decodedSamples + ch.length)) * audioDuration : 0;
+    // より正確に：全体のビットレートからバイト位置→時刻を推定
+    const tStartEst = (start / totalSize) * audioDuration;
+    const tEndEst   = Math.min(audioDuration, ((start + CHUNK_SIZE) / totalSize) * audioDuration);
+
+    const xStart = (tStartEst / audioDuration) * wvW;
+    const xEnd   = (tEndEst   / audioDuration) * wvW;
+    const segW   = Math.max(1, xEnd - xStart);
+
+    // バンドパスフィルタ（prerenderWaveform と同じ係数）
+    function biquadHP(fc, sr) {
+      const w0 = 2*Math.PI*fc/sr, cos0 = Math.cos(w0), sin0 = Math.sin(w0);
+      const alpha = sin0/(2*0.7071);
+      const b0=(1+cos0)/2, b1=-(1+cos0), b2=b0, a0=1+alpha, a1=-2*cos0, a2=1-alpha;
+      return {b0:b0/a0,b1:b1/a0,b2:b2/a0,a1:a1/a0,a2:a2/a0};
+    }
+    function biquadLP(fc, sr) {
+      const w0 = 2*Math.PI*fc/sr, cos0 = Math.cos(w0), sin0 = Math.sin(w0);
+      const alpha = sin0/(2*0.7071);
+      const b0=(1-cos0)/2, b1=1-cos0, b2=b0, a0=1+alpha, a1=-2*cos0, a2=1-alpha;
+      return {b0:b0/a0,b1:b1/a0,b2:b2/a0,a1:a1/a0,a2:a2/a0};
+    }
+    const loHz = fullBandMode ? 0 : bandLow;
+    const hiHz = fullBandMode ? sr/2 : bandHigh;
+    const cfHP = loHz > 10       ? biquadHP(loHz, sr) : null;
+    const cfLP = hiHz < sr/2 - 1 ? biquadLP(hiHz, sr) : null;
+
+    // ピクセルバケツごとにpeakを集計
+    const buckets = Math.ceil(segW);
+    const peakBuf = new Float32Array(buckets);
+    let hpX1=0,hpX2=0,hpY1=0,hpY2=0, lpX1=0,lpX2=0,lpY1=0,lpY2=0;
+    const dsStride = Math.max(1, Math.floor(sr / Math.max(4000, hiHz * 4)));
+    const dsLen = Math.floor(ch.length / dsStride);
+
+    for (let di = 0; di < dsLen; di++) {
+      let v = ch[di * dsStride];
+      if (cfHP) {
+        const y = cfHP.b0*v+cfHP.b1*hpX1+cfHP.b2*hpX2-cfHP.a1*hpY1-cfHP.a2*hpY2;
+        hpX2=hpX1;hpX1=v;hpY2=hpY1;hpY1=y;v=y;
+      }
+      if (cfLP) {
+        const y = cfLP.b0*v+cfLP.b1*lpX1+cfLP.b2*lpX2-cfLP.a1*lpY1-cfLP.a2*lpY2;
+        lpX1=lpX1;lpX1=v;lpY2=lpY1;lpY1=y;v=y;
+      }
+      const bIdx = Math.min(buckets-1, Math.floor(di / dsLen * buckets));
+      const av = Math.abs(v);
+      if (av > peakBuf[bIdx]) peakBuf[bIdx] = av;
+    }
+
+    // peakをdBに変換してonset（前バケツとのdB差）を計算
+    const FLOOR_DB = -60;
+    const dbBuf = peakBuf.map(p => p > 0 ? Math.max(FLOOR_DB, 20*Math.log10(p)) : FLOOR_DB);
+    let prevDb = lastPeakDb !== null ? lastPeakDb : dbBuf[0];
+    for (let bi = 0; bi < buckets; bi++) {
+      const rise = Math.max(0, dbBuf[bi] - prevDb);
+      const px   = Math.round(xStart + bi);
+      if (px >= 0 && px < wvW) onsetFull[px] = Math.max(onsetFull[px], rise);
+      prevDb = dbBuf[bi];
+    }
+    lastPeakDb = dbBuf[dbBuf.length - 1];
+    decodedSamples += ch.length;
+
+    // チャンクごとに閾値を再計算して波形キャッシュを更新（プログレッシブ描画）
+    const nonzero = Array.from(onsetFull).filter(v => v > 0).sort((a, b) => a - b);
+    const { yellowThr: DB_YELLOW, redThr: DB_RED } = getSpikeThresholds(nonzero);
+    drawStreamBars(onsetFull, DB_YELLOW, DB_RED);
+    wvOnset = onsetFull; wvOnsetYellow = DB_YELLOW; wvOnsetRed = DB_RED;
+
+    const pct = Math.round((ci + 1) / numChunks * 100);
+    progEl.style.width = pct + '%';
+    setStatus(`波形生成中… ${pct}%　（${ci+1} / ${numChunks} チャンク）`);
   }
 
-  // デコード成功したチャンクが1つもない場合はタイムラインのみ
-  const hasAny = samples.some(s => s.peaks);
-  if (!hasAny) { prerenderTimeline(); return; }
-
-  // サンプルを保持してリサイズ時にも再描画できるようにする
-  streamSamples = { chunks: samples, totalSize, chunkSize: CHUNK_SIZE };
-  prerenderStreamWaveform(streamSamples);
+  progEl.style.width = '100%';
+  setTimeout(() => { progEl.style.display = 'none'; }, 600);
+  setStatus(`読み込み完了 ${fmtTime(audioDuration)} — ⚠ 大きなファイルのためダウンロード非対応`);
+  streamSamples = { onsetFull, wvW }; // リサイズ時の再描画用に保持
 }
 
-function prerenderStreamWaveform({ chunks: samples, totalSize, chunkSize }) {
+// onsetFull配列から棒グラフキャッシュを生成（ストリーミング用）
+function drawStreamBars(onsetFull, DB_YELLOW, DB_RED) {
   if (!wvW) return;
   const dpr = devicePixelRatio || 1;
-  const oc = document.createElement('canvas');
-  oc.width = wvW * dpr; oc.height = wvH * dpr;
-  const ox = oc.getContext('2d');
+  const oc  = document.createElement('canvas');
+  oc.width  = wvW * dpr; oc.height = wvH * dpr;
+  const ox  = oc.getContext('2d');
   ox.scale(dpr, dpr);
   ox.fillStyle = '#080c14'; ox.fillRect(0, 0, wvW, wvH);
 
@@ -477,66 +723,36 @@ function prerenderStreamWaveform({ chunks: samples, totalSize, chunkSize }) {
     ox.fillText(fmtTime(t), x + 2, wvH - 3);
   }
 
-  // チャンク内オンセット検出：dBスケールで前後ウィンドウ比較（小さい音も検出）
-  function drawChunkWithOnset(peaks, xStart, bucketW) {
-    const FLOOR_DB = -60;
-    const db = peaks.map(({ mn, mx }) => {
-      const amp = (mx - mn) * 0.5;
-      return amp > 0 ? Math.max(FLOOR_DB, 20 * Math.log10(amp)) : FLOOR_DB;
-    });
-    const WIN = Math.max(2, Math.floor(peaks.length * 0.05));
-    const onset = new Float32Array(peaks.length);
-    for (let i = WIN; i < peaks.length - WIN; i++) {
-      let prevDb = 0, curDb = 0;
-      for (let w = 0; w < WIN; w++) {
-        prevDb += db[i - WIN + w];
-        curDb  += db[i + w];
-      }
-      onset[i] = Math.max(0, curDb / WIN - prevDb / WIN);
+  // 棒グラフ描画
+  const minH = 2, maxH = wvH;
+  for (let px = 0; px < wvW; px++) {
+    const rise = onsetFull[px];
+    let norm, hue, sat, lgt;
+    if (rise < DB_YELLOW) {
+      norm = 0; hue = 210; sat = 60; lgt = 22;
+    } else {
+      norm = Math.min(1, (rise - DB_YELLOW) / Math.max(0.1, DB_RED * 3 - DB_YELLOW));
+      hue = Math.round(60 - norm * 60); sat = 90; lgt = Math.round(42 + norm * 18);
     }
-    const nonzero = Array.from(onset).filter(v => v > 0).sort((a, b) => a - b);
-    const { yellowThr: DB_YELLOW, redThr: DB_RED } = getSpikeThresholds(nonzero);
-    peaks.forEach(({ mn, mx }, bi) => {
-      const amp = mx - mn;
-      const rise = onset[bi];
-      let hue, sat;
-      if (rise < DB_YELLOW) {
-        hue = 210; sat = 75;
-      } else {
-        const t = Math.min(1, (rise - DB_YELLOW) / Math.max(0.1, DB_RED - DB_YELLOW));
-        hue = Math.round(60 - t * 60);
-        sat = 90;
-      }
-      ox.fillStyle = `hsl(${hue},${sat}%,${34+amp*28}%)`;
-      const px = xStart + bi * bucketW;
-      ox.fillRect(px, ((1 - mx) * 0.5) * wvH, Math.max(1, bucketW - 0.5), Math.max(1, amp * wvH));
-    });
+    const barH = Math.round(minH + norm * (maxH - minH));
+    ox.fillStyle = `hsl(${hue},${sat}%,${lgt}%)`;
+    ox.fillRect(px, wvH - barH, 1, barH);
   }
 
-  // 各サンプルチャンクの波形をファイル内の位置に対応させて描画
-  samples.forEach(({ offset, peaks }) => {
-    const xStart = (offset / totalSize) * wvW;
-    const xEnd   = Math.min(wvW, ((offset + chunkSize) / totalSize) * wvW);
-    const segW   = xEnd - xStart;
-    if (!peaks) {
-      // デコード失敗チャンクは薄いブロックで「データあり・波形未取得」を示す
-      ox.fillStyle = 'rgba(55,65,81,0.3)';
-      ox.fillRect(xStart, wvH * 0.25, segW, wvH * 0.5);
-      return;
-    }
-    drawChunkWithOnset(peaks, xStart, segW / peaks.length);
-  });
-
-  // 中央基準線
-  ox.strokeStyle = '#1e293b'; ox.lineWidth = 1;
-  ox.beginPath(); ox.moveTo(0, wvH / 2); ox.lineTo(wvW, wvH / 2); ox.stroke();
-
-  // 注記
   ox.fillStyle = '#4b5563'; ox.font = '9px monospace';
-  ox.fillText('概算波形（サンプリング表示）', 4, 12);
-
+  ox.fillText('概算（サンプリング表示）', 4, 12);
   wvCache = oc;
 }
+
+// リサイズ時にストリーミング波形を再描画
+function prerenderStreamWaveform({ onsetFull }) {
+  if (!wvW || !onsetFull) return;
+  const nonzero = Array.from(onsetFull).filter(v => v > 0).sort((a, b) => a - b);
+  const { yellowThr: DB_YELLOW, redThr: DB_RED } = getSpikeThresholds(nonzero);
+  drawStreamBars(onsetFull, DB_YELLOW, DB_RED);
+  wvOnset = onsetFull; wvOnsetYellow = DB_YELLOW; wvOnsetRed = DB_RED;
+}
+
 
 // ストリーミング時：波形なしでタイムラインだけ描画
 function prerenderTimeline() {
@@ -722,59 +938,319 @@ let wvOnset = null, wvOnsetYellow = 1, wvOnsetRed = 5;
 
 let playbarSmooth = 0; // ピークホールド用（下降のみ）
 
+// ════════════════════════════════════════════
+//  ストリーミング時リアルタイムonset蓄積
+// ════════════════════════════════════════════
+// onset配列は時間解像度（1秒単位）で持つ — wvWに依存しない
+let rtOnset      = null;  // Float32Array(秒数分) — 蓄積済みonset
+let rtCovered    = null;  // Uint8Array(秒数分)
+let rtInterval   = null;
+let rtDirty      = false;
+let bgAudio      = null;
+let bgSrc        = null;
+let bgAnalyser   = null;
+let _bgLastTime  = 0;
+let bgScanUrl    = null;  // 再スキャン用にURLを保持
+
+function initRtOnset() {
+  if (!audioDuration || !isFinite(audioDuration)) return;
+  const slots = Math.ceil(audioDuration) + 1;
+  rtOnset   = new Float32Array(slots);
+  rtCovered = new Uint8Array(slots);
+  rtDirty   = false;
+  if (rtInterval) clearInterval(rtInterval);
+  rtInterval = setInterval(() => {
+    if (!rtDirty || !rtOnset) return;
+    rtDirty = false;
+    redrawRtCache();
+  }, 500);
+}
+
+const BG_WORKERS = 32; // 並列スキャン数
+let bgWorkers = []; // {audio, analyser, src, lastTime, startSec, endSec}
+
+function startBgScan(url) {
+  bgScanUrl = url;
+  // 既存スキャンを停止
+  bgWorkers.forEach(w => { w.audio.pause(); w.audio.src = ''; });
+  bgWorkers = [];
+  if (bgAudio) { bgAudio.pause(); bgAudio.src = ''; bgAudio = null; }
+
+  if (!audioDuration || !isFinite(audioDuration)) return;
+
+  // rtOnsetをリセット
+  initRtOnset();
+
+  const segDur = audioDuration / BG_WORKERS;
+
+  // 現在の帯域設定でbiquadフィルタ係数を計算
+  function mkHP(fc, sr) {
+    const w0 = 2*Math.PI*fc/sr, c = Math.cos(w0), s = Math.sin(w0), a = s/(2*0.7071);
+    const b0=(1+c)/2, b1=-(1+c), b2=b0, a0=1+a, a1=-2*c, a2=1-a;
+    return {b0:b0/a0,b1:b1/a0,b2:b2/a0,a1:a1/a0,a2:a2/a0};
+  }
+  function mkLP(fc, sr) {
+    const w0 = 2*Math.PI*fc/sr, c = Math.cos(w0), s = Math.sin(w0), a = s/(2*0.7071);
+    const b0=(1-c)/2, b1=1-c, b2=b0, a0=1+a, a1=-2*c, a2=1-a;
+    return {b0:b0/a0,b1:b1/a0,b2:b2/a0,a1:a1/a0,a2:a2/a0};
+  }
+
+  for (let wi = 0; wi < BG_WORKERS; wi++) {
+    const startSec = wi * segDur;
+    const endSec   = (wi + 1) * segDur;
+
+    const audio = document.createElement('audio');
+    audio.src     = url;
+    audio.muted   = false;
+    audio.volume  = 0;
+    audio.preload = 'auto';
+
+    // 帯域フィルタ（IIRFilterNode で実装）
+    const sr = actx.sampleRate;
+    const loHz = fullBandMode ? 0    : bandLow;
+    const hiHz = fullBandMode ? sr/2 : bandHigh;
+    let filterChain = null; // 接続先ノード
+    let lastNode;
+    const src = actx.createMediaElementSource(audio);
+    lastNode = src;
+
+    if (loHz > 10) {
+      const cf = mkHP(loHz, sr);
+      const hp = actx.createIIRFilter(
+        [cf.b0, cf.b1, cf.b2], [1, cf.a1, cf.a2]);
+      lastNode.connect(hp); lastNode = hp;
+    }
+    if (hiHz < sr/2 - 1) {
+      const cf = mkLP(hiHz, sr);
+      const lp = actx.createIIRFilter(
+        [cf.b0, cf.b1, cf.b2], [1, cf.a1, cf.a2]);
+      lastNode.connect(lp); lastNode = lp;
+    }
+
+    const analyser = actx.createAnalyser();
+    analyser.fftSize = 2048;
+    const silentGain = actx.createGain();
+    silentGain.gain.value = 0;
+    lastNode.connect(analyser);
+    analyser.connect(silentGain);
+    silentGain.connect(actx.destination);
+
+    const w = { audio, analyser, src, lastTime: startSec, startSec, endSec, wi };
+    bgWorkers.push(w);
+
+    audio.addEventListener('canplay', () => {
+      audio.playbackRate = 16;
+      audio.currentTime  = startSec;
+    }, {once: true});
+
+    audio.addEventListener('seeked', () => {
+      if (Math.abs(audio.currentTime - startSec) < 1) audio.play().catch(() => {});
+    }, {once: true});
+
+    audio.addEventListener('timeupdate', () => {
+      if (!rtOnset || !audioDuration) return;
+      const cur = audio.currentTime;
+
+      // セグメント末尾を超えたら停止
+      if (cur >= endSec) { audio.pause(); checkAllDone(); return; }
+
+      const slotFrom = Math.max(0, Math.floor(w.lastTime));
+      const slotTo   = Math.min(rtOnset.length - 1, Math.floor(cur));
+      const td = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(td);
+      let peak = 0;
+      for (let i = 0; i < td.length; i++) { const a = Math.abs(td[i]); if (a > peak) peak = a; }
+      for (let s = slotFrom; s <= slotTo; s++) {
+        if (peak > (rtOnset[s] || 0)) rtOnset[s] = peak;
+        rtCovered[s] = 1;
+      }
+      w.lastTime = cur;
+      rtDirty = true;
+      updateBgScanProgress();
+    });
+
+    audio.addEventListener('ended', () => { checkAllDone(); });
+  }
+
+  // 最初のworkerをbgAudioとして参照（進捗表示用）
+  bgAudio = bgWorkers[0].audio;
+  _bgLastTime = 0;
+}
+
+function checkAllDone() {
+  if (!bgWorkers.length) return;
+  const allDone = bgWorkers.every(w => w.audio.paused || w.audio.ended);
+  if (!allDone) return;
+  id('bgScanBar').style.width = '100%';
+  id('bgScanLabel').textContent = '波形読み込み完了';
+  setTimeout(() => { id('bgScanLabel').textContent = ''; id('bgScanBar').style.width = '0%'; }, 2000);
+  rtDirty = true;
+}
+
+function accumOnset() {
+  // バックグラウンドスキャンで蓄積するため不要
+}
+
+function redrawRtCache() {
+  if (!wvW || !rtOnset || !audioDuration) return;
+
+  // 秒単位のonset配列 → ピクセル配列にリサンプル
+  const slots = rtOnset.length;
+  const pxOnset   = new Float32Array(wvW);
+  const pxCovered = new Uint8Array(wvW);
+  for (let s = 0; s < slots; s++) {
+    const px = Math.min(wvW - 1, Math.floor(s / audioDuration * wvW));
+    if (rtOnset[s]   > pxOnset[px]) pxOnset[px] = rtOnset[s];
+    if (rtCovered[s]) pxCovered[px] = 1;
+  }
+
+  // 閾値を分布のパーセンタイルから計算（peak 0〜1スケール）
+  const nonzero = Array.from(pxOnset).filter(v => v > 0).sort((a, b) => a - b);
+  const t = spikeSensitivity / 100;
+  const pY = Math.round(90 - t * 50);
+  const pR = Math.round(98 - t * 33);
+  const DB_YELLOW = nonzero.length ? (nonzero[Math.floor(nonzero.length * pY / 100)] ?? nonzero[nonzero.length-1]) : 0.1;
+  const DB_RED    = nonzero.length ? (nonzero[Math.floor(nonzero.length * pR / 100)] ?? nonzero[nonzero.length-1]) : 0.3;
+  wvOnsetYellow = DB_YELLOW; wvOnsetRed = DB_RED;
+  wvOnset = pxOnset;
+
+  const dpr = devicePixelRatio || 1;
+  const oc  = document.createElement('canvas');
+  oc.width  = wvW * dpr; oc.height = wvH * dpr;
+  const ox  = oc.getContext('2d');
+  ox.scale(dpr, dpr);
+  ox.fillStyle = '#080c14'; ox.fillRect(0, 0, wvW, wvH);
+
+  // 時間マーカー
+  const dur  = audioDuration;
+  const step = dur <= 60 ? 5 : dur <= 300 ? 15 : dur <= 1800 ? 60 : 300;
+  for (let t = 0; t <= dur; t += step) {
+    const x = (t / dur) * wvW;
+    ox.strokeStyle = '#151b2e'; ox.lineWidth = 1;
+    ox.beginPath(); ox.moveTo(x, 0); ox.lineTo(x, wvH); ox.stroke();
+    ox.fillStyle = '#374151'; ox.font = '9px monospace';
+    ox.fillText(fmtTime(t), x + 2, wvH - 3);
+  }
+
+  for (let px = 0; px < wvW; px++) {
+    if (!pxCovered[px]) {
+      ox.fillStyle = '#1a2030';
+      ox.fillRect(px, wvH - 2, 1, 2);
+      continue;
+    }
+    const rise = pxOnset[px];
+    let norm, hue, sat, lgt;
+    if (rise < DB_YELLOW) {
+      norm = 0; hue = 210; sat = 70; lgt = 35; // 蓄積済みだが低レベル — 視認できる明るさに
+    } else {
+      norm = Math.min(1, (rise - DB_YELLOW) / Math.max(0.001, DB_RED - DB_YELLOW));
+      hue = Math.round(60 - norm * 60); sat = 90; lgt = Math.round(45 + norm * 20);
+    }
+    const barH = Math.round(wvH * 0.15 + norm * wvH * 0.85); // 最低15%の高さ
+    ox.fillStyle = `hsl(${hue},${sat}%,${lgt}%)`;
+    ox.fillRect(px, wvH - barH, 1, barH);
+  }
+
+  ox.fillStyle = '#4b5563'; ox.font = '9px monospace';
+  ox.fillText('リアルタイム蓄積（再生した範囲のみ）', 4, 12);
+  wvCache = oc;
+
+  // 即座に画面に反映
+  wvCtx.clearRect(0, 0, wvW, wvH);
+  wvCtx.drawImage(wvCache, 0, 0, wvW, wvH);
+}
+
 function drawWaveform() {
   if (!wvW) return;
   wvCtx.clearRect(0, 0, wvW, wvH);
-  if (wvCache) { wvCtx.drawImage(wvCache, 0, 0, wvW, wvH); }
-  else { wvCtx.fillStyle = '#080c14'; wvCtx.fillRect(0, 0, wvW, wvH); }
+
+  if (wvCache) {
+    if (zoomLevel <= 1) {
+      // 全体表示：キャッシュをそのまま描画
+      wvCtx.drawImage(wvCache, 0, 0, wvW, wvH);
+    } else {
+      // ズーム表示：キャッシュの一部を切り出して拡大
+      // wvCacheは dpr 倍の実ピクセルで作られているので srcX/srcW/srcH も dpr 倍にする
+      const dpr = devicePixelRatio || 1;
+      const visibleDur = audioDuration / zoomLevel;
+      const srcX = Math.round((zoomStart / audioDuration) * wvW * dpr);
+      const srcW = Math.round((visibleDur / audioDuration) * wvW * dpr);
+      const srcH = wvH * dpr;
+      wvCtx.drawImage(wvCache, srcX, 0, srcW, srcH, 0, 0, wvW, wvH);
+
+      // ズーム時の時間マーカーを上書き
+      wvCtx.fillStyle = '#080c14';
+      wvCtx.fillRect(0, wvH - 14, wvW, 14);
+      const step = visibleDur <= 10 ? 1 : visibleDur <= 60 ? 5 : visibleDur <= 300 ? 15 : 60;
+      const tStart = Math.ceil(zoomStart / step) * step;
+      for (let t = tStart; t <= zoomStart + visibleDur; t += step) {
+        const x = ((t - zoomStart) / visibleDur) * wvW;
+        wvCtx.strokeStyle = '#1e2535'; wvCtx.lineWidth = 1;
+        wvCtx.beginPath(); wvCtx.moveTo(x, 0); wvCtx.lineTo(x, wvH); wvCtx.stroke();
+        wvCtx.fillStyle = '#4b5563'; wvCtx.font = '9px monospace';
+        wvCtx.fillText(fmtTime(t), x + 2, wvH - 3);
+      }
+    }
+  } else {
+    wvCtx.fillStyle = '#080c14'; wvCtx.fillRect(0, 0, wvW, wvH);
+  }
+
   if (!audioDuration) return;
 
+  // 再生中は現在位置がズーム表示範囲外なら自動スクロール
   const cur = playing
     ? (streamMode ? mediaAudio.currentTime : Math.min(actx.currentTime - startAt, audioDuration))
     : pauseAt;
-  const px = (cur / audioDuration) * wvW;
 
-  // 再生済み領域の薄い塗り
-  wvCtx.fillStyle = 'rgba(251,191,36,0.06)';
-  wvCtx.fillRect(0, 0, px, wvH);
+  if (zoomLevel > 1 && playing) {
+    const visibleDur = audioDuration / zoomLevel;
+    if (cur < zoomStart || cur > zoomStart + visibleDur * 0.8) {
+      zoomStart = Math.max(0, Math.min(audioDuration - visibleDur, cur - visibleDur * 0.2));
+      updateScrollbar();
+    }
+  }
 
-  // 現在位置のオンセット強度を事前計算済み配列から直接取得
-  // 周辺数pxの最大値を使って細いスパイクも確実に拾う
+  // 現在位置をズーム座標系のピクセルに変換
+  const visibleDur = audioDuration / zoomLevel;
+  const px = zoomLevel <= 1
+    ? (cur / audioDuration) * wvW
+    : ((cur - zoomStart) / visibleDur) * wvW;
+
+  // 未再生領域を少し暗くする（再生済み領域は明るいまま）
+  wvCtx.fillStyle = 'rgba(0,0,0,0.35)';
+  wvCtx.fillRect(Math.ceil(px), 0, wvW - Math.ceil(px), wvH);
+
+  // 現在位置のonset強度（全体キャッシュ座標で引く）
+  const globalPx = (cur / audioDuration) * wvW;
   let rise = 0;
   if (wvOnset && wvOnset.length > 0) {
-    const opx = Math.round(px);
+    const opx = Math.round(globalPx);
     for (let k = -2; k <= 2; k++) {
       const v = wvOnset[Math.max(0, Math.min(wvOnset.length - 1, opx + k))];
       if (v > rise) rise = v;
     }
   }
-  // ピークホールド：上昇は即座、下降は緩やか
   if (rise > playbarSmooth) playbarSmooth = rise;
   else playbarSmooth *= 0.92;
 
-  // 0〜1 に正規化：yellow閾値で棒が伸び始め、red閾値で全高
   const norm = (wvOnsetRed > wvOnsetYellow)
     ? Math.min(1, Math.max(0, (playbarSmooth - wvOnsetYellow) / (wvOnsetRed - wvOnsetYellow)))
-    : Math.min(1, playbarSmooth > 0 ? 1 : 0);
+    : 0;
 
-  // 棒の高さ：最低40%〜最大100%
   const barW = 3;
   const minH = Math.round(wvH * 0.4);
   const barH = Math.round(minH + norm * (wvH - minH));
   const barY = Math.round((wvH - barH) / 2);
 
-  // 色：スパイク小=黄、大=赤（波形の色付けと同じ基準）
   const hue = Math.round(60 - norm * 60);
   wvCtx.shadowColor = `hsl(${hue},100%,60%)`;
   wvCtx.shadowBlur  = 6 + norm * 12;
-
   const grad = wvCtx.createLinearGradient(0, barY, 0, barY + barH);
   grad.addColorStop(0,   `hsla(${hue},100%,70%,0.5)`);
   grad.addColorStop(0.5, `hsla(${hue},100%,62%,1.0)`);
   grad.addColorStop(1,   `hsla(${hue},100%,70%,0.5)`);
   wvCtx.fillStyle = grad;
   wvCtx.fillRect(px - 1, barY, barW, barH);
-
   wvCtx.shadowBlur = 0;
 
   // 時刻ラベル
@@ -794,17 +1270,19 @@ function drawWaveform() {
 
 // 波形シーク
 let wvDragging = false;
+function wvTimeFromEvent(e) {
+  const r = wvCanvas.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - r.left) / wvW));
+  const visibleDur = audioDuration / zoomLevel;
+  return zoomLevel <= 1 ? ratio * audioDuration : zoomStart + ratio * visibleDur;
+}
 function wvSeek(e) {
   if (!audioDuration) return;
-  const r = wvCanvas.getBoundingClientRect();
-  const t = Math.max(0, Math.min(1, (e.clientX - r.left) / wvW)) * audioDuration;
+  const t = wvTimeFromEvent(e);
   pauseAt = t;
   if (playing) {
-    if (streamMode) {
-      mediaAudio.currentTime = t;
-    } else {
-      startFrom(t);
-    }
+    if (streamMode) { mediaAudio.currentTime = t; }
+    else { startFrom(t); }
   }
 }
 wvCanvas.addEventListener('mousedown', e => { wvDragging = true; wvSeek(e); wvCanvas.style.cursor = 'grabbing'; });
@@ -812,8 +1290,7 @@ document.addEventListener('mousemove', e => { if (wvDragging) wvSeek(e); });
 document.addEventListener('mouseup',   () => { wvDragging = false; wvCanvas.style.cursor = 'col-resize'; });
 wvCanvas.addEventListener('mousemove', e => {
   if (wvDragging || !audioDuration) return;
-  const r = wvCanvas.getBoundingClientRect();
-  const t = Math.max(0, Math.min(1, (e.clientX - r.left) / wvW)) * audioDuration;
+  const t = wvTimeFromEvent(e);
   id('waveTip').textContent = `${fmtTime(t)} / ${fmtTime(audioDuration)}${fmtClockAt(t)}`;
 });
 wvCanvas.addEventListener('mouseleave', () => { id('waveTip').textContent = ''; });
@@ -878,6 +1355,7 @@ function drawSpectrum() {
 // ════════════════════════════════════════════
 function drawLoop() {
   requestAnimationFrame(drawLoop);
+  accumOnset(); // ストリーミング再生中のonset蓄積
   drawWaveform(); drawSpectrum();
   if (analyserNode) {
     const fd = new Uint8Array(analyserNode.frequencyBinCount);
@@ -898,6 +1376,9 @@ function loadFile(file) {
   actx = new AudioContext();
   buildGraph();
   audioBuf = null; pauseAt = 0; streamSamples = null;
+  rtOnset = null; rtCovered = null;
+  bgWorkers.forEach(w => { w.audio.pause(); w.audio.src = ''; }); bgWorkers = [];
+  if (bgAudio) { bgAudio.pause(); bgAudio.src = ''; bgAudio = null; }
   recordingStart = parseRecordingStart(file.name);
 
   if (file.size > STREAM_THRESHOLD) {
@@ -905,22 +1386,29 @@ function loadFile(file) {
     streamMode = true;
     if (mediaAudio) { mediaAudio.src = ''; }
     mediaAudio = document.createElement('audio');
-    const url  = URL.createObjectURL(file);
+    const url = URL.createObjectURL(file);
     mediaAudio.src = url;
     mediaAudio.preload = 'metadata';
-    mediaAudio.addEventListener('loadedmetadata', () => {
+    let streamReady = false;
+    function onStreamReady() {
+      if (streamReady) return;
+      streamReady = true;
       audioDuration = mediaAudio.duration;
       const mediaSrc = actx.createMediaElementSource(mediaAudio);
-      mediaSrc.connect(hp1); // フィルタチェーンへ
-      id('fileName').textContent = `✅ ${file.name}（ストリーミング）`;
-      setStatus(`読み込み完了 ${fmtTime(audioDuration)} — 波形を生成中...`);
-      wvCache = null;
+      mediaSrc.connect(hp1);
+      id('fileName').textContent = `✅ ${file.name}`;
+      wvCache = null; wvOnset = null;
       resizeWaveform(); resizeSpectrum();
-      // 大きなファイルでも波形を概算表示：先頭・中間・末尾からサンプリング
-      buildStreamWaveform(file).then(() => {
-        setStatus(`読み込み完了 ${fmtTime(audioDuration)} — ⚠ 大きなファイルのためダウンロード非対応`);
-      });
-    }, {once: true});
+      initRtOnset();
+      prerenderTimeline();
+      startBgScan(url);
+    }
+    mediaAudio.addEventListener('loadedmetadata', () => {
+      if (isFinite(mediaAudio.duration) && mediaAudio.duration > 0) onStreamReady();
+    });
+    mediaAudio.addEventListener('durationchange', () => {
+      if (isFinite(mediaAudio.duration) && mediaAudio.duration > 0) onStreamReady();
+    });
     mediaAudio.addEventListener('ended', () => { playing = false; pauseAt = 0; setStatus('⏹ 再生終了'); }, {once: false});
   } else {
     // ─── バッファモード（通常ファイル）───
@@ -978,20 +1466,100 @@ function fmtTime(s) {
 }
 function fmt(s)    { return fmtTime(s); }
 function parseRecordingStart(name) {
-  const m = name.match(/(?:^|[^\d])(\d{2})(\d{2})(\d{2})[-_](?:(\d{2})(\d{2})|(\d{2})['’′](\d{2})['’′](\d{2}))(?:[^\d]|$)/);
-  if (!m) return null;
-  const year = 2000 + Number(m[1]);
-  const month = Number(m[2]);
-  const day = Number(m[3]);
-  const hour = Number(m[4] ?? m[6]);
-  const minute = Number(m[5] ?? m[7]);
-  const second = Number(m[8] ?? 0);
-  const d = new Date(year, month - 1, day, hour, minute, second, 0);
-  if (
-    d.getFullYear() !== year || d.getMonth() !== month - 1 || d.getDate() !== day ||
-    d.getHours() !== hour || d.getMinutes() !== minute || d.getSeconds() !== second
-  ) return null;
-  return d;
+  // 各パターンを試して最初にマッチしたものを返す
+  // 戻り値: Date or null
+  const n = name.replace(/\.[^.]+$/, ''); // remove extension
+
+  const try_ = (y, mo, d, h, mi, s) => {
+    y = Number(y); mo = Number(mo); d = Number(d);
+    h = Number(h||0); mi = Number(mi||0); s = Number(s||0);
+    if (y < 100) y += 2000;
+    const dt = new Date(y, mo-1, d, h, mi, s, 0);
+    if (dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d||
+        dt.getHours()!==h||dt.getMinutes()!==mi||dt.getSeconds()!==s) return null;
+    return dt;
+  };
+
+  let m;
+
+  // 1. YYYYMMDD_HHMMSS  例: 20250531_111600
+  if ((m = n.match(/(\d{4})(\d{2})(\d{2})[_\-T](\d{2})(\d{2})(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 2. YYYYMMDD_HHMM  例: 20250531_1116
+  if ((m = n.match(/(\d{4})(\d{2})(\d{2})[_\-T](\d{2})(\d{2})(?!\d)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  // 3. YYYY-MM-DD_HH-MM-SS  例: 2025-05-31_11-16-00
+  if ((m = n.match(/(\d{4})-(\d{2})-(\d{2})[_\-T ](\d{2})-(\d{2})-(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 4. YYYY-MM-DD_HH-MM  例: 2025-05-31_11-16
+  if ((m = n.match(/(\d{4})-(\d{2})-(\d{2})[_\-T ](\d{2})-(\d{2})(?!-\d)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  // 5. YYYY-MM-DD HH:MM:SS  例: 2025-05-31 11:16:00
+  if ((m = n.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 6. YYYY-MM-DD HH:MM  例: 2025-05-31 11:16
+  if ((m = n.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})(?!:)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  // 7. YYMMDD_HHMMSS  例: 250531_111600
+  if ((m = n.match(/(?:^|[^\d])(\d{2})(\d{2})(\d{2})[_\-](\d{2})(\d{2})(\d{2})(?:[^\d]|$)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 8. YYMMDD-HHMM / YYMMDD_HHMM  例: 250531-1116, 260531_1116
+  if ((m = n.match(/(?:^|[^\d])(\d{2})(\d{2})(\d{2})[_\-](\d{2})(\d{2})(?!\d)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  // 9. YYMMDD_HH’MM’SS (シャープレコーダー等)  例: 250531_11’16’00
+  if ((m = n.match(/(\d{2})(\d{2})(\d{2})[_\-](\d{2})['\u2019\u2032](\d{2})['\u2019\u2032](\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 10. REC_YYYYMMDD_HHMMSS  例: REC_20250531_111600
+  if ((m = n.match(/[Rr][Ee][Cc][_\-]?(\d{4})(\d{2})(\d{2})[_\-](\d{2})(\d{2})(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 11. REC_YYMMDD_HHMM  例: REC_250531_1116
+  if ((m = n.match(/[Rr][Ee][Cc][_\-]?(\d{2})(\d{2})(\d{2})[_\-](\d{2})(\d{2})(?!\d)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  // 12. SONYレコーダー YYYYMMDD_HHMMSS  例: 20250531_111600 (上記1で対応済みだが念のため)
+  // 13. IC Recorder: YYMMDD_HHMM  (上記8で対応)
+
+  // 14. Olympus: YYYY_MMDD_HHMMSSms  例: 2025_0531_111600
+  if ((m = n.match(/(\d{4})[_\-](\d{2})(\d{2})[_\-](\d{2})(\d{2})(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 15. iPhone/Android: YYYY-MM-DD-HH-MM-SS  例: 2025-05-31-11-16-00
+  if ((m = n.match(/(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 16. UnixTimestamp 10桁  例: 1748685360
+  if ((m = n.match(/(?:^|[^\d])(\d{10})(?:[^\d]|$)/))) {
+    const d = new Date(Number(m[1]) * 1000);
+    if (!isNaN(d.getTime()) && d.getFullYear() >= 2000 && d.getFullYear() <= 2099) return d;
+  }
+
+  // 17. YYYYMMDDHHMMSSなど区切りなし14桁  例: 20250531111600
+  if ((m = n.match(/(?:^|[^\d])(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?:[^\d]|$)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 18. DD-MM-YYYY_HHMMSS (欧州形式)  例: 31-05-2025_111600
+  if ((m = n.match(/(\d{2})-(\d{2})-(\d{4})[_\-](\d{2})(\d{2})(\d{2})/)))
+    return try_(m[3],m[2],m[1],m[4],m[5],m[6]);
+
+  // 19. YYYY.MM.DD HH.MM.SS  例: 2025.05.31 11.16.00
+  if ((m = n.match(/(\d{4})\.(\d{2})\.(\d{2})[ _\-](\d{2})\.(\d{2})\.(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 20. YYYY.MM.DD_HH.MM  例: 2025.05.31_11.16
+  if ((m = n.match(/(\d{4})\.(\d{2})\.(\d{2})[_ ](\d{2})\.(\d{2})(?!\.)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  return null;
 }
 function fmtClockAt(offsetSec) {
   if (!recordingStart) return '';
