@@ -431,6 +431,8 @@ function applyZoom(newLevel, centerTime) {
     zoomStart = Math.max(0, Math.min(audioDuration - visibleDur, centerTime - visibleDur / 2));
   }
   id('zoomLabel').textContent = zoomLevel + '×';
+  // ストリーミングモードはズームに合わせてキャッシュを再描画（棒幅が変わるため）
+  if (streamMode && rtOnset) redrawRtCache();
 }
 
 function zoomIn() {
@@ -1163,23 +1165,24 @@ function accumOnset() {
 function redrawRtCache() {
   if (!wvW || !rtOnset || !audioDuration) return;
 
-  // 秒単位のonset配列 → ピクセル配列にリサンプル
   const slots = rtOnset.length;
-  const pxOnset   = new Float32Array(wvW);
-  const pxCovered = new Uint8Array(wvW);
-  for (let s = 0; s < slots; s++) {
-    const px = Math.min(wvW - 1, Math.floor(s / audioDuration * wvW));
-    if (rtOnset[s]   > pxOnset[px]) pxOnset[px] = rtOnset[s];
-    if (rtCovered[s]) pxCovered[px] = 1;
-  }
 
-  // 閾値を分布のパーセンタイルから計算（peak 0〜1スケール）
-  const nonzero = Array.from(pxOnset).filter(v => v > 0).sort((a, b) => a - b);
+  // 閾値を秒単位配列の分布から計算
+  const nonzero = Array.from(rtOnset).filter(v => v > 0).sort((a, b) => a - b);
   const t = spikeSensitivity / 100;
   const pY = Math.round(90 - t * 50);
   const pR = Math.round(98 - t * 33);
   const DB_YELLOW = nonzero.length ? (nonzero[Math.floor(nonzero.length * pY / 100)] ?? nonzero[nonzero.length-1]) : 0.1;
   const DB_RED    = nonzero.length ? (nonzero[Math.floor(nonzero.length * pR / 100)] ?? nonzero[nonzero.length-1]) : 0.3;
+
+  // wvOnset はピクセル配列として保持（再生バー用）— 秒→px にリサンプル
+  const pxOnset   = new Float32Array(wvW);
+  const pxCovered = new Uint8Array(wvW);
+  for (let s = 0; s < slots; s++) {
+    const px = Math.min(wvW - 1, Math.floor(s / audioDuration * wvW));
+    if (rtOnset[s] > pxOnset[px]) pxOnset[px] = rtOnset[s];
+    if (rtCovered[s]) pxCovered[px] = 1;
+  }
   wvOnsetYellow = DB_YELLOW; wvOnsetRed = DB_RED;
   wvOnset = pxOnset;
 
@@ -1201,23 +1204,37 @@ function redrawRtCache() {
     ox.fillText(fmtTime(t), x + 2, wvH - 3);
   }
 
-  for (let px = 0; px < wvW; px++) {
-    if (!pxCovered[px]) {
+  // ズーム時は表示範囲のみを全幅で描画（棒が太く見える）
+  // 全体表示時は全体を描画
+  const visibleDur  = audioDuration / zoomLevel;
+  const drawStart   = zoomLevel > 1 ? zoomStart : 0;
+  const drawEnd     = zoomLevel > 1 ? zoomStart + visibleDur : audioDuration;
+  const drawDur     = drawEnd - drawStart;
+
+  const pxPerSec = wvW / drawDur;
+  const gap  = pxPerSec >= 3 ? Math.max(0.5, pxPerSec * 0.15) : 0;
+  const barW = Math.max(1, pxPerSec - gap);
+
+  for (let s = 0; s < slots; s++) {
+    const tSec = s; // スロット = 秒
+    if (tSec < drawStart - 1 || tSec > drawEnd + 1) continue;
+    const x = (tSec - drawStart) / drawDur * wvW;
+    if (!rtCovered[s]) {
       ox.fillStyle = '#1a2030';
-      ox.fillRect(px, wvH - 2, 1, 2);
+      ox.fillRect(x, wvH - 2, Math.max(1, pxPerSec), 2);
       continue;
     }
-    const rise = pxOnset[px];
+    const rise = rtOnset[s];
     let norm, hue, sat, lgt;
     if (rise < DB_YELLOW) {
-      norm = 0; hue = 210; sat = 70; lgt = 35; // 蓄積済みだが低レベル — 視認できる明るさに
+      norm = 0; hue = 210; sat = 70; lgt = 35;
     } else {
       norm = Math.min(1, (rise - DB_YELLOW) / Math.max(0.001, DB_RED - DB_YELLOW));
       hue = Math.round(60 - norm * 60); sat = 90; lgt = Math.round(45 + norm * 20);
     }
-    const barH = Math.round(wvH * 0.15 + norm * wvH * 0.85); // 最低15%の高さ
+    const barH = Math.round(wvH * 0.15 + norm * wvH * 0.85);
     ox.fillStyle = `hsl(${hue},${sat}%,${lgt}%)`;
-    ox.fillRect(px, wvH - barH, 1, barH);
+    ox.fillRect(x, wvH - barH, barW, barH);
   }
 
   ox.fillStyle = '#4b5563'; ox.font = '9px monospace';
@@ -1245,7 +1262,12 @@ function drawWaveform() {
       const srcX = Math.round((zoomStart / audioDuration) * wvW * dpr);
       const srcW = Math.round((visibleDur / audioDuration) * wvW * dpr);
       const srcH = wvH * dpr;
-      wvCtx.drawImage(wvCache, srcX, 0, srcW, srcH, 0, 0, wvW, wvH);
+      // ストリーミングモードはキャッシュ自体がズーム範囲で描かれているのでそのまま表示
+      if (streamMode && rtOnset) {
+        wvCtx.drawImage(wvCache, 0, 0, wvW, wvH);
+      } else {
+        wvCtx.drawImage(wvCache, srcX, 0, srcW, srcH, 0, 0, wvW, wvH);
+      }
 
       // ズーム時の時間マーカーを上書き
       wvCtx.fillStyle = '#080c14';
