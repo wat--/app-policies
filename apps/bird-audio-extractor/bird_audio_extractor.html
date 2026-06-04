@@ -98,6 +98,7 @@ h1{text-align:center;font-size:16px;color:#93c5fd;margin-bottom:16px;letter-spac
 <div class="drop-zone" id="dropZone">
   <div class="icon">🎵</div>
   <p>音声ファイルをここにドロップ、またはクリックして選択（m4a / mp3 / wav）</p>
+  <p style="font-size:10px;color:#4b5563;margin-top:6px;">🔒 すべての処理はブラウザ内で完結します。ファイルはサーバに送信されません。</p>
   <div class="loaded" id="fileName"></div>
   <input type="file" id="fileInput" accept="audio/*" style="display:none">
 </div>
@@ -160,6 +161,12 @@ h1{text-align:center;font-size:16px;color:#93c5fd;margin-bottom:16px;letter-spac
     <label>上限</label>
     <input type="range" id="bandHigh" min="1" max="7" step="0.01" oninput="onBandChange()">
     <span class="freq-val" id="bandHighV">1 kHz</span>
+  </div>
+  <div class="slider-row">
+    <label>音量</label>
+    <input type="range" id="gainSlider" min="-24" max="24" step="0.5" value="0" oninput="onGainChange()">
+    <span class="freq-val" id="gainVal">0 dB</span>
+    <button id="agcBtn" onclick="toggleAgc()" style="margin-left:6px;background:#1f2937;border:1px solid #374151;color:#9ca3af;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;white-space:nowrap;">自動</button>
   </div>
 
   <div class="sensitivity-row">
@@ -242,7 +249,67 @@ function applyFilters() {
   const hi = fullBandMode ? 20000  : bandHigh;
   hp1.frequency.value = lo;  hp2.frequency.value = lo;
   lp1.frequency.value = hi;  lp2.frequency.value = hi;
-  bandGain.gain.value = fullBandMode ? 1.5 : 8;
+  // ゲインスライダーのdB値を乗算（デフォルト0dB=変化なし）
+  const baseGain = fullBandMode ? 1.5 : 8;
+  const dbOffset = parseFloat(id('gainSlider')?.value ?? 0);
+  bandGain.gain.value = baseGain * Math.pow(10, dbOffset / 20);
+}
+
+function onGainChange() {
+  const db = parseFloat(id('gainSlider').value);
+  id('gainVal').textContent = (db >= 0 ? '+' : '') + db.toFixed(1) + ' dB';
+  applyFilters();
+}
+
+// ── AGC（自動ゲイン制御）──
+let agcEnabled = false;
+let agcTimer   = null;
+
+function toggleAgc() {
+  agcEnabled = !agcEnabled;
+  const btn = id('agcBtn');
+  if (agcEnabled) {
+    btn.style.background = '#1d4ed8';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#2563eb';
+    runAgc();
+  } else {
+    btn.style.background = '#1f2937';
+    btn.style.color = '#9ca3af';
+    btn.style.borderColor = '#374151';
+    clearTimeout(agcTimer);
+  }
+}
+
+function runAgc() {
+  if (!agcEnabled || !analyserNode) return;
+
+  // 周波数域データから帯域内の最大振幅を取得
+  const fd = new Uint8Array(analyserNode.frequencyBinCount);
+  analyserNode.getByteFrequencyData(fd);
+  const nyq = actx.sampleRate / 2;
+  let maxAmp = 0;
+  for (let i = 0; i < fd.length; i++) {
+    const freq = (i / fd.length) * nyq;
+    if (freq < bandLow || freq > bandHigh) continue;
+    if (fd[i] > maxAmp) maxAmp = fd[i];
+  }
+  // fd値は0〜255、スペクトラム棒の高さは amp * spH * 0.9
+  // 目標: 最大棒の高さ = spH * 0.5 → maxAmp/255 = 0.5/0.9 ≒ 0.556
+  const TARGET = 0.556;
+  const current = maxAmp / 255;
+
+  if (current > 0.01) {
+    const currentDb = parseFloat(id('gainSlider').value);
+    const errorDb   = 20 * Math.log10(TARGET / current);
+    // スムージング: 一度に最大1.5dBずつ
+    const step  = Math.max(-1.5, Math.min(1.5, errorDb));
+    const newDb = Math.max(-24, Math.min(24, currentDb + step * 0.25));
+    id('gainSlider').value = newDb;
+    onGainChange();
+  }
+
+  agcTimer = setTimeout(runAgc, 150);
 }
 
 // ════════════════════════════════════════════
