@@ -127,6 +127,19 @@
     ]
   },
   {
+    "id": "smart-page-memo",
+    "name": "スマートページメモ",
+    "type": "ios",
+    "icon": "📝",
+    "description": "URLを入力するだけでAIがタイトル・概要・タグを自動生成してメモとして保存するiOSアプリ。SafariなどのShare Extensionからも直接保存でき、AIはすべてオンデバイス（Foundation Models）で動作するためデータが外部に送信されることはありません。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/smart-page-memo/privacy-policy.html"
+      }
+    ]
+  },
+  {
     "id": "kumasuzu",
     "name": "熊よけベル",
     "type": "ios",
