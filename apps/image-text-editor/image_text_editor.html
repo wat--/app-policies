@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>画像テキストエディター</title>
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1127768628418295" crossorigin="anonymous"></script>
+  <style>
+    * { box-sizing: border-box; }
+
+    :root {
+      --bg: #f4f6fb;
+      --panel: #ffffff;
+      --text: #1e2430;
+      --sub: #5a6475;
+      --line: #d7deea;
+      --brand: #1f6fff;
+      --brand-soft: #eaf1ff;
+      --ok: #18a957;
+      --danger: #e53935;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Hiragino Kaku Gothic ProN", "Yu Gothic", "Noto Sans JP", sans-serif;
+      background: radial-gradient(circle at top left, #e6edff 0%, var(--bg) 45%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      margin: 0 0 4px;
+      font-size: 1.4rem;
+      font-weight: 700;
+      letter-spacing: -0.3px;
+    }
+
+    .subtitle {
+      font-size: 0.8rem;
+      color: var(--sub);
+      margin: 0 0 16px;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 20px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(26, 53, 114, 0.08);
+    }
+
+    .panel h2 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--sub);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin: 0 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .section {
+      margin-bottom: 18px;
+    }
+
+    .section h3 {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--sub);
+      margin: 0 0 8px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.78rem;
+      color: var(--sub);
+      margin-bottom: 4px;
+    }
+
+    input[type="text"],
+    input[type="number"],
+    select,
+    textarea {
+      width: 100%;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-family: inherit;
+      color: var(--text);
+      background: #fafbfd;
+      margin-bottom: 10px;
+      transition: border-color 0.15s;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: var(--brand);
+      background: #fff;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 60px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .row3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 8px;
+    }
+
+    input[type="range"] {
+      width: 100%;
+      accent-color: var(--brand);
+      margin-bottom: 2px;
+    }
+
+    .range-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    .range-row input[type="range"] {
+      flex: 1;
+      margin: 0;
+    }
+
+    .range-val {
+      font-size: 0.78rem;
+      color: var(--brand);
+      font-weight: 600;
+      min-width: 36px;
+      text-align: right;
+    }
+
+    input[type="color"] {
+      width: 100%;
+      height: 36px;
+      padding: 2px 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fafbfd;
+      cursor: pointer;
+      margin-bottom: 10px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      padding: 9px 14px;
+      border-radius: 10px;
+      border: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .btn-primary {
+      background: var(--brand);
+      color: #fff;
+      width: 100%;
+    }
+
+    .btn-primary:hover { background: #1259e0; }
+
+    .btn-secondary {
+      background: var(--brand-soft);
+      color: var(--brand);
+      border: 1px solid #c5d9ff;
+    }
+
+    .btn-secondary:hover { background: #dce9ff; }
+
+    .btn-danger {
+      background: #fdecea;
+      color: var(--danger);
+      border: 1px solid #f5c6c6;
+    }
+
+    .btn-danger:hover { background: #fbd5d5; }
+
+    .btn-sm {
+      padding: 5px 10px;
+      font-size: 0.75rem;
+    }
+
+    .btn-full { width: 100%; margin-bottom: 8px; }
+
+    /* Upload area */
+    .upload-area {
+      border: 2px dashed var(--line);
+      border-radius: 12px;
+      padding: 28px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 12px;
+    }
+
+    .upload-area:hover, .upload-area.drag-over {
+      border-color: var(--brand);
+      background: var(--brand-soft);
+    }
+
+    .upload-area .icon { font-size: 2rem; margin-bottom: 6px; }
+    .upload-area p { margin: 0; font-size: 0.8rem; color: var(--sub); }
+    .upload-area input { display: none; }
+
+    /* Text layer list */
+    .layer-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 10px;
+      max-height: 180px;
+      overflow-y: auto;
+    }
+
+    .layer-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.15s;
+    }
+
+    .layer-item:hover { border-color: var(--brand); background: var(--brand-soft); }
+    .layer-item.active { border-color: var(--brand); background: var(--brand-soft); font-weight: 600; }
+
+    .layer-item .layer-preview {
+      flex: 1;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .layer-item .layer-btns {
+      display: flex;
+      gap: 4px;
+    }
+
+    /* Canvas area */
+    .canvas-panel {
+      position: relative;
+    }
+
+    .canvas-wrapper {
+      position: relative;
+      background: #e8eaf0;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 300px;
+    }
+
+    .canvas-wrapper canvas {
+      display: block;
+      max-width: 100%;
+      cursor: crosshair;
+    }
+
+    .canvas-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--sub);
+      font-size: 0.85rem;
+      padding: 60px 20px;
+      gap: 8px;
+    }
+
+    .canvas-placeholder .big-icon { font-size: 3rem; }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+
+    .canvas-info {
+      font-size: 0.75rem;
+      color: var(--sub);
+      margin-top: 8px;
+    }
+
+    /* Drag handle overlay on canvas */
+    #text-handles {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+
+    .handle {
+      position: absolute;
+      pointer-events: all;
+      cursor: move;
+      border: 2px dashed var(--brand);
+      border-radius: 4px;
+      padding: 4px;
+      background: rgba(31,111,255,0.06);
+      display: flex;
+      align-items: flex-start;
+    }
+
+    .handle.selected {
+      border-style: solid;
+      background: rgba(31,111,255,0.12);
+    }
+
+    .handle-label {
+      font-size: 0.7rem;
+      background: var(--brand);
+      color: #fff;
+      border-radius: 3px;
+      padding: 1px 4px;
+      white-space: nowrap;
+      pointer-events: none;
+      position: absolute;
+      top: -18px;
+      left: 0;
+    }
+
+    /* align buttons */
+    .align-btns {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+
+    .align-btn {
+      flex: 1;
+      padding: 6px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fafbfd;
+      cursor: pointer;
+      font-size: 0.85rem;
+      transition: all 0.15s;
+    }
+
+    .align-btn:hover, .align-btn.active {
+      background: var(--brand-soft);
+      border-color: var(--brand);
+    }
+
+    /* shadow toggle */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .toggle-label { font-size: 0.78rem; color: var(--sub); }
+
+    .toggle {
+      position: relative;
+      width: 38px;
+      height: 20px;
+    }
+
+    .toggle input { opacity: 0; width: 0; height: 0; }
+
+    .toggle-slider {
+      position: absolute;
+      inset: 0;
+      background: #ccd4e0;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    .toggle-slider::before {
+      content: '';
+      position: absolute;
+      width: 16px; height: 16px;
+      left: 2px; top: 2px;
+      background: #fff;
+      border-radius: 50%;
+      transition: 0.2s;
+    }
+
+    .toggle input:checked + .toggle-slider { background: var(--brand); }
+    .toggle input:checked + .toggle-slider::before { transform: translateX(18px); }
+
+    @media (max-width: 720px) {
+      .container { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- LEFT PANEL -->
+  <div>
+    <div class="panel">
+      <h1>🖼️ 画像テキストエディター</h1>
+      <p class="subtitle">画像にテキストを自由に追加・編集</p>
+
+      <!-- Upload -->
+      <div class="section">
+        <h2>画像</h2>
+        <div class="upload-area" id="uploadArea">
+          <div class="icon">📁</div>
+          <p>クリックまたはドラッグ＆ドロップ</p>
+          <p style="margin-top:4px;font-size:0.72rem;">PNG / JPG / WebP / GIF</p>
+          <input type="file" id="fileInput" accept="image/*">
+        </div>
+      </div>
+
+      <!-- Text layers -->
+      <div class="section">
+        <h2>テキストレイヤー</h2>
+        <div class="layer-list" id="layerList"></div>
+        <button class="btn btn-secondary btn-full" id="addLayerBtn">＋ テキストを追加</button>
+      </div>
+
+      <!-- Text properties (shown when a layer is selected) -->
+      <div class="section" id="propPanel" style="display:none;">
+        <h2>テキスト設定</h2>
+
+        <label>テキスト内容</label>
+        <textarea id="propText" rows="3" placeholder="テキストを入力..."></textarea>
+
+        <label>フォント</label>
+        <select id="propFont">
+          <option value="'Hiragino Kaku Gothic ProN', sans-serif">ヒラギノ角ゴ（デフォルト）</option>
+          <option value="'Yu Gothic', sans-serif">游ゴシック</option>
+          <option value="'Hiragino Mincho ProN', serif">ヒラギノ明朝</option>
+          <option value="'Yu Mincho', serif">游明朝</option>
+          <option value="'Arial', sans-serif">Arial</option>
+          <option value="'Georgia', serif">Georgia</option>
+          <option value="'Courier New', monospace">Courier New</option>
+          <option value="'Impact', sans-serif">Impact</option>
+        </select>
+
+        <div class="row">
+          <div>
+            <label>フォントサイズ</label>
+            <div class="range-row">
+              <input type="range" id="propSize" min="8" max="300" value="48" step="1">
+              <span class="range-val" id="propSizeVal">48px</span>
+            </div>
+          </div>
+          <div>
+            <label>不透明度</label>
+            <div class="range-row">
+              <input type="range" id="propOpacity" min="0" max="100" value="100" step="1">
+              <span class="range-val" id="propOpacityVal">100%</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label>文字色</label>
+            <input type="color" id="propColor" value="#ffffff">
+          </div>
+          <div>
+            <label>縁取り色</label>
+            <input type="color" id="propStrokeColor" value="#000000">
+          </div>
+        </div>
+
+        <label>縁取り幅</label>
+        <div class="range-row">
+          <input type="range" id="propStroke" min="0" max="20" value="0" step="0.5">
+          <span class="range-val" id="propStrokeVal">0px</span>
+        </div>
+
+        <label>回転角度</label>
+        <div class="range-row">
+          <input type="range" id="propRotation" min="-180" max="180" value="0" step="1">
+          <span class="range-val" id="propRotationVal">0°</span>
+        </div>
+
+        <label>テキスト揃え</label>
+        <div class="align-btns">
+          <button class="align-btn active" data-align="left" title="左揃え">⬅</button>
+          <button class="align-btn" data-align="center" title="中央揃え">↔</button>
+          <button class="align-btn" data-align="right" title="右揃え">➡</button>
+        </div>
+
+        <label>太字 / 斜体</label>
+        <div class="row" style="margin-bottom:10px;">
+          <button class="btn btn-secondary btn-sm" id="propBold">B</button>
+          <button class="btn btn-secondary btn-sm" id="propItalic"><em>I</em></button>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">ドロップシャドウ</span>
+          <label class="toggle">
+            <input type="checkbox" id="propShadow">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+
+        <div id="shadowSettings" style="display:none;">
+          <div class="row">
+            <div>
+              <label>影色</label>
+              <input type="color" id="propShadowColor" value="#000000">
+            </div>
+            <div>
+              <label>影ぼかし</label>
+              <div class="range-row" style="margin-top:4px;">
+                <input type="range" id="propShadowBlur" min="0" max="40" value="4" step="1">
+                <span class="range-val" id="propShadowBlurVal">4px</span>
+              </div>
+            </div>
+          </div>
+          <div class="row">
+            <div>
+              <label>影 X オフセット</label>
+              <div class="range-row">
+                <input type="range" id="propShadowX" min="-40" max="40" value="2" step="1">
+                <span class="range-val" id="propShadowXVal">2px</span>
+              </div>
+            </div>
+            <div>
+              <label>影 Y オフセット</label>
+              <div class="range-row">
+                <input type="range" id="propShadowY" min="-40" max="40" value="2" step="1">
+                <span class="range-val" id="propShadowYVal">2px</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <label>位置（X）</label>
+        <div class="range-row">
+          <input type="range" id="propX" min="0" max="100" value="50" step="0.1">
+          <span class="range-val" id="propXVal">50%</span>
+        </div>
+        <label>位置（Y）</label>
+        <div class="range-row">
+          <input type="range" id="propY" min="0" max="100" value="50" step="0.1">
+          <span class="range-val" id="propYVal">50%</span>
+        </div>
+
+        <button class="btn btn-danger btn-sm btn-full" id="deleteLayerBtn">🗑 このレイヤーを削除</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL -->
+  <div class="canvas-panel panel">
+    <h2>プレビュー</h2>
+    <div class="toolbar">
+      <button class="btn btn-primary" id="downloadBtn" style="width:auto;">⬇ PNG でダウンロード</button>
+      <button class="btn btn-secondary" id="downloadJpgBtn">JPG</button>
+      <button class="btn btn-secondary" id="clearAllBtn">🗑 全クリア</button>
+    </div>
+
+    <div class="canvas-wrapper" id="canvasWrapper">
+      <div class="canvas-placeholder" id="placeholder">
+        <span class="big-icon">🖼️</span>
+        <span>左のパネルから画像をアップロードしてください</span>
+      </div>
+      <canvas id="mainCanvas" style="display:none;"></canvas>
+    </div>
+    <div class="canvas-info" id="canvasInfo"></div>
+  </div>
+</div>
+
+<!-- Privacy Policy -->
+<div id="privacy-policy" style="max-width:700px;margin:60px auto 40px;padding:32px;background:#fff;border:1px solid var(--line);border-radius:16px;font-size:0.85rem;color:var(--sub);line-height:1.7;">
+  <h2 style="color:var(--text);font-size:1rem;">プライバシーポリシー</h2>
+  <p>本ツールは、アップロードされた画像やテキストをサーバーへ送信しません。すべての処理はお使いのブラウザ上のみで完結します。</p>
+  <p>本ツールは Google AdSense を使用しており、広告配信のためにクッキーが使用される場合があります。</p>
+  <p>最終更新日：2026年6月9日</p>
+</div>
+
+<script>
+// ──────────────────────────────────────────────
+// State
+// ──────────────────────────────────────────────
+let img = null;
+let layers = [];
+let selectedId = null;
+let nextId = 1;
+
+// Drag state
+let dragging = null; // { id, startX, startY, origPctX, origPctY }
+
+const canvas = document.getElementById('mainCanvas');
+const ctx = canvas.getContext('2d');
+
+// ──────────────────────────────────────────────
+// Upload
+// ──────────────────────────────────────────────
+const uploadArea = document.getElementById('uploadArea');
+const fileInput = document.getElementById('fileInput');
+
+uploadArea.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', e => loadImage(e.target.files[0]));
+
+uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+uploadArea.addEventListener('drop', e => {
+  e.preventDefault();
+  uploadArea.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file && file.type.startsWith('image/')) loadImage(file);
+});
+
+function loadImage(file) {
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const image = new Image();
+    image.onload = () => {
+      img = image;
+      canvas.width = image.width;
+      canvas.height = image.height;
+      document.getElementById('placeholder').style.display = 'none';
+      canvas.style.display = 'block';
+      document.getElementById('canvasInfo').textContent = `${image.width} × ${image.height} px`;
+      render();
+    };
+    image.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+// ──────────────────────────────────────────────
+// Layer management
+// ──────────────────────────────────────────────
+function makeLayer() {
+  return {
+    id: nextId++,
+    text: 'テキストを入力',
+    font: "'Hiragino Kaku Gothic ProN', sans-serif",
+    size: 48,
+    color: '#ffffff',
+    opacity: 100,
+    bold: false,
+    italic: false,
+    align: 'center',
+    stroke: 0,
+    strokeColor: '#000000',
+    shadow: false,
+    shadowColor: '#000000',
+    shadowBlur: 4,
+    shadowX: 2,
+    shadowY: 2,
+    rotation: 0,
+    x: 50, // percent
+    y: 50,
+  };
+}
+
+document.getElementById('addLayerBtn').addEventListener('click', () => {
+  const layer = makeLayer();
+  layers.push(layer);
+  selectLayer(layer.id);
+  renderLayerList();
+  render();
+});
+
+document.getElementById('deleteLayerBtn').addEventListener('click', () => {
+  layers = layers.filter(l => l.id !== selectedId);
+  selectedId = layers.length ? layers[layers.length - 1].id : null;
+  renderLayerList();
+  updatePropPanel();
+  render();
+});
+
+document.getElementById('clearAllBtn').addEventListener('click', () => {
+  if (!confirm('全レイヤーを削除しますか？')) return;
+  layers = [];
+  selectedId = null;
+  renderLayerList();
+  updatePropPanel();
+  render();
+});
+
+function selectLayer(id) {
+  selectedId = id;
+  renderLayerList();
+  updatePropPanel();
+}
+
+function renderLayerList() {
+  const list = document.getElementById('layerList');
+  list.innerHTML = '';
+  [...layers].reverse().forEach(l => {
+    const el = document.createElement('div');
+    el.className = 'layer-item' + (l.id === selectedId ? ' active' : '');
+    el.innerHTML = `
+      <span class="layer-preview">${l.text.replace(/</g,'&lt;').substring(0,30)}</span>
+      <span class="layer-btns">
+        <button class="btn btn-secondary btn-sm" data-mv="up" title="上へ">↑</button>
+        <button class="btn btn-secondary btn-sm" data-mv="down" title="下へ">↓</button>
+      </span>`;
+    el.addEventListener('click', ev => {
+      if (ev.target.closest('[data-mv]')) return;
+      selectLayer(l.id);
+    });
+    el.querySelectorAll('[data-mv]').forEach(btn => {
+      btn.addEventListener('click', ev => {
+        ev.stopPropagation();
+        const dir = btn.dataset.mv;
+        const idx = layers.findIndex(x => x.id === l.id);
+        if (dir === 'up' && idx < layers.length - 1) {
+          [layers[idx], layers[idx+1]] = [layers[idx+1], layers[idx]];
+        } else if (dir === 'down' && idx > 0) {
+          [layers[idx], layers[idx-1]] = [layers[idx-1], layers[idx]];
+        }
+        renderLayerList();
+        render();
+      });
+    });
+    list.appendChild(el);
+  });
+}
+
+// ──────────────────────────────────────────────
+// Property panel
+// ──────────────────────────────────────────────
+const propIds = ['propText','propFont','propSize','propOpacity','propColor','propStrokeColor',
+  'propStroke','propRotation','propX','propY','propShadow','propShadowColor',
+  'propShadowBlur','propShadowX','propShadowY'];
+
+function updatePropPanel() {
+  const panel = document.getElementById('propPanel');
+  const layer = layers.find(l => l.id === selectedId);
+  panel.style.display = layer ? '' : 'none';
+  if (!layer) return;
+
+  document.getElementById('propText').value = layer.text;
+  document.getElementById('propFont').value = layer.font;
+  setRange('propSize', layer.size, 'propSizeVal', v => v + 'px');
+  setRange('propOpacity', layer.opacity, 'propOpacityVal', v => v + '%');
+  document.getElementById('propColor').value = layer.color;
+  document.getElementById('propStrokeColor').value = layer.strokeColor;
+  setRange('propStroke', layer.stroke, 'propStrokeVal', v => v + 'px');
+  setRange('propRotation', layer.rotation, 'propRotationVal', v => v + '°');
+  setRange('propX', layer.x, 'propXVal', v => v + '%');
+  setRange('propY', layer.y, 'propYVal', v => v + '%');
+  document.getElementById('propShadow').checked = layer.shadow;
+  document.getElementById('shadowSettings').style.display = layer.shadow ? '' : 'none';
+  document.getElementById('propShadowColor').value = layer.shadowColor;
+  setRange('propShadowBlur', layer.shadowBlur, 'propShadowBlurVal', v => v + 'px');
+  setRange('propShadowX', layer.shadowX, 'propShadowXVal', v => v + 'px');
+  setRange('propShadowY', layer.shadowY, 'propShadowYVal', v => v + 'px');
+
+  document.getElementById('propBold').style.fontWeight = layer.bold ? '900' : '600';
+  document.getElementById('propBold').style.background = layer.bold ? 'var(--brand-soft)' : '';
+  document.getElementById('propItalic').style.fontStyle = layer.italic ? 'italic' : '';
+  document.getElementById('propItalic').style.background = layer.italic ? 'var(--brand-soft)' : '';
+
+  document.querySelectorAll('.align-btn').forEach(b => {
+    b.classList.toggle('active', b.dataset.align === layer.align);
+  });
+}
+
+function setRange(inputId, value, valId, fmt) {
+  document.getElementById(inputId).value = value;
+  document.getElementById(valId).textContent = fmt(value);
+}
+
+function bindProp(inputId, key, valId, fmt, transform) {
+  const el = document.getElementById(inputId);
+  el.addEventListener('input', () => {
+    const layer = layers.find(l => l.id === selectedId);
+    if (!layer) return;
+    layer[key] = transform ? transform(el.value) : el.value;
+    if (valId) document.getElementById(valId).textContent = fmt(el.value);
+    render();
+  });
+}
+
+bindProp('propText', 'text', null, null, v => v);
+bindProp('propFont', 'font', null, null, v => v);
+bindProp('propSize', 'size', 'propSizeVal', v => v + 'px', Number);
+bindProp('propOpacity', 'opacity', 'propOpacityVal', v => v + '%', Number);
+bindProp('propColor', 'color', null, null, v => v);
+bindProp('propStrokeColor', 'strokeColor', null, null, v => v);
+bindProp('propStroke', 'stroke', 'propStrokeVal', v => v + 'px', Number);
+bindProp('propRotation', 'rotation', 'propRotationVal', v => v + '°', Number);
+bindProp('propX', 'x', 'propXVal', v => v + '%', Number);
+bindProp('propY', 'y', 'propYVal', v => v + '%', Number);
+bindProp('propShadowColor', 'shadowColor', null, null, v => v);
+bindProp('propShadowBlur', 'shadowBlur', 'propShadowBlurVal', v => v + 'px', Number);
+bindProp('propShadowX', 'shadowX', 'propShadowXVal', v => v + 'px', Number);
+bindProp('propShadowY', 'shadowY', 'propShadowYVal', v => v + 'px', Number);
+
+document.getElementById('propShadow').addEventListener('change', e => {
+  const layer = layers.find(l => l.id === selectedId);
+  if (!layer) return;
+  layer.shadow = e.target.checked;
+  document.getElementById('shadowSettings').style.display = layer.shadow ? '' : 'none';
+  render();
+});
+
+document.getElementById('propBold').addEventListener('click', () => {
+  const layer = layers.find(l => l.id === selectedId);
+  if (!layer) return;
+  layer.bold = !layer.bold;
+  updatePropPanel();
+  render();
+});
+
+document.getElementById('propItalic').addEventListener('click', () => {
+  const layer = layers.find(l => l.id === selectedId);
+  if (!layer) return;
+  layer.italic = !layer.italic;
+  updatePropPanel();
+  render();
+});
+
+document.querySelectorAll('.align-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const layer = layers.find(l => l.id === selectedId);
+    if (!layer) return;
+    layer.align = btn.dataset.align;
+    updatePropPanel();
+    render();
+  });
+});
+
+// ──────────────────────────────────────────────
+// Canvas drag to reposition
+// ──────────────────────────────────────────────
+canvas.addEventListener('mousedown', e => {
+  if (!img) return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top) * scaleY;
+
+  // Find topmost layer under cursor
+  for (let i = layers.length - 1; i >= 0; i--) {
+    const l = layers[i];
+    const lx = (l.x / 100) * canvas.width;
+    const ly = (l.y / 100) * canvas.height;
+    const dist = Math.hypot(cx - lx, cy - ly);
+    if (dist < Math.max(l.size * 2, 80)) {
+      selectLayer(l.id);
+      updatePropPanel();
+      dragging = { id: l.id, startX: cx, startY: cy, origPctX: l.x, origPctY: l.y };
+      break;
+    }
+  }
+});
+
+canvas.addEventListener('mousemove', e => {
+  if (!dragging || !img) return;
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top) * scaleY;
+  const dx = cx - dragging.startX;
+  const dy = cy - dragging.startY;
+  const layer = layers.find(l => l.id === dragging.id);
+  if (!layer) return;
+  layer.x = Math.min(100, Math.max(0, dragging.origPctX + (dx / canvas.width) * 100));
+  layer.y = Math.min(100, Math.max(0, dragging.origPctY + (dy / canvas.height) * 100));
+  document.getElementById('propX').value = layer.x.toFixed(1);
+  document.getElementById('propXVal').textContent = layer.x.toFixed(1) + '%';
+  document.getElementById('propY').value = layer.y.toFixed(1);
+  document.getElementById('propYVal').textContent = layer.y.toFixed(1) + '%';
+  render();
+});
+
+canvas.addEventListener('mouseup', () => { dragging = null; });
+canvas.addEventListener('mouseleave', () => { dragging = null; });
+
+// Touch support
+canvas.addEventListener('touchstart', e => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  canvas.dispatchEvent(new MouseEvent('mousedown', { clientX: touch.clientX, clientY: touch.clientY }));
+}, { passive: false });
+
+canvas.addEventListener('touchmove', e => {
+  e.preventDefault();
+  const touch = e.touches[0];
+  canvas.dispatchEvent(new MouseEvent('mousemove', { clientX: touch.clientX, clientY: touch.clientY }));
+}, { passive: false });
+
+canvas.addEventListener('touchend', e => {
+  e.preventDefault();
+  canvas.dispatchEvent(new MouseEvent('mouseup', {}));
+}, { passive: false });
+
+// ──────────────────────────────────────────────
+// Render
+// ──────────────────────────────────────────────
+function render() {
+  if (!img) return;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0);
+
+  layers.forEach(l => {
+    const x = (l.x / 100) * canvas.width;
+    const y = (l.y / 100) * canvas.height;
+
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate((l.rotation * Math.PI) / 180);
+    ctx.globalAlpha = l.opacity / 100;
+
+    const weight = l.bold ? 'bold' : 'normal';
+    const style = l.italic ? 'italic' : 'normal';
+    ctx.font = `${style} ${weight} ${l.size}px ${l.font}`;
+    ctx.textAlign = l.align;
+    ctx.textBaseline = 'middle';
+
+    if (l.shadow) {
+      ctx.shadowColor = l.shadowColor;
+      ctx.shadowBlur = l.shadowBlur;
+      ctx.shadowOffsetX = l.shadowX;
+      ctx.shadowOffsetY = l.shadowY;
+    }
+
+    const lines = l.text.split('\n');
+    const lineHeight = l.size * 1.3;
+    const totalH = lineHeight * (lines.length - 1);
+    lines.forEach((line, i) => {
+      const ly = (i * lineHeight) - totalH / 2;
+      if (l.stroke > 0) {
+        ctx.strokeStyle = l.strokeColor;
+        ctx.lineWidth = l.stroke * 2;
+        ctx.lineJoin = 'round';
+        ctx.shadowColor = 'transparent';
+        ctx.shadowBlur = 0;
+        ctx.strokeText(line, 0, ly);
+        if (l.shadow) {
+          ctx.shadowColor = l.shadowColor;
+          ctx.shadowBlur = l.shadowBlur;
+          ctx.shadowOffsetX = l.shadowX;
+          ctx.shadowOffsetY = l.shadowY;
+        }
+      }
+      ctx.fillStyle = l.color;
+      ctx.fillText(line, 0, ly);
+    });
+
+    // Draw position indicator for selected layer
+    if (l.id === selectedId) {
+      ctx.globalAlpha = 0.7;
+      ctx.strokeStyle = '#1f6fff';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([5, 4]);
+      const metrics = ctx.measureText(l.text.split('\n').reduce((a, b) => a.length > b.length ? a : b));
+      const w = metrics.width + 20;
+      const h = l.size * 1.3 * lines.length + 20;
+      const ox = l.align === 'left' ? 0 : l.align === 'right' ? -w : -w / 2;
+      ctx.strokeRect(ox - 10, -h / 2, w, h);
+      ctx.setLineDash([]);
+    }
+
+    ctx.restore();
+  });
+}
+
+// ──────────────────────────────────────────────
+// Download
+// ──────────────────────────────────────────────
+document.getElementById('downloadBtn').addEventListener('click', () => {
+  const prev = selectedId;
+  selectedId = null;
+  render();
+  const link = document.createElement('a');
+  link.download = 'image_with_text.png';
+  link.href = canvas.toDataURL('image/png');
+  link.click();
+  selectedId = prev;
+  render();
+});
+
+document.getElementById('downloadJpgBtn').addEventListener('click', () => {
+  const prev = selectedId;
+  selectedId = null;
+  render();
+  const link = document.createElement('a');
+  link.download = 'image_with_text.jpg';
+  link.href = canvas.toDataURL('image/jpeg', 0.95);
+  link.click();
+  selectedId = prev;
+  render();
+});
+</script>
+</body>
+</html>

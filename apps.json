@@ -99,6 +99,20 @@
     ]
   },
   {
+    "id": "image-text-editor",
+    "name": "画像テキストエディター",
+    "type": "web",
+    "icon": "✏️",
+    "webUrl": "apps/image-text-editor/image_text_editor.html",
+    "description": "アップロードした画像にテキストを自由に重ねられる Web ツール。フォント・サイズ・色・不透明度・縁取り・ドロップシャドウ・回転・位置をレイヤーごとに細かく設定でき、PNG / JPG 形式でダウンロードできます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/image-text-editor/image_text_editor.html#privacy-policy"
+      }
+    ]
+  },
+  {
     "id": "appstore-screenshot-maker",
     "name": "App Store画像メーカー",
     "type": "web",
