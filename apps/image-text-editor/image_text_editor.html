@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>画像テキストエディター</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=BIZ+UDPGothic:wght@400;700&family=BIZ+UDPMincho:wght@400;700&family=Klee+One:wght@400;600&family=M+PLUS+Rounded+1c:wght@400;700&family=Noto+Sans+JP:wght@400;700&family=Noto+Serif+JP:wght@400;700&family=Rampart+One&family=Shippori+Mincho:wght@400;700&family=Zen+Kaku+Gothic+New:wght@400;700&display=swap" rel="stylesheet">
   <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1127768628418295" crossorigin="anonymous"></script>
   <style>
     * { box-sizing: border-box; }
@@ -457,14 +460,31 @@
 
         <label>フォント</label>
         <select id="propFont">
-          <option value="'Hiragino Kaku Gothic ProN', sans-serif">ヒラギノ角ゴ（デフォルト）</option>
-          <option value="'Yu Gothic', sans-serif">游ゴシック</option>
-          <option value="'Hiragino Mincho ProN', serif">ヒラギノ明朝</option>
-          <option value="'Yu Mincho', serif">游明朝</option>
-          <option value="'Arial', sans-serif">Arial</option>
-          <option value="'Georgia', serif">Georgia</option>
-          <option value="'Courier New', monospace">Courier New</option>
-          <option value="'Impact', sans-serif">Impact</option>
+          <optgroup label="── ゴシック系 ──">
+            <option value="'Hiragino Kaku Gothic ProN', sans-serif">ヒラギノ角ゴ</option>
+            <option value="'Yu Gothic', sans-serif">游ゴシック</option>
+            <option value="'Noto Sans JP', sans-serif">Noto Sans JP（新ゴ系）</option>
+            <option value="'BIZ UDPGothic', sans-serif">BIZ UDPゴシック（メイリオ系）</option>
+            <option value="'Zen Kaku Gothic New', sans-serif">Zen角ゴシック New</option>
+            <option value="'M PLUS Rounded 1c', sans-serif">M PLUS 丸ゴシック</option>
+          </optgroup>
+          <optgroup label="── 明朝系 ──">
+            <option value="'Hiragino Mincho ProN', serif">ヒラギノ明朝</option>
+            <option value="'Yu Mincho', serif">游明朝</option>
+            <option value="'Noto Serif JP', serif">Noto Serif JP（リュウミン系）</option>
+            <option value="'BIZ UDPMincho', serif">BIZ UDP明朝</option>
+            <option value="'Shippori Mincho', serif">しっぽり明朝</option>
+          </optgroup>
+          <optgroup label="── 手書き・装飾 ──">
+            <option value="'Klee One', cursive">Klee One（手書き）</option>
+            <option value="'Rampart One', sans-serif">Rampart One（装飾）</option>
+          </optgroup>
+          <optgroup label="── 欧文 ──">
+            <option value="'Arial', sans-serif">Arial</option>
+            <option value="'Georgia', serif">Georgia</option>
+            <option value="'Courier New', monospace">Courier New</option>
+            <option value="'Impact', sans-serif">Impact</option>
+          </optgroup>
         </select>
 
         <div class="row">
@@ -805,7 +825,14 @@ function bindProp(inputId, key, valId, fmt, transform) {
 }
 
 bindProp('propText', 'text', null, null, v => v);
-bindProp('propFont', 'font', null, null, v => v);
+// フォント変更時はロードを待ってから描画
+document.getElementById('propFont').addEventListener('change', async e => {
+  const layer = layers.find(l => l.id === selectedId);
+  if (!layer) return;
+  layer.font = e.target.value;
+  try { await document.fonts.load(`16px ${e.target.value}`); } catch(_) {}
+  render();
+});
 bindProp('propSize', 'size', 'propSizeVal', v => v + 'px', Number);
 bindProp('propOpacity', 'opacity', 'propOpacityVal', v => v + '%', Number);
 bindProp('propColor', 'color', null, null, v => v);
