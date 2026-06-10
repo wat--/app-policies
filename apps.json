@@ -145,6 +145,7 @@
     "name": "スマートページメモ",
     "type": "ios",
     "icon": "📝",
+    "appStoreUrl": "https://apps.apple.com/app/%E3%82%B9%E3%83%9E%E3%83%BC%E3%83%88%E3%83%9A%E3%83%BC%E3%82%B8%E3%83%A1%E3%83%A2/id6777717545",
     "description": "URLを入力するだけでAIがタイトル・概要・タグを自動生成してメモとして保存するiOSアプリ。SafariなどのShare Extensionからも直接保存でき、AIはすべてオンデバイス（Foundation Models）で動作するためデータが外部に送信されることはありません。",
     "links": [
       {
