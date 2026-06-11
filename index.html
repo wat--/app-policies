@@ -135,6 +135,94 @@
             font-weight: 500;
         }
 
+        /* Android download modal */
+        .android-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .android-modal-overlay.open {
+            display: flex;
+        }
+
+        .android-modal {
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px 24px 20px;
+            max-width: 340px;
+            width: calc(100% - 40px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+
+        .android-modal h3 {
+            margin: 0 0 6px;
+            font-size: 1.05em;
+            color: #1a1a1a;
+        }
+
+        .android-modal p {
+            margin: 0 0 20px;
+            font-size: 0.88em;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .android-modal-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .android-modal-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .android-modal-btn:hover { opacity: 0.82; }
+
+        .android-modal-btn.galaxy {
+            background: #1428A0;
+            color: #fff;
+        }
+
+        .android-modal-btn.apk {
+            background: #3DDC84;
+            color: #fff;
+        }
+
+        .android-modal-btn .btn-sub {
+            font-size: 0.78em;
+            font-weight: 400;
+            opacity: 0.85;
+            display: block;
+        }
+
+        .android-modal-cancel {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 0.85em;
+            color: #888;
+            cursor: pointer;
+            background: none;
+            border: none;
+            width: 100%;
+            padding: 4px;
+        }
+
+        .android-modal-cancel:hover { color: #555; }
+
         .app-secondary-links {
             display: flex;
             gap: 10px;
@@ -487,6 +575,31 @@
         </section>
     </main>
 
+    <!-- Android download modal -->
+    <div id="android-modal-overlay" class="android-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="android-modal-title">
+        <div class="android-modal">
+            <h3 id="android-modal-title">Android アプリをダウンロード</h3>
+            <p id="android-modal-desc">Samsung Galaxy をお使いの方は Galaxy Store からインストールできます。それ以外の Android 端末は APK ファイルをダウンロードしてインストールしてください。</p>
+            <div class="android-modal-btns">
+                <a id="android-modal-galaxy" href="#" target="_blank" rel="noopener noreferrer" class="android-modal-btn galaxy">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                    <span>
+                        Galaxy Store でインストール
+                        <span class="btn-sub">Samsung Galaxy 端末向け</span>
+                    </span>
+                </a>
+                <a id="android-modal-apk" href="#" target="_blank" rel="noopener noreferrer" class="android-modal-btn apk">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>
+                        APK をダウンロード
+                        <span class="btn-sub">その他の Android 端末向け</span>
+                    </span>
+                </a>
+            </div>
+            <button class="android-modal-cancel" onclick="closeAndroidModal()">キャンセル</button>
+        </div>
+    </div>
+
     <section class="ad-wrap" aria-label="広告枠">
         <p class="ad-label">Advertisement</p>
         <ins
@@ -514,6 +627,28 @@
 
     <script>
         document.getElementById('year').textContent = new Date().getFullYear();
+
+        function openAndroidModal(galaxyUrl, apkUrl) {
+            const isSamsung = /samsung/i.test(navigator.userAgent);
+            if (isSamsung) {
+                window.open(galaxyUrl, '_blank', 'noopener,noreferrer');
+                return;
+            }
+            document.getElementById('android-modal-galaxy').href = galaxyUrl;
+            document.getElementById('android-modal-apk').href = apkUrl;
+            const overlay = document.getElementById('android-modal-overlay');
+            overlay.classList.add('open');
+            overlay.addEventListener('click', function onOverlayClick(e) {
+                if (e.target === overlay) {
+                    closeAndroidModal();
+                    overlay.removeEventListener('click', onOverlayClick);
+                }
+            });
+        }
+
+        function closeAndroidModal() {
+            document.getElementById('android-modal-overlay').classList.remove('open');
+        }
 
         function initAds() {
             document.querySelectorAll('.adsbygoogle').forEach((adElement) => {
@@ -550,12 +685,20 @@
                            </a>`
                         : `<span class="app-cta coming-soon">リリース予定</span>`;
 
-                    // Android 直接配布リンク (GitHub Releases から APK 取得)
+                    // Android ボタン: Galaxy Store あればモーダル、なければ直接リンク
                     const androidBtn = app.androidDownloadUrl
-                        ? `<a href="${app.androidDownloadUrl}" target="_blank" rel="noopener noreferrer" class="app-cta android">
-                               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17l-2 4M19 17l2 4M5 9V7a7 7 0 0 1 14 0v2M5 9h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM8 5v0M16 5v0"/></svg>
-                               Android アプリ
-                           </a>`
+                        ? (app.galaxyStoreUrl
+                            ? `<button type="button"
+                                   class="app-cta android"
+                                   onclick="openAndroidModal('${app.galaxyStoreUrl}','${app.androidDownloadUrl}')"
+                                   style="cursor:pointer;border:none;">
+                                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17l-2 4M19 17l2 4M5 9V7a7 7 0 0 1 14 0v2M5 9h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM8 5v0M16 5v0"/></svg>
+                                   Android アプリ
+                               </button>`
+                            : `<a href="${app.androidDownloadUrl}" target="_blank" rel="noopener noreferrer" class="app-cta android">
+                                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17l-2 4M19 17l2 4M5 9V7a7 7 0 0 1 14 0v2M5 9h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM8 5v0M16 5v0"/></svg>
+                                   Android アプリ
+                               </a>`)
                         : '';
 
                     const ctaBtn = isIos

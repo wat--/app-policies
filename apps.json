@@ -47,7 +47,8 @@
     "type": "ios",
     "icon": "🐦",
     "appStoreUrl": "https://apps.apple.com/jp/app/%E9%87%8E%E9%B3%A5%E9%B3%B4%E3%81%8D%E5%A3%B0%E3%82%B5%E3%83%BC%E3%83%81/id6761675286",
-    "androidDownloadUrl": "https://github.com/wat--/releases/releases/latest",
+    "androidDownloadUrl": "https://github.com/wat--/releases/releases/tag/v0.1.1-android",
+    "galaxyStoreUrl": "https://galaxystore.samsung.com/detail/com.callisto.birdcompass",
     "description": "録音した野鳥の鳴き声から候補を推定し、図鑑的に特徴を確認できる iOS / Android アプリ。観察ノートに写真・音声・ビデオ・メモを添えて保存できるので、日本で出会える野鳥の観察記録を一箇所にまとめられます。",
     "links": [
       {
