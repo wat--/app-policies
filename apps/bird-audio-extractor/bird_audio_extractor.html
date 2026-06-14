@@ -794,20 +794,24 @@ function drawStreamBars(onsetFull, DB_YELLOW, DB_RED) {
     ox.fillText(fmtTime(t), x + 2, wvH - 3);
   }
 
-  // 棒グラフ描画
-  const minH = 2, maxH = wvH;
+  // 棒グラフ描画（ストリーミング概算版）
+  const minH = 2, maxH = wvH - 12;
   for (let px = 0; px < wvW; px++) {
     const rise = onsetFull[px];
-    let norm, hue, sat, lgt;
+    let norm = 0, hue, sat, lgt;
     if (rise < DB_YELLOW) {
-      norm = 0; hue = 210; sat = 60; lgt = 22;
+      hue = 195; sat = 45; lgt = 16;
     } else {
       norm = Math.min(1, (rise - DB_YELLOW) / Math.max(0.1, DB_RED * 3 - DB_YELLOW));
-      hue = Math.round(60 - norm * 60); sat = 90; lgt = Math.round(42 + norm * 18);
+      hue = Math.round(60 - norm * 60); sat = 90; lgt = Math.round(38 + norm * 22);
     }
     const barH = Math.round(minH + norm * (maxH - minH));
+    // 背景輪郭
+    ox.fillStyle = `hsl(${hue},${sat}%,${Math.round(lgt * 0.4)}%)`;
+    ox.fillRect(px, wvH - maxH - 2, 1, maxH + 2);
+    // 前景バー
     ox.fillStyle = `hsl(${hue},${sat}%,${lgt}%)`;
-    ox.fillRect(px, wvH - barH, 1, barH);
+    ox.fillRect(px, wvH - barH - 12, 1, barH);
   }
 
   ox.fillStyle = '#4b5563'; ox.font = '9px monospace';
@@ -978,25 +982,48 @@ function prerenderWaveform() {
   const onsetNonzero = Array.from(onset).filter(v => v > 0).sort((a, b) => a - b);
   const { yellowThr: DB_YELLOW, redThr: DB_RED } = getSpikeThresholds(onsetNonzero);
 
-  // onset強度を棒グラフで描画（下から上方向、高さ=スパイク強度）
-  // DB_YELLOW未満=最低高さ、DB_YELLOW〜DB_REDで線形に伸び、DB_RED以上=全高
+  // 絶対音量（dB）を 0〜1 に正規化（高さに使う）
+  const DB_TOP = 0;   // 0 dB = 最大高さ
+  const dbRange = Math.abs(FLOOR_DB - DB_TOP) || 60;
+  const normDb = new Float32Array(wvW);
+  for (let px = 0; px < wvW; px++) {
+    normDb[px] = Math.max(0, Math.min(1, (db[px] - FLOOR_DB) / dbRange));
+  }
+
+  // 棒グラフ描画:
+  //   高さ = 絶対音量（静かな区間は低く、音がある区間だけ高くなる）
+  //   色   = オンセット強度（立ち上がりが強いほど赤〜橙〜黄、弱ければ青緑で暗め）
   const minH = 2;
-  const maxH = wvH;
+  const maxH = wvH - 12; // 時刻ラベル分の余白
   for (let px = 0; px < wvW; px++) {
     const rise = onset[px];
-    let norm = 0, hue, sat, lgt;
-    if (rise < DB_YELLOW) {
-      norm = 0;
-      hue = 210; sat = 60; lgt = 22;
-    } else {
-      // yellow〜redを黄色ゾーン、red〜red*3を橙〜赤ゾーンにして赤をレアに
-      norm = Math.min(1, (rise - DB_YELLOW) / Math.max(0.1, DB_RED * 3 - DB_YELLOW));
-      const t = norm;
-      hue = Math.round(60 - t * 60); sat = 90; lgt = Math.round(42 + t * 18);
+    const volH = Math.round(minH + normDb[px] * (maxH - minH));
+
+    // オンセット強度で色を決定
+    let onsetNorm = 0;
+    if (rise >= DB_YELLOW) {
+      onsetNorm = Math.min(1, (rise - DB_YELLOW) / Math.max(0.1, DB_RED * 3 - DB_YELLOW));
     }
-    const barH = Math.round(minH + norm * (maxH - minH));
+
+    let hue, sat, lgt;
+    if (normDb[px] < 0.04) {
+      // ほぼ無音 — 非常に暗い青
+      hue = 220; sat = 40; lgt = 12;
+    } else if (onsetNorm === 0) {
+      // 音はあるがオンセットなし — 暗い青緑（背景ノイズ）
+      hue = 195; sat = 50; lgt = Math.round(18 + normDb[px] * 14);
+    } else {
+      // オンセットあり — 黄〜橙〜赤（鳥声・音声の立ち上がり）
+      hue = Math.round(60 - onsetNorm * 60);
+      sat = 90;
+      lgt = Math.round(38 + onsetNorm * 22);
+    }
+
+    // 背景層（絶対音量の輪郭）を暗い色で描いてから前景を重ねる
+    ox.fillStyle = `hsl(${hue},${sat}%,${Math.round(lgt * 0.45)}%)`;
+    ox.fillRect(px, wvH - maxH - 2, 1, maxH + 2);
     ox.fillStyle = `hsl(${hue},${sat}%,${lgt}%)`;
-    ox.fillRect(px, wvH - barH, 1, barH);
+    ox.fillRect(px, wvH - volH - 12, 1, volH);
   }
   wvCache = oc;
   wvOnset = onset;
@@ -1225,16 +1252,21 @@ function redrawRtCache() {
       continue;
     }
     const rise = rtOnset[s];
-    let norm, hue, sat, lgt;
+    let norm = 0, hue, sat, lgt;
     if (rise < DB_YELLOW) {
-      norm = 0; hue = 210; sat = 70; lgt = 35;
+      hue = 195; sat = 45; lgt = 18;
     } else {
       norm = Math.min(1, (rise - DB_YELLOW) / Math.max(0.001, DB_RED - DB_YELLOW));
-      hue = Math.round(60 - norm * 60); sat = 90; lgt = Math.round(45 + norm * 20);
+      hue = Math.round(60 - norm * 60); sat = 90; lgt = Math.round(38 + norm * 22);
     }
-    const barH = Math.round(wvH * 0.15 + norm * wvH * 0.85);
+    const maxBarH = wvH - 12;
+    const barH = Math.round(maxBarH * 0.10 + norm * maxBarH * 0.90);
+    // 背景輪郭
+    ox.fillStyle = `hsl(${hue},${sat}%,${Math.round(lgt * 0.4)}%)`;
+    ox.fillRect(x, wvH - maxBarH - 2, barW, maxBarH + 2);
+    // 前景バー
     ox.fillStyle = `hsl(${hue},${sat}%,${lgt}%)`;
-    ox.fillRect(x, wvH - barH, barW, barH);
+    ox.fillRect(x, wvH - barH - 12, barW, barH);
   }
 
   ox.fillStyle = '#4b5563'; ox.font = '9px monospace';
