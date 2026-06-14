@@ -1906,13 +1906,36 @@ async function runWhisper() {
       language: 'japanese',
     });
 
+    // ── フィルタリング ──────────────────────────────
+    // 1. ノイズタグ除去：(音楽)(笑)(拍手) など括弧系タグのみのセグメントを除外
+    const NOISE_TAG = /^[\s(（\[［【「『]*(音楽|笑|拍手|歓声|ざわめき|BGM|Music|music|\.\.\.|♪)[)\）\]］】」』\s]*$/;
+
+    // 2. ループ検出：同じ単語・フレーズが3回以上繰り返されたら幻覚とみなす
+    function isHallucination(text) {
+      // 「このように、」など句読点込みで繰り返すパターンを検出
+      const m = text.match(/(.{2,12})[、。,]\s*(?:\1[、。,]\s*){2,}/);
+      return !!m;
+    }
+
+    // 3. 極端に短い・長すぎるテキストを除外（音楽区間の幻覚は文字数が多い傾向）
+    const MAX_CHARS_PER_SEC = 12; // 日本語の自然な発話速度の上限
+
     voiceSegments = (result.chunks || []).map(c => ({
       start: c.timestamp[0] ?? 0,
       end:   c.timestamp[1] ?? audioDuration,
       text:  c.text.trim(),
-    })).filter(s => s.text.length > 0);
+    })).filter(s => {
+      if (!s.text) return false;
+      if (NOISE_TAG.test(s.text)) return false;
+      if (isHallucination(s.text)) return false;
+      const dur = Math.max(0.1, s.end - s.start);
+      if (s.text.length / dur > MAX_CHARS_PER_SEC) return false;
+      return true;
+    });
 
-    statusEl.textContent = `検出完了: ${voiceSegments.length}件`;
+    const totalChunks = (result.chunks || []).length;
+    const filtered = totalChunks - voiceSegments.length;
+    statusEl.textContent = `検出完了: ${voiceSegments.length}件${filtered > 0 ? `（幻覚・ノイズ ${filtered}件除外）` : ''}`;
     renderWhisperSegments();
     renderVoiceMarkers();
   } catch (err) {
