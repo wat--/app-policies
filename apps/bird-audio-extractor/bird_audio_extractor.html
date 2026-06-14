@@ -46,6 +46,13 @@ h1{text-align:center;font-size:16px;color:#93c5fd;margin-bottom:16px;letter-spac
 #bgScanLabel{position:absolute;right:6px;top:50%;transform:translateY(-50%);
   font-size:9px;color:#6b7280;font-family:monospace;pointer-events:none;white-space:nowrap;}
 
+.sgram-wrap{position:relative;background:#080c14;border-radius:10px;
+  margin-bottom:4px;overflow:hidden;border:1px solid #1e2535;cursor:col-resize;}
+#sgramCanvas{display:block;width:100%;}
+#sgramTip{position:absolute;right:8px;bottom:5px;font-size:10px;color:#fbbf24;
+  font-family:monospace;pointer-events:none;background:rgba(8,12,20,.78);
+  padding:2px 4px;border-radius:4px;}
+
 .spectrum-wrap{position:relative;background:#080c14;border-radius:10px;
   margin-bottom:14px;overflow:hidden;border:1px solid #1e2535;}
 #spectrumCanvas{display:block;width:100%;}
@@ -93,7 +100,7 @@ h1{text-align:center;font-size:16px;color:#93c5fd;margin-bottom:16px;letter-spac
 </head>
 <body>
 <h1>🐦 鳴き声・音声抽出ツール</h1>
-<div class="version">v0.3.0</div>
+<div class="version">v0.4.0</div>
 
 <div class="drop-zone" id="dropZone">
   <div class="icon">🎵</div>
@@ -119,6 +126,12 @@ h1{text-align:center;font-size:16px;color:#93c5fd;margin-bottom:16px;letter-spac
   <div id="waveScrollTrack">
     <div id="waveScrollThumb"></div>
   </div>
+</div>
+
+<div class="sgram-wrap" id="sgramWrap" style="display:none">
+  <canvas id="sgramCanvas" height="120"></canvas>
+  <div id="sgramTip"></div>
+  <div id="sgramPlaybar" style="position:absolute;top:0;bottom:0;width:2px;background:rgba(251,191,36,.8);pointer-events:none;display:none;"></div>
 </div>
 
 <div class="spectrum-wrap">
@@ -1419,6 +1432,217 @@ wvCanvas.addEventListener('mousemove', e => {
 wvCanvas.addEventListener('mouseleave', () => { id('waveTip').textContent = ''; });
 
 // ════════════════════════════════════════════
+//  Spectrogram Canvas（ファイル全体・時間軸）
+// ════════════════════════════════════════════
+const sgCanvas  = document.getElementById('sgramCanvas');
+const sgCtx     = sgCanvas.getContext('2d');
+let sgW = 0, sgH = 120, sgCache = null;
+const SG_F_MIN = 20, SG_F_MAX = 16000;
+// 対数周波数 → Y座標（上=高周波）
+function sgF2y(f) {
+  return sgH - sgH * Math.log10(f / SG_F_MIN) / Math.log10(SG_F_MAX / SG_F_MIN);
+}
+
+function resizeSgram() {
+  const dpr = devicePixelRatio || 1;
+  sgW = sgCanvas.parentElement.offsetWidth;
+  sgCanvas.width  = sgW * dpr; sgCanvas.height = sgH * dpr;
+  sgCanvas.style.width = sgW + 'px'; sgCanvas.style.height = sgH + 'px';
+  sgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (sgCache) drawSgram();
+}
+
+// dB値をスペクトログラムの色に変換（黒→青→シアン→緑→黄→白）
+function sgColor(db, dbMin, dbMax) {
+  const t = Math.max(0, Math.min(1, (db - dbMin) / (dbMax - dbMin)));
+  // 5段階グラデーション
+  if (t < 0.25) {
+    const s = t / 0.25;
+    return [Math.round(s * 0), Math.round(s * 60), Math.round(80 + s * 120)];
+  } else if (t < 0.5) {
+    const s = (t - 0.25) / 0.25;
+    return [0, Math.round(60 + s * 180), Math.round(200 - s * 150)];
+  } else if (t < 0.75) {
+    const s = (t - 0.5) / 0.25;
+    return [Math.round(s * 220), Math.round(240 - s * 30), Math.round(50 - s * 40)];
+  } else {
+    const s = (t - 0.75) / 0.25;
+    return [Math.round(220 + s * 35), Math.round(210 + s * 45), Math.round(10 + s * 245)];
+  }
+}
+
+// ファイル全体をFFT解析してスペクトログラムキャッシュを生成
+async function prerenderSgram() {
+  if (!audioBuf || !sgW) return;
+  id('sgramWrap').style.display = 'block';
+  const sr       = audioBuf.sampleRate;
+  const samples  = audioBuf.getChannelData(0);
+  const totalLen = samples.length;
+
+  // 時間分解能：1列 = 約50ms（列数はキャンバス幅に合わせる）
+  const hopMs   = Math.max(20, audioBuf.duration * 1000 / (sgW * 2));
+  const hopSamp = Math.round(sr * hopMs / 1000);
+  const FFT_SIZE = 2048;
+  const halfFFT  = FFT_SIZE / 2;
+  const nCols    = Math.ceil(totalLen / hopSamp);
+
+  // Hann窓
+  const hann = new Float32Array(FFT_SIZE);
+  for (let i = 0; i < FFT_SIZE; i++) hann[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (FFT_SIZE - 1)));
+
+  // OfflineAudioContext + AnalyserNodeでFFT（ブラウザネイティブ）
+  // → Web Audio APIのFFTは非同期で使いにくいため自前でDFTを計算
+  // Cooley-Tukey FFT（実数入力）
+  function fft(re, im) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = -2 * Math.PI / len;
+      const wRe = Math.cos(ang), wIm = Math.sin(ang);
+      for (let i = 0; i < n; i += len) {
+        let curRe = 1, curIm = 0;
+        for (let j = 0; j < len / 2; j++) {
+          const uRe = re[i+j], uIm = im[i+j];
+          const vRe = re[i+j+len/2]*curRe - im[i+j+len/2]*curIm;
+          const vIm = re[i+j+len/2]*curIm + im[i+j+len/2]*curRe;
+          re[i+j] = uRe+vRe; im[i+j] = uIm+vIm;
+          re[i+j+len/2] = uRe-vRe; im[i+j+len/2] = uIm-vIm;
+          [curRe, curIm] = [curRe*wRe - curIm*wIm, curRe*wIm + curIm*wRe];
+        }
+      }
+    }
+  }
+
+  // 全列のdB行列を計算（間引きしながら処理）
+  const colsPerPx = Math.max(1, Math.ceil(nCols / sgW));
+  const nPxCols   = Math.ceil(nCols / colsPerPx);
+  // 各周波数ビンのY座標をキャッシュ
+  const binFreqs = new Float32Array(halfFFT);
+  for (let k = 0; k < halfFFT; k++) binFreqs[k] = k * sr / FFT_SIZE;
+
+  // ImageDataに直接書き込む（高速）
+  const dpr = devicePixelRatio || 1;
+  const imgW = Math.round(sgW * dpr), imgH = Math.round(sgH * dpr);
+  const imgData = sgCtx.createImageData(imgW, imgH);
+  const pix = imgData.data;
+
+  // まず背景を黒で塗る
+  for (let i = 0; i < pix.length; i += 4) { pix[i]=8; pix[i+1]=12; pix[i+2]=20; pix[i+3]=255; }
+
+  // dBの全体レンジ推定用に一部サンプリング
+  let dbGlobalMin = 0, dbGlobalMax = -120;
+  const sampleStep = Math.max(1, Math.floor(nCols / 200));
+  for (let ci = 0; ci < nCols; ci += sampleStep) {
+    const offset = ci * hopSamp;
+    const re = new Float32Array(FFT_SIZE), im = new Float32Array(FFT_SIZE);
+    for (let i = 0; i < FFT_SIZE && offset + i < totalLen; i++) re[i] = samples[offset + i] * hann[i];
+    fft(re, im);
+    for (let k = 1; k < halfFFT; k++) {
+      const mag = Math.sqrt(re[k]*re[k] + im[k]*im[k]) / halfFFT;
+      if (mag > 1e-9) { const db = 20 * Math.log10(mag); if (db > dbGlobalMax) dbGlobalMax = db; if (db < dbGlobalMin) dbGlobalMin = db; }
+    }
+  }
+  const dbMin = Math.max(dbGlobalMin, dbGlobalMax - 70); // 表示レンジを70dBに
+
+  // 各ピクセル列を描画
+  const re = new Float32Array(FFT_SIZE), im = new Float32Array(FFT_SIZE);
+  for (let px = 0; px < sgW; px++) {
+    const ci = Math.round(px / sgW * nCols);
+    const offset = ci * hopSamp;
+    re.fill(0); im.fill(0);
+    for (let i = 0; i < FFT_SIZE && offset + i < totalLen; i++) re[i] = samples[offset + i] * hann[i];
+    fft(re, im);
+
+    for (let k = 1; k < halfFFT; k++) {
+      const freq = binFreqs[k];
+      if (freq < SG_F_MIN || freq > SG_F_MAX) continue;
+      const mag = Math.sqrt(re[k]*re[k] + im[k]*im[k]) / halfFFT;
+      const db  = mag > 1e-9 ? 20 * Math.log10(mag) : dbMin;
+      const [r, g, b] = sgColor(db, dbMin, dbGlobalMax);
+
+      // このビンのY範囲を塗りつぶす
+      const y0 = Math.round(sgF2y(freq) * dpr);
+      const y1 = k + 1 < halfFFT ? Math.round(sgF2y(binFreqs[k + 1]) * dpr) : imgH;
+      const yTop = Math.max(0, Math.min(y0, y1));
+      const yBot = Math.min(imgH, Math.max(y0, y1) + 1);
+      for (let y = yTop; y < yBot; y++) {
+        for (let dx = 0; dx < dpr; dx++) {
+          const idx = (y * imgW + Math.min(imgW - 1, Math.round(px * dpr) + dx)) * 4;
+          pix[idx] = r; pix[idx+1] = g; pix[idx+2] = b; pix[idx+3] = 255;
+        }
+      }
+    }
+  }
+  sgCtx.putImageData(imgData, 0, 0);
+
+  // 周波数ラベルと人声・鳥声帯域マーカーを重ね描き
+  // 帯域ハイライト
+  const bandMarkers = [
+    { lo: 300,  hi: 3400,  label: '人声',  color: 'rgba(167,139,250,0.18)' },
+    { lo: 2000, hi: 8000,  label: '鳥声',  color: 'rgba(52,211,153,0.15)'  },
+  ];
+  bandMarkers.forEach(({ lo, hi, label, color }) => {
+    const yTop = sgF2y(Math.min(hi, SG_F_MAX));
+    const yBot = sgF2y(Math.max(lo, SG_F_MIN));
+    sgCtx.fillStyle = color;
+    sgCtx.fillRect(0, yTop, sgW, yBot - yTop);
+    sgCtx.fillStyle = color.replace(/[\d.]+\)$/, '0.9)').replace('rgba', 'rgba');
+    sgCtx.font = '8px monospace';
+    sgCtx.fillStyle = '#94a3b8';
+    sgCtx.fillText(label, 3, yTop + 10);
+  });
+
+  // 周波数グリッド
+  [100, 300, 500, 1000, 2000, 3400, 5000, 8000].forEach(f => {
+    if (f < SG_F_MIN || f > SG_F_MAX) return;
+    const y = Math.round(sgF2y(f));
+    sgCtx.strokeStyle = 'rgba(255,255,255,0.12)'; sgCtx.lineWidth = 1;
+    sgCtx.beginPath(); sgCtx.moveTo(0, y); sgCtx.lineTo(sgW, y); sgCtx.stroke();
+    const label = f >= 1000 ? (f/1000) + 'k' : f + '';
+    sgCtx.fillStyle = 'rgba(255,255,255,0.45)'; sgCtx.font = '8px monospace';
+    sgCtx.fillText(label, 3, y - 2);
+  });
+
+  sgCache = true;
+}
+
+// スペクトログラムに再生位置バーを描画（drawWaveformと同じロジック）
+function drawSgram() {
+  if (!sgCache || !sgW) return;
+  // キャッシュはsgramCanvas自体に書き込み済みなのでバー描画のみ別レイヤーで管理
+  // 再生位置バー
+  const bar = id('sgramPlaybar');
+  if (!audioDuration) { bar.style.display = 'none'; return; }
+  const cur = getCurrentTime();
+  const visibleDur = audioDuration / zoomLevel;
+  if (zoomLevel > 1 && (cur < zoomStart || cur > zoomStart + visibleDur)) {
+    bar.style.display = 'none'; return;
+  }
+  const px = zoomLevel <= 1
+    ? (cur / audioDuration) * sgW
+    : ((cur - zoomStart) / visibleDur) * sgW;
+  bar.style.display  = 'block';
+  bar.style.left     = Math.round(px) + 'px';
+}
+
+// スペクトログラムのシーク
+sgCanvas.addEventListener('mousedown', e => { wvDragging = true; wvSeek(e); sgCanvas.style.cursor = 'grabbing'; });
+sgCanvas.addEventListener('mousemove', e => {
+  if (!audioDuration) return;
+  const r = sgCanvas.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - r.left) / sgW));
+  const visibleDur = audioDuration / zoomLevel;
+  const t = zoomLevel <= 1 ? ratio * audioDuration : zoomStart + ratio * visibleDur;
+  id('sgramTip').textContent = fmtTime(t);
+});
+sgCanvas.addEventListener('mouseleave', () => { id('sgramTip').textContent = ''; });
+
+// ════════════════════════════════════════════
 //  Spectrum Canvas
 // ════════════════════════════════════════════
 const spCanvas = document.getElementById('spectrumCanvas');
@@ -1479,7 +1703,7 @@ function drawSpectrum() {
 function drawLoop() {
   requestAnimationFrame(drawLoop);
   accumOnset(); // ストリーミング再生中のonset蓄積
-  drawWaveform(); drawSpectrum();
+  drawWaveform(); drawSgram(); drawSpectrum();
   if (analyserNode) {
     const fd = new Uint8Array(analyserNode.frequencyBinCount);
     analyserNode.getByteFrequencyData(fd);
@@ -1500,6 +1724,7 @@ function loadFile(file) {
   buildGraph();
   audioBuf = null; pauseAt = 0; streamSamples = null;
   rtOnset = null; rtCovered = null;
+  sgCache = null; id('sgramWrap').style.display = 'none';
   bgWorkers.forEach(w => { w.audio.pause(); w.audio.src = ''; }); bgWorkers = [];
   if (bgAudio) { bgAudio.pause(); bgAudio.src = ''; bgAudio = null; }
   recordingStart = parseRecordingStart(file.name);
@@ -1542,8 +1767,12 @@ function loadFile(file) {
       audioDuration = audioBuf.duration;
       id('fileName').textContent = '✅ ' + file.name;
       setStatus('読み込み完了。帯域を指定して ▶ 再生してください。');
-      resizeWaveform(); resizeSpectrum();
+      sgCache = null; id('sgramWrap').style.display = 'none';
+      resizeWaveform(); resizeSpectrum(); resizeSgram();
       prerenderWaveform();
+      setStatus('スペクトログラム生成中...');
+      await prerenderSgram();
+      setStatus('読み込み完了。帯域を指定して ▶ 再生してください。');
     };
     reader.readAsArrayBuffer(file);
   }
@@ -1692,8 +1921,8 @@ function fmtClockAt(offsetSec) {
 function fmtFreq(f){ return f>=1000?(f/1000).toFixed(f%1000===0?0:1)+'kHz':Math.round(f)+'Hz'; }
 function setStatus(m){ id('status').textContent=m; }
 
-window.addEventListener('resize', () => { resizeWaveform(); resizeSpectrum(); });
-resizeWaveform(); resizeSpectrum();
+window.addEventListener('resize', () => { resizeWaveform(); resizeSpectrum(); resizeSgram(); if (audioBuf) prerenderSgram(); });
+resizeWaveform(); resizeSpectrum(); resizeSgram();
 drawLoop();
 </script>
 </body>
