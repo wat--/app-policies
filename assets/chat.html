@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>OVMS Agent Chat</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0e17; --surface: #131926; --border: #1e2a3a;
+  --text: #e4e8f1; --text-dim: #7a8599;
+  --accent: #3b82f6; --user-bg: #1a2744; --assistant-bg: #131926;
+  --success: #22c55e; --error: #ef4444; --warning: #f59e0b;
+  --tool-bg: #0d1a0d; --tool-border: #1a3a1a; --tool-call-bg: #1a1a0d;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Noto Sans JP',sans-serif; background:var(--bg); color:var(--text); height:100vh; display:flex; flex-direction:column; overflow:hidden; }
+
+/* ── Header ── */
+header { display:flex; align-items:center; justify-content:space-between; padding:10px 20px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; }
+.logo { display:flex; align-items:center; gap:8px; font-weight:700; font-size:15px; }
+.logo-icon { width:26px; height:26px; background:linear-gradient(135deg,var(--accent),#8b5cf6); border-radius:5px; display:flex; align-items:center; justify-content:center; font-size:12px; color:#fff; }
+.status { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-dim); }
+.status-dot { width:7px; height:7px; border-radius:50%; background:var(--error); transition:background .3s; }
+.status-dot.connected { background:var(--success); }
+
+/* ── Settings bar ── */
+.settings-bar { display:flex; align-items:center; gap:12px; padding:8px 20px; border-bottom:1px solid var(--border); background:var(--surface); flex-shrink:0; flex-wrap:wrap; }
+.setting-group { display:flex; align-items:center; gap:5px; }
+.setting-group label { font-size:10px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; font-weight:500; white-space:nowrap; }
+.setting-group input, .setting-group select { font-family:'JetBrains Mono',monospace; font-size:12px; padding:3px 7px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--text); outline:none; transition:border-color .2s; }
+.setting-group input:focus, .setting-group select:focus { border-color:var(--accent); }
+.setting-group input[type="number"] { width:68px; }
+.setting-group input[type="text"] { width:190px; }
+.btn-sm { padding:3px 10px; font-size:11px; font-family:'Noto Sans JP',sans-serif; color:var(--text-dim); background:transparent; border:1px solid var(--border); border-radius:4px; cursor:pointer; transition:all .2s; }
+.btn-sm:hover { color:var(--error); border-color:var(--error); }
+.btn-sm.add:hover { color:var(--success); border-color:var(--success); }
+.agent-toggle { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-dim); cursor:pointer; user-select:none; }
+.agent-toggle input[type="checkbox"] { accent-color:var(--accent); width:14px; height:14px; cursor:pointer; }
+.agent-toggle.active { color:var(--accent); }
+
+/* ── Tools panel ── */
+.tools-panel { border-bottom:1px solid var(--border); background:#0c1520; flex-shrink:0; overflow:hidden; max-height:0; transition:max-height .3s ease; }
+.tools-panel.open { max-height:260px; }
+.tools-inner { padding:10px 20px; display:flex; flex-direction:column; gap:8px; }
+.tools-header { display:flex; align-items:center; justify-content:space-between; }
+.tools-header span { font-size:11px; color:var(--text-dim); text-transform:uppercase; letter-spacing:.05em; }
+.tool-list { display:flex; flex-wrap:wrap; gap:6px; }
+.tool-chip { display:flex; align-items:center; gap:5px; padding:3px 10px 3px 8px; border-radius:20px; background:var(--tool-border); border:1px solid #2a4a2a; font-size:11px; font-family:'JetBrains Mono',monospace; color:#86efac; }
+.tool-chip button { background:none; border:none; cursor:pointer; color:#6b7280; font-size:12px; line-height:1; padding:0 0 0 2px; transition:color .2s; }
+.tool-chip button:hover { color:var(--error); }
+.tool-add-row { display:flex; gap:6px; align-items:center; }
+.tool-add-row input { flex:1; font-family:'JetBrains Mono',monospace; font-size:12px; padding:4px 8px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--text); outline:none; min-width:0; }
+.tool-add-row input:focus { border-color:var(--success); }
+.tool-add-row select { font-family:'JetBrains Mono',monospace; font-size:11px; padding:4px 6px; border:1px solid var(--border); border-radius:4px; background:var(--bg); color:var(--text); outline:none; }
+
+/* ── Chat area ── */
+.chat-area { flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:4px; scroll-behavior:smooth; }
+.chat-area::-webkit-scrollbar { width:5px; }
+.chat-area::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
+
+/* ── Messages ── */
+.message { max-width:82%; padding:11px 15px; border-radius:12px; font-size:14px; line-height:1.7; white-space:pre-wrap; word-break:break-word; animation:fadeIn .2s ease; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+.message.user { align-self:flex-end; background:var(--user-bg); border:1px solid rgba(59,130,246,.2); border-bottom-right-radius:4px; }
+.message.assistant { align-self:flex-start; background:var(--assistant-bg); border:1px solid var(--border); border-bottom-left-radius:4px; }
+.message .role-tag { font-size:10px; text-transform:uppercase; letter-spacing:.08em; font-weight:500; margin-bottom:4px; display:block; }
+.message.user .role-tag { color:var(--accent); }
+.message.assistant .role-tag { color:var(--success); }
+.message .meta { font-size:11px; color:var(--text-dim); margin-top:8px; font-family:'JetBrains Mono',monospace; border-top:1px solid var(--border); padding-top:5px; }
+.meta-tools { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:6px; }
+.meta-tool-badge {
+  display:inline-flex; align-items:center; gap:4px;
+  padding:2px 8px; border-radius:12px;
+  background:#0a1f0a; border:1px solid #1a4a1a;
+  font-size:10px; font-family:'JetBrains Mono',monospace;
+  color:#86efac; letter-spacing:.02em;
+}
+.meta-tool-badge .badge-icon { font-size:11px; }
+.meta-tool-badge.no-tool { background:#111827; border-color:#1f2937; color:var(--text-dim); }
+.meta-stats { color:var(--text-dim); }
+
+/* ── Agent step card ── */
+.agent-step {
+  align-self: flex-start; max-width: 90%;
+  border: 1px solid #2a3a1a; border-radius: 10px;
+  background: #0d160d; overflow: hidden;
+  animation: fadeIn .2s ease; margin: 2px 0;
+}
+.agent-step-header {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; cursor: pointer;
+  background: #111f0f; user-select: none;
+  transition: background .15s;
+}
+.agent-step-header:hover { background: #162b12; }
+.step-badge {
+  font-size: 10px; font-weight: 700; padding: 1px 6px;
+  border-radius: 10px; font-family: 'JetBrains Mono', monospace;
+  letter-spacing: .04em; flex-shrink: 0;
+}
+.step-badge.calling  { background: #2a2500; color: var(--warning); border: 1px solid #4a4000; }
+.step-badge.done     { background: #0a2a0a; color: #86efac;        border: 1px solid #1a4a1a; }
+.step-badge.error    { background: #2a0a0a; color: var(--error);   border: 1px solid #4a1a1a; }
+.step-tool-name {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  color: #fde68a; font-weight: 600; flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.step-summary {
+  font-size: 11px; color: var(--text-dim); flex: 2; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.step-chevron {
+  font-size: 10px; color: var(--text-dim); transition: transform .2s; flex-shrink: 0;
+}
+.agent-step.open .step-chevron { transform: rotate(180deg); }
+.agent-step-body {
+  display: none; border-top: 1px solid #1a2a1a;
+}
+.agent-step.open .agent-step-body { display: block; }
+.step-section {
+  padding: 8px 12px; border-bottom: 1px solid #1a2a1a;
+}
+.step-section:last-child { border-bottom: none; }
+.step-section-label {
+  font-size: 10px; text-transform: uppercase; letter-spacing: .06em;
+  color: var(--text-dim); margin-bottom: 4px; font-weight: 600;
+}
+.step-code {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  color: #d1fae5; white-space: pre-wrap; word-break: break-all; line-height: 1.5;
+}
+.step-result-text {
+  font-family: 'JetBrains Mono', monospace; font-size: 12px;
+  color: #a7f3d0; white-space: pre-wrap; word-break: break-all; line-height: 1.5;
+}
+.step-result-text.error-text { color: #fca5a5; }
+.tool-body { font-family:'JetBrains Mono',monospace; font-size:12px; white-space:pre-wrap; word-break:break-all; }
+
+/* ── Typing indicator ── */
+.typing-indicator {
+  align-self:flex-start; display:flex; align-items:center; gap:10px;
+  padding:10px 14px; background:var(--surface); border:1px solid var(--border);
+  border-radius:12px; border-bottom-left-radius:4px;
+  font-size:12px; color:var(--text-dim); animation:fadeIn .2s ease;
+  max-width:82%;
+}
+.typing-dots { display:flex; gap:4px; align-items:center; }
+.typing-dots span {
+  width:7px; height:7px; border-radius:50%; background:var(--accent);
+  display:inline-block; animation:typingBounce 1.1s infinite ease-in-out;
+}
+.typing-dots span:nth-child(2) { animation-delay:.18s; }
+.typing-dots span:nth-child(3) { animation-delay:.36s; }
+@keyframes typingBounce {
+  0%,60%,100% { transform:translateY(0); opacity:.35; }
+  30%          { transform:translateY(-5px); opacity:1; }
+}
+.typing-label { font-size:11px; color:var(--text-dim); }
+
+/* ── 送信ボタン処理中状態 ── */
+.btn-send.processing {
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  cursor: not-allowed;
+  position: relative;
+  overflow: hidden;
+}
+.btn-send.processing::after {
+  content: '';
+  position: absolute; left: -60%; top: 0;
+  width: 60%; height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(59,130,246,.25), transparent);
+  animation: shimmer .9s infinite;
+}
+@keyframes shimmer { to { left: 120%; } }
+
+/* ── 処理中ステータスバー ── */
+.processing-bar {
+  display: none; align-items: center; gap: 8px;
+  padding: 5px 20px; background: rgba(59,130,246,.07);
+  border-bottom: 1px solid rgba(59,130,246,.2);
+  font-size: 11px; color: var(--accent); flex-shrink: 0;
+}
+.processing-bar.active { display: flex; }
+.processing-bar-dot {
+  width:6px; height:6px; border-radius:50%; background:var(--accent);
+  animation:processingPulse 1s infinite;
+}
+@keyframes processingPulse { 0%,100%{opacity:.3; transform:scale(.8)} 50%{opacity:1; transform:scale(1.1)} }
+
+/* ── Welcome ── */
+.welcome { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; color:var(--text-dim); gap:10px; text-align:center; }
+.welcome h2 { font-size:19px; font-weight:500; color:var(--text); }
+.welcome p { font-size:13px; max-width:420px; line-height:1.6; }
+
+/* ── Input area ── */
+.input-area { padding:14px 20px; border-top:1px solid var(--border); background:var(--surface); flex-shrink:0; }
+.input-row { display:flex; gap:8px; align-items:flex-end; }
+.input-row textarea { flex:1; font-family:'Noto Sans JP',sans-serif; font-size:14px; padding:9px 13px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); resize:none; outline:none; min-height:44px; max-height:160px; line-height:1.5; transition:border-color .2s; }
+.input-row textarea:focus { border-color:var(--accent); }
+.input-row textarea::placeholder { color:var(--text-dim); }
+.btn-send { padding:9px 18px; font-family:'Noto Sans JP',sans-serif; font-size:13px; font-weight:500; color:#fff; background:var(--accent); border:none; border-radius:8px; cursor:pointer; transition:all .2s; white-space:nowrap; height:44px; }
+.btn-send:hover { filter:brightness(1.15); }
+.btn-send:disabled { opacity:.4; cursor:not-allowed; }
+.input-hint { font-size:11px; color:var(--text-dim); margin-top:5px; }
+
+/* ── Toast ── */
+.error-toast { position:fixed; top:14px; right:14px; background:var(--error); color:#fff; padding:9px 14px; border-radius:8px; font-size:13px; z-index:100; animation:fadeIn .3s ease; max-width:380px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="logo"><div class="logo-icon">OV</div>OVMS Agent Chat</div>
+  <div class="status"><div class="status-dot" id="statusDot"></div><span id="statusText">Connecting...</span></div>
+</header>
+
+<div class="settings-bar">
+  <div class="setting-group"><label>Endpoint</label><input type="text" id="endpoint" value="http://localhost:8000/v3"></div>
+  <div class="setting-group"><label>Model</label><input type="text" id="model" value="qwen3"></div>
+  <div class="setting-group"><label>Max Tokens</label><input type="number" id="maxTokens" value="2000" min="1" max="8192"></div>
+  <label class="agent-toggle" id="agentToggleLabel">
+    <input type="checkbox" id="agentEnabled" onchange="toggleAgent()" checked> Agent Mode
+  </label>
+  <button class="btn-sm" onclick="clearChat()">Clear</button>
+</div>
+
+<!-- 処理中ステータスバー -->
+<div class="processing-bar" id="processingBar">
+  <div class="processing-bar-dot"></div>
+  <span id="processingLabel">処理中...</span>
+</div>
+
+<!-- ツールパネル（Agent Mode時に表示） -->
+<div class="tools-panel" id="toolsPanel">
+  <div class="tools-inner">
+    <div class="tools-header">
+      <span>🔧 有効なツール（組み込み）</span>
+      <span style="font-size:11px;color:var(--text-dim);">サーバー起動時に <code style="font-family:monospace">--tool_parser hermes3</code> が必要</span>
+    </div>
+    <div class="tool-list" id="toolList"></div>
+    <div class="tools-header" style="margin-top:4px;"><span>➕ カスタムツール追加</span></div>
+    <div class="tool-add-row">
+      <input type="text" id="customToolName" placeholder="ツール名 (例: search_web)">
+      <input type="text" id="customToolDesc" placeholder="説明 (例: Webを検索する)">
+      <button class="btn-sm add" onclick="addCustomTool()">追加</button>
+    </div>
+  </div>
+</div>
+
+<div class="chat-area" id="chatArea">
+  <div class="welcome" id="welcome">
+    <h2>OVMS Agent Chat</h2>
+    <p>Agent Mode をオンにすると、OVMSのtool calling機能を使った自律エージェントが有効になります。<br>
+    サーバー起動時に <code style="font-family:monospace;font-size:12px;">--tool_parser hermes3</code> オプションが必要です（Qwen3/Hermes3用）。Llama3系は <code style="font-family:monospace;font-size:12px;">--tool_parser llama3_json</code> を使用してください。</p>
+  </div>
+</div>
+
+<div class="input-area">
+  <div class="input-row">
+    <textarea id="userInput" placeholder="メッセージを入力..." rows="1" oninput="autoResize(this)"></textarea>
+    <button class="btn-send" id="sendBtn" onclick="sendMessage()">送信</button>
+  </div>
+  <div class="input-hint">Enter で送信 / Shift+Enter で改行</div>
+</div>
+
+<script>
+// ─────────────────────────────────────────────
+// 状態
+// ─────────────────────────────────────────────
+const chatArea   = document.getElementById('chatArea');
+const userInput  = document.getElementById('userInput');
+const sendBtn    = document.getElementById('sendBtn');
+const statusDot  = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const welcome    = document.getElementById('welcome');
+
+let messages     = [];      // 会話履歴（tool messagesも含む）
+let isGenerating = false;
+
+const SYSTEM_PROMPT = {
+  role: 'system',
+  content: 'あなたは優秀なアシスタントです。必ず日本語で回答してください。利用可能なツール(functions)が提供されている場合は、必ずそのツールを呼び出して回答してください。自分で答えを推測せず、ツールの実行結果を使って回答してください。'
+};
+
+// ─────────────────────────────────────────────
+// 組み込みツール定義（フロントエンドで実行）
+// ─────────────────────────────────────────────
+const BUILTIN_TOOLS = {
+  get_current_time: {
+    definition: {
+      type: 'function',
+      function: {
+        name: 'get_current_time',
+        description: '現在の日時（日本時間）を返します。',
+        parameters: { type: 'object', properties: {}, required: [] }
+      }
+    },
+    execute: async () => {
+      const now = new Date();
+      return now.toLocaleString('ja-JP', { timeZone: 'Asia/Tokyo', year:'numeric', month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit', second:'2-digit', weekday:'short' });
+    }
+  },
+  calculate: {
+    definition: {
+      type: 'function',
+      function: {
+        name: 'calculate',
+        description: '数式を計算して結果を返します。例: "2 + 3 * 4", "Math.sqrt(16)"',
+        parameters: {
+          type: 'object',
+          properties: { expression: { type: 'string', description: '評価する数式' } },
+          required: ['expression']
+        }
+      }
+    },
+    execute: async ({ expression }) => {
+      try {
+        const safe = expression.replace(/[^0-9+\-*/().% sMaqrtlognpifeEINFTY]/g, '');
+        const result = Function('"use strict"; return (' + safe + ')')();
+        return String(result);
+      } catch (e) {
+        return 'エラー: ' + e.message;
+      }
+    }
+  }
+};
+
+// カスタムツール（UIから追加、実行はサーバー側が処理する想定のスタブ）
+const customTools = {};
+
+// ─────────────────────────────────────────────
+// Tools UI
+// ─────────────────────────────────────────────
+function toggleAgent() {
+  const enabled = document.getElementById('agentEnabled').checked;
+  document.getElementById('toolsPanel').classList.toggle('open', enabled);
+  document.getElementById('agentToggleLabel').classList.toggle('active', enabled);
+  if (enabled) renderToolList();
+}
+
+function renderToolList() {
+  const list = document.getElementById('toolList');
+  list.innerHTML = '';
+  Object.keys(BUILTIN_TOOLS).forEach(name => {
+    const chip = document.createElement('div');
+    chip.className = 'tool-chip';
+    chip.innerHTML = `⚡ ${name}`;
+    list.appendChild(chip);
+  });
+  Object.keys(customTools).forEach(name => {
+    const chip = document.createElement('div');
+    chip.className = 'tool-chip';
+    chip.style.borderColor = '#3a1a3a'; chip.style.color = '#c4b5fd';
+    chip.innerHTML = `🔌 ${name} <button onclick="removeCustomTool('${name}')">×</button>`;
+    list.appendChild(chip);
+  });
+}
+
+function addCustomTool() {
+  const name = document.getElementById('customToolName').value.trim();
+  const desc = document.getElementById('customToolDesc').value.trim();
+  if (!name) return;
+  customTools[name] = {
+    definition: {
+      type: 'function',
+      function: {
+        name,
+        description: desc || name,
+        parameters: { type: 'object', properties: {}, required: [] }
+      }
+    },
+    execute: async (args) => `[カスタムツール "${name}" が呼ばれました。引数: ${JSON.stringify(args)}]`
+  };
+  document.getElementById('customToolName').value = '';
+  document.getElementById('customToolDesc').value = '';
+  renderToolList();
+}
+
+function removeCustomTool(name) {
+  delete customTools[name];
+  renderToolList();
+}
+
+function getActiveTools() {
+  const all = { ...BUILTIN_TOOLS, ...customTools };
+  return Object.values(all).map(t => t.definition);
+}
+
+async function executeTool(name, argsStr) {
+  const allTools = { ...BUILTIN_TOOLS, ...customTools };
+  const tool = allTools[name];
+  if (!tool) return `エラー: ツール "${name}" が見つかりません`;
+  try {
+    const args = argsStr ? JSON.parse(argsStr) : {};
+    return String(await tool.execute(args));
+  } catch (e) {
+    return `エラー: ${e.message}`;
+  }
+}
+
+// ─────────────────────────────────────────────
+// ThinkStripper（ストリーミング対応）
+// ─────────────────────────────────────────────
+class ThinkStripper {
+  constructor() { this.rawBuffer=''; this.thinkClosed=false; this.hasThink=false; }
+  feed(chunk) {
+    this.rawBuffer += chunk;
+    if (!this.hasThink) {
+      const s = this.rawBuffer.indexOf('<think>');
+      if (s === -1) {
+        const safe = this.rawBuffer.length - 5;
+        if (safe > 0) { const out=this.rawBuffer.slice(0,safe); this.rawBuffer=this.rawBuffer.slice(safe); return out; }
+        return '';
+      }
+      this.hasThink = true;
+      const before = this.rawBuffer.slice(0, s);
+      this.rawBuffer = this.rawBuffer.slice(s);
+      return before;
+    }
+    if (!this.thinkClosed) {
+      const e = this.rawBuffer.indexOf('</think>');
+      if (e === -1) return '';
+      this.thinkClosed = true;
+      this.rawBuffer = this.rawBuffer.slice(e + '</think>'.length).replace(/^\n{1,2}/,'');
+    }
+    const safe = this.rawBuffer.length - 5;
+    if (safe > 0) { const out=this.rawBuffer.slice(0,safe); this.rawBuffer=this.rawBuffer.slice(safe); return out; }
+    return '';
+  }
+  flush() { const out=this.rawBuffer; this.rawBuffer=''; return out; }
+}
+
+// ─────────────────────────────────────────────
+// UI ヘルパー
+// ─────────────────────────────────────────────
+function autoResize(el) { el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,160)+'px'; }
+userInput.addEventListener('keydown', e => { if (e.key==='Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } });
+
+function escapeHtml(t) { const d=document.createElement('div'); d.textContent=t; return d.innerHTML; }
+function scrollBottom() { chatArea.scrollTop=chatArea.scrollHeight; }
+
+function hideWelcome() { if (welcome) welcome.style.display='none'; }
+
+function addMessage(role, content, meta, cssClass, usedTools) {
+  hideWelcome();
+  const div = document.createElement('div');
+  div.className = `message ${cssClass || role}`;
+  const labels = { user:'You', assistant:'Assistant', 'tool-call':'⚙ Tool Call', 'tool-result':'✅ Tool Result' };
+  let h = `<span class="role-tag">${labels[cssClass||role]||role}</span><div class="content ${['tool-call','tool-result'].includes(cssClass)?'tool-body':''}">${escapeHtml(content)}</div>`;
+  if (meta !== undefined && meta !== null) {
+    let metaHtml = '<div class="meta">';
+    {
+      metaHtml += '<div class="meta-tools">';
+      if (usedTools && usedTools.length) {
+        for (const name of usedTools) {
+          const icon = name === 'get_current_time' ? '🕐' : name === 'calculate' ? '🔢' : '🔧';
+          metaHtml += `<span class="meta-tool-badge"><span class="badge-icon">${icon}</span>${escapeHtml(name)}</span>`;
+        }
+      } else {
+        metaHtml += '<span class="meta-tool-badge no-tool"><span class="badge-icon">—</span>ツール未使用</span>';
+      }
+      metaHtml += '</div>';
+    }
+    if (meta) metaHtml += `<span class="meta-stats">${meta}</span>`;
+    metaHtml += '</div>';
+    h += metaHtml;
+  }
+  div.innerHTML = h;
+  chatArea.appendChild(div);
+  scrollBottom();
+  return div;
+}
+
+function addAgentStepCard(toolName, argsStr) {
+  hideWelcome();
+  let prettyArgs = argsStr;
+  try { prettyArgs = JSON.stringify(JSON.parse(argsStr), null, 2); } catch {}
+
+  const card = document.createElement('div');
+  card.className = 'agent-step';
+  card.innerHTML = `
+    <div class="agent-step-header" onclick="this.parentElement.classList.toggle('open')">
+      <span class="step-badge calling">⚙ CALLING</span>
+      <span class="step-tool-name">${escapeHtml(toolName)}</span>
+      <span class="step-summary">${escapeHtml(prettyArgs.replace(/\n/g,' ').slice(0,60))}</span>
+      <span class="step-chevron">▼</span>
+    </div>
+    <div class="agent-step-body">
+      <div class="step-section">
+        <div class="step-section-label">🔧 Tool</div>
+        <div class="step-code">${escapeHtml(toolName)}</div>
+      </div>
+      <div class="step-section">
+        <div class="step-section-label">📥 Arguments</div>
+        <div class="step-code args-code">${escapeHtml(prettyArgs)}</div>
+      </div>
+      <div class="step-section result-section" style="display:none">
+        <div class="step-section-label">📤 Result</div>
+        <div class="step-result-text result-text"></div>
+      </div>
+    </div>`;
+  chatArea.appendChild(card);
+  scrollBottom();
+  return card;
+}
+
+function updateAgentStepResult(card, result, isError) {
+  const badge = card.querySelector('.step-badge');
+  badge.className = `step-badge ${isError ? 'error' : 'done'}`;
+  badge.textContent = isError ? '✗ ERROR' : '✓ DONE';
+
+  card.querySelector('.step-summary').textContent = result.slice(0,60) + (result.length>60?'…':'');
+
+  const resultSection = card.querySelector('.result-section');
+  resultSection.style.display = '';
+  const rt = card.querySelector('.result-text');
+  rt.textContent = result;
+  if (isError) rt.classList.add('error-text');
+
+  scrollBottom();
+}
+
+function updateMsg(div, content, meta) {
+  const c = div.querySelector('.content');
+  if (c) c.textContent = content;
+  let m = div.querySelector('.meta');
+  if (meta) { if (!m) { m=document.createElement('div'); m.className='meta'; div.appendChild(m); } m.textContent=meta; }
+  scrollBottom();
+}
+
+function addTyping(label) {
+  const d = document.createElement('div');
+  d.className='typing-indicator';
+  d.innerHTML=`<div class="typing-dots"><span></span><span></span><span></span></div><span class="typing-label">${label||'応答を生成中...'}</span>`;
+  chatArea.appendChild(d); scrollBottom();
+  return d;
+}
+
+function setProcessing(active, label) {
+  const bar = document.getElementById('processingBar');
+  const lbl = document.getElementById('processingLabel');
+  bar.classList.toggle('active', active);
+  if (label) lbl.textContent = label;
+  if (active) {
+    sendBtn.classList.add('processing');
+    sendBtn.textContent = '処理中...';
+  } else {
+    sendBtn.classList.remove('processing');
+    sendBtn.textContent = '送信';
+  }
+}
+
+function showError(msg) {
+  const el=document.createElement('div'); el.className='error-toast'; el.textContent=msg;
+  document.body.appendChild(el); setTimeout(()=>el.remove(),5000);
+}
+
+// ─────────────────────────────────────────────
+// Status check
+// ─────────────────────────────────────────────
+async function checkStatus() {
+  try {
+    const ep=document.getElementById('endpoint').value;
+    const m=document.getElementById('model').value;
+    const r=await fetch(`${ep}/models/${m}`);
+    statusDot.className='status-dot'+(r.ok?' connected':'');
+    statusText.textContent=r.ok?'Connected':'Disconnected';
+  } catch { statusDot.className='status-dot'; statusText.textContent='Disconnected'; }
+}
+
+function clearChat() { messages=[]; chatArea.innerHTML=''; if(welcome){welcome.style.display='flex';chatArea.appendChild(welcome);} }
+
+// ─────────────────────────────────────────────
+// ストリーミング1回分の推論
+// ─────────────────────────────────────────────
+async function callLLM(msgs, tools) {
+  const ep      = document.getElementById('endpoint').value;
+  const model   = document.getElementById('model').value;
+  const maxTok  = parseInt(document.getElementById('maxTokens').value) || 500;
+
+  const body = { model, messages:[SYSTEM_PROMPT, ...msgs], max_tokens:maxTok, stream:true };
+  if (tools && tools.length) body.tools = tools;
+
+  const res = await fetch(`${ep}/chat/completions`, {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+  return res;
+}
+
+async function streamResponse(res) {
+  const stripper = new ThinkStripper();
+  let display='', raw='', completionTokens=0;
+  const tool_calls = {};
+
+  const reader=res.body.getReader(), decoder=new TextDecoder();
+  let buf='';
+
+  while (true) {
+    const {done,value}=await reader.read();
+    if (done) break;
+    buf += decoder.decode(value,{stream:true});
+    const lines=buf.split('\n'); buf=lines.pop();
+    for (const line of lines) {
+      if (!line.startsWith('data: ')) continue;
+      const data=line.slice(6).trim();
+      if (data==='[DONE]') continue;
+      try {
+        const json=JSON.parse(data);
+        const delta=json.choices?.[0]?.delta;
+        if (delta?.content) {
+          raw += delta.content;
+          display += stripper.feed(delta.content);
+        }
+        if (delta?.tool_calls) {
+          for (const tc of delta.tool_calls) {
+            const idx=tc.index ?? 0;
+            if (!tool_calls[idx]) tool_calls[idx]={id:'',name:'',arguments:''};
+            if (tc.id)                  tool_calls[idx].id        += tc.id;
+            if (tc.function?.name)      tool_calls[idx].name      += tc.function.name;
+            if (tc.function?.arguments) tool_calls[idx].arguments += tc.function.arguments;
+          }
+        }
+        const u=json.usage||json.choices?.[0]?.usage;
+        if (u?.completion_tokens) completionTokens=u.completion_tokens;
+      } catch {}
+    }
+  }
+  display += stripper.flush();
+
+  if (!completionTokens) {
+    const cjk=(raw.match(/[　-鿿豈-﫿]/g)||[]).length;
+    completionTokens=Math.ceil(cjk*1.5+(raw.length-cjk)*0.25);
+  }
+
+  return {
+    content: display,
+    tool_calls: Object.values(tool_calls).filter(t=>t.name),
+    completionTokens,
+    rawContent: raw
+  };
+}
+
+// ─────────────────────────────────────────────
+// メイン送信ループ（tool calling対応）
+// ─────────────────────────────────────────────
+async function sendMessage() {
+  const text=userInput.value.trim();
+  if (!text || isGenerating) return;
+  isGenerating=true; sendBtn.disabled=true;
+  userInput.value=''; userInput.style.height='auto';
+
+  messages.push({role:'user', content:text});
+  addMessage('user', text);
+
+  const agentMode = document.getElementById('agentEnabled').checked;
+  const tools     = agentMode ? getActiveTools() : [];
+  const startTime = performance.now();
+  let totalTokens = 0;
+
+  setProcessing(true, 'モデルに送信中...');
+  const usedTools = [];
+
+  try {
+    for (let step=0; step<8; step++) {
+      const typing=addTyping('応答を生成中...');
+      let res;
+      try { res=await callLLM(messages, tools); }
+      catch(e) { typing.remove(); throw e; }
+
+      typing.remove();
+
+      const {content, tool_calls, completionTokens}=await streamResponse(res);
+      totalTokens += completionTokens;
+
+      if (tool_calls.length > 0) {
+        messages.push({
+          role:'assistant',
+          content: content || null,
+          tool_calls: tool_calls.map(tc=>({
+            id: tc.id || `call_${Date.now()}`,
+            type:'function',
+            function: {name:tc.name, arguments:tc.arguments}
+          }))
+        });
+
+        for (const tc of tool_calls) {
+          if (!usedTools.includes(tc.name)) usedTools.push(tc.name);
+          const card = addAgentStepCard(tc.name, tc.arguments);
+          card.classList.add('open');
+          setProcessing(true, `ツール実行中: ${tc.name}`);
+
+          let result, isError = false;
+          try {
+            result = await executeTool(tc.name, tc.arguments);
+          } catch(e) {
+            result = `エラー: ${e.message}`;
+            isError = true;
+          }
+          updateAgentStepResult(card, result, isError);
+          card.classList.remove('open');
+
+          messages.push({
+            role:'tool',
+            tool_call_id: tc.id || `call_${Date.now()}`,
+            content: result
+          });
+        }
+        continue;
+      }
+
+      const elapsed=((performance.now()-startTime)/1000).toFixed(1);
+      const tps=(totalTokens/parseFloat(elapsed)).toFixed(1);
+      const statsText = `${totalTokens} tokens / ${elapsed}s / ${tps} tok/s`;
+      addMessage('assistant', content, statsText, null, usedTools);
+      messages.push({role:'assistant', content});
+      break;
+    }
+  } catch(e) {
+    showError(`Error: ${e.message}`);
+    if (messages.at(-1)?.role==='user') messages.pop();
+  }
+
+  setProcessing(false);
+  isGenerating=false; sendBtn.disabled=false; userInput.focus();
+}
+
+// Agent Modeをデフォルトオンで初期化
+document.getElementById('agentToggleLabel').classList.add('active');
+document.getElementById('toolsPanel').classList.add('open');
+renderToolList();
+
+checkStatus();
+setInterval(checkStatus, 10000);
+userInput.focus();
+</script>
+</body>
+</html>

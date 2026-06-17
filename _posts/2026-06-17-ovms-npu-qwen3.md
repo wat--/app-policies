@@ -194,3 +194,11 @@ ServableManagerModule started
 | `PagedAttentionExtension ... unsupported opset` | NPUはLM_CB非対応 | `--pipeline_type LM_CB`を削除しLegacyで起動 |
 | ツールが呼ばれない | バージョンが2025系 | 2026.1にアップデート |
 | `curl.exe`が見つからない | PATHに未登録 | `Invoke-WebRequest`を使用 |
+
+---
+
+## 参考
+
+OVMSのWindows NPU環境でのセットアップについて、先行して詳しくまとめてくださっている記事を参考にさせていただきました。
+
+- [OpenVINOのModel ServerをWindowsで動作させてみる - uepon日々の備忘録](https://uepon.hatenadiary.com/entry/2026/03/30/160249)
