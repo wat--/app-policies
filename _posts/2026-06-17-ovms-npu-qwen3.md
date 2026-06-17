@@ -173,7 +173,7 @@ ServableManagerModule started
 
 ## チャットUI
 
-`ovms_chat_v3.html` をブラウザで開く。
+[chat.html](/assets/chat.html) をブラウザで開く。
 
 **UIの主な機能：**
 
