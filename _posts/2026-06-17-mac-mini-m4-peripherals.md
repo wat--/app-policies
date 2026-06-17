@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Mac mini M4の周辺機器まとめ"
-date: 2026-06-17 15:00:00 +0900
+date: 2026-06-17 09:00:00 +0900
 tags: [アプリ開発, Mac]
 description: iOSアプリ開発のメイン機であるMac mini M4で使っている周辺機器と運用スタイルをまとめました。
 ---
