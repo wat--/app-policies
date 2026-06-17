@@ -2,7 +2,7 @@
 layout: post
 title: "FIREシミュレーター — 開発秘話"
 date: 2026-04-15 09:00:00 +0900
-tags: [アプリ開発]
+tags: [アプリ開発, Webアプリ]
 description: 経済的自立（FIRE）をシミュレートするWebアプリ「FIREシミュレーター」の開発経緯を紹介します。
 ---
 
