@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "OpenVINO Model ServerをWindowsのNPUで動かす【Qwen3 + Tool calling対応】"
-date: 2026-06-17 12:00:00 +0900
+date: 2026-05-26 12:00:00 +0900
 tags: [生成AI, NPU, Windows]
 description: OpenVINO Model Server v2026.1をWindows 11のNPU環境で動かし、Qwen3のTool callingを確認するまでの手順まとめです。
 ---
@@ -202,3 +202,5 @@ ServableManagerModule started
 OVMSのWindows NPU環境でのセットアップについて、先行して詳しくまとめてくださっている記事を参考にさせていただきました。
 
 - [OpenVINOのModel ServerをWindowsで動作させてみる - uepon日々の備忘録](https://uepon.hatenadiary.com/entry/2026/03/30/160249)
+
+WindowsのNPU環境でローカルLLMを動かしたい方の手がかりになれば幸いです。

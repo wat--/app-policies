@@ -18,4 +18,6 @@ description: 経済的自立（FIRE）をシミュレートするWebアプリ「
 
 iOSアプリとは違い、ブラウザ上で動くWebアプリなのでインストール不要で使えます。
 
+数字を動かしながら「いつFIREできそうか」を気軽に試してみてください。
+
 [Webアプリを起動](https://tail-studio.com/apps/fire-simulator/fire_simulator.html)

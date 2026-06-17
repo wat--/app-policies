@@ -34,6 +34,22 @@ layout: default
     {{ content }}
   </div>
 
+  <nav class="post-nav">
+    <div class="post-nav-prev">
+      {% if page.previous %}
+        <span class="post-nav-label">← 前の記事</span>
+        <a href="{{ page.previous.url | relative_url }}">{{ page.previous.title }}</a>
+      {% endif %}
+    </div>
+    <a href="{{ '/blog/' | relative_url }}" class="post-nav-top">記事一覧</a>
+    <div class="post-nav-next">
+      {% if page.next %}
+        <span class="post-nav-label">次の記事 →</span>
+        <a href="{{ page.next.url | relative_url }}">{{ page.next.title }}</a>
+      {% endif %}
+    </div>
+  </nav>
+
   <div class="author-card">
     <div class="author-card-info">
       <h3>Tail Studio</h3>

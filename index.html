@@ -494,6 +494,15 @@
             margin: 0;
         }
 
+        .post-count {
+            font-size: 0.78em;
+            font-weight: 600;
+            background: #e6f4ea;
+            color: #1a8a40;
+            padding: 2px 9px;
+            border-radius: 100px;
+        }
+
         .footer-links a {
             color: #007AFF;
             text-decoration: none;
@@ -555,6 +564,7 @@
         <section class="blog-feature section-divider" id="blog-feature">
             <div class="blog-feature-header">
                 <span class="section-title">ブログ - 開発・生成AIノート</span>
+                <span class="post-count">{{ site.posts.size }}本</span>
                 <a href="/blog/" class="blog-feature-more">すべて見る →</a>
             </div>
             <div class="blog-feature-list">

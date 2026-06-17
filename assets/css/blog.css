@@ -298,6 +298,57 @@ main {
   margin: 1.5rem 0;
 }
 
+/* Post navigation */
+.post-nav {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem;
+  align-items: start;
+  margin-top: 3rem;
+  padding: 1.25rem 0;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+}
+.post-nav-prev { text-align: left; }
+.post-nav-next { text-align: right; }
+.post-nav-label {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  margin-bottom: 0.25rem;
+}
+.post-nav-prev a,
+.post-nav-next a {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--accent);
+  text-decoration: none;
+  line-height: 1.5;
+}
+.post-nav-prev a:hover,
+.post-nav-next a:hover { text-decoration: underline; }
+.post-nav-top {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-decoration: none;
+  white-space: nowrap;
+  padding-top: 0.1rem;
+}
+.post-nav-top:hover { color: var(--accent); }
+@media (max-width: 600px) {
+  .post-nav {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+  }
+  .post-nav-top {
+    grid-column: 1 / -1;
+    text-align: center;
+    order: -1;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+}
+
 /* Profile */
 .author-card {
   margin-top: 3rem;
