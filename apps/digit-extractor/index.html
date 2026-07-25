@@ -38,11 +38,10 @@ h1{text-align:center;font-size:15px;color:#93c5fd;margin-bottom:4px;letter-spaci
   position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 .drop-zone .icon{font-size:32px;margin-bottom:8px;}
 .drop-zone p{color:#6b7280;font-size:12px;line-height:1.9;}
-.drop-zone .hint{font-size:11px;color:#4b5563;margin-top:4px;}
 
 #previewWrap{display:none;margin-bottom:14px;border-radius:10px;overflow:hidden;
   border:1px solid #1f2937;background:#080c14;text-align:center;position:relative;}
-#previewImg{max-width:100%;max-height:340px;display:block;margin:0 auto;}
+#previewImg{max-width:100%;max-height:300px;display:block;margin:0 auto;}
 .preview-label{font-size:10px;color:#4b5563;padding:5px 10px;background:#080c14;}
 .clear-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);
   border:1px solid #374151;color:#9ca3af;border-radius:6px;padding:3px 8px;
@@ -59,15 +58,25 @@ h1{text-align:center;font-size:15px;color:#93c5fd;margin-bottom:4px;letter-spaci
 
 #statusBox{display:none;background:#1a1f2e;border-radius:10px;
   padding:12px 16px;margin-bottom:14px;}
-#statusText{font-size:12px;color:#60a5fa;margin-bottom:8px;}
-#progressBar{height:6px;background:#1e2535;border-radius:4px;overflow:hidden;}
-#progressFill{height:100%;background:#3b82f6;width:0%;transition:width .2s;border-radius:4px;}
+.status-main{font-size:12px;color:#60a5fa;margin-bottom:6px;}
+.status-rot{display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;}
+.rot-chip{
+  font-size:10px;font-family:monospace;padding:2px 8px;border-radius:4px;
+  border:1px solid #1f2937;color:#4b5563;background:#0f1117;}
+.rot-chip.active{border-color:#3b82f6;color:#60a5fa;background:#1e3a5f;}
+.rot-chip.ok{border-color:#065f46;color:#34d399;background:#064e3b;}
+.rot-chip.best{border-color:#b45309;color:#fbbf24;background:#1c1209;}
+#progressBar{height:5px;background:#1e2535;border-radius:4px;overflow:hidden;}
+#progressFill{height:100%;background:#3b82f6;width:0%;transition:width .15s;border-radius:4px;}
 
 #resultSection{display:none;}
 .result-header{display:flex;align-items:center;justify-content:space-between;
   margin-bottom:10px;}
 .result-header h2{font-size:13px;color:#93c5fd;}
+.result-meta{display:flex;align-items:center;gap:8px;}
 .result-count{font-size:11px;color:#4b5563;}
+.rot-badge{font-size:10px;font-family:monospace;background:#1c1209;
+  border:1px solid #b45309;color:#fbbf24;border-radius:4px;padding:2px 7px;}
 .copy-all-btn{
   background:#064e3b;border:1px solid #065f46;color:#34d399;
   border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;
@@ -94,8 +103,7 @@ h1{text-align:center;font-size:15px;color:#93c5fd;margin-bottom:4px;letter-spaci
 .empty-msg{text-align:center;font-size:12px;color:#6b7280;padding:20px;
   background:#1a1f2e;border-radius:10px;line-height:1.8;}
 
-#rawToggle{
-  margin-top:14px;font-size:11px;color:#374151;cursor:pointer;
+#rawToggle{margin-top:14px;font-size:11px;color:#374151;cursor:pointer;
   text-align:center;user-select:none;}
 #rawToggle:hover{color:#6b7280;}
 #rawBox{display:none;margin-top:8px;background:#080c14;border:1px solid #1f2937;
@@ -125,7 +133,7 @@ h1{text-align:center;font-size:15px;color:#93c5fd;margin-bottom:4px;letter-spaci
     <span class="pattern-preview" id="patternPreview">XXXX-XXXX-XXXX-XXXX</span>
     <span style="font-size:11px;color:#4b5563;margin-left:8px;">（計 <span id="totalDigits">16</span> 桁）</span>
   </div>
-  <p class="config-hint">※ ハイフン・スペース等の区切りに柔軟対応。抽出結果はハイフンなしで表示されます。</p>
+  <p class="config-hint">※ 向きは自動判定します。ハイフン・スペース等の区切りに柔軟対応。結果はハイフンなしで表示。</p>
 </div>
 
 <!-- capture属性なし → カメラ・フォトライブラリ両対応 -->
@@ -147,15 +155,22 @@ h1{text-align:center;font-size:15px;color:#93c5fd;margin-bottom:4px;letter-spaci
 </div>
 
 <div id="statusBox">
-  <div id="statusText">準備中...</div>
+  <div class="status-main" id="statusText">準備中...</div>
+  <div class="status-rot" id="rotChips">
+    <span class="rot-chip" id="chip0">0°</span>
+    <span class="rot-chip" id="chip90">90°</span>
+    <span class="rot-chip" id="chip180">180°</span>
+    <span class="rot-chip" id="chip270">270°</span>
+  </div>
   <div id="progressBar"><div id="progressFill"></div></div>
 </div>
 
 <div id="resultSection">
   <div class="result-header">
     <h2>抽出結果</h2>
-    <div style="display:flex;align-items:center;gap:10px;">
+    <div class="result-meta">
       <span class="result-count" id="resultCount"></span>
+      <span class="rot-badge" id="rotBadge" style="display:none"></span>
       <button class="copy-all-btn" id="copyAllBtn">全てコピー</button>
     </div>
   </div>
@@ -183,12 +198,15 @@ const progressFill  = document.getElementById('progressFill');
 const resultSection = document.getElementById('resultSection');
 const resultList    = document.getElementById('resultList');
 const resultCount   = document.getElementById('resultCount');
+const rotBadge      = document.getElementById('rotBadge');
 const copyAllBtn    = document.getElementById('copyAllBtn');
 const rawToggle     = document.getElementById('rawToggle');
 const rawBox        = document.getElementById('rawBox');
+const chips         = [0, 90, 180, 270].map(r => document.getElementById('chip' + r));
 
 let currentFile = null;
 
+// ── パターンプレビュー ──
 function updatePattern() {
   const g = Math.max(1, parseInt(groupCountEl.value) || 1);
   const d = Math.max(1, parseInt(groupDigitsEl.value) || 1);
@@ -198,6 +216,7 @@ function updatePattern() {
 groupCountEl.addEventListener('input', updatePattern);
 groupDigitsEl.addEventListener('input', updatePattern);
 
+// ── ファイル選択 ──
 dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
 dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
 dropZone.addEventListener('drop', e => {
@@ -230,66 +249,130 @@ clearBtn.addEventListener('click', () => {
   statusBox.style.display = 'none';
 });
 
+// ── 画像をキャンバスに回転描画（最大1500px、白背景） ──
+const MAX_DIM = 1500;
+
+function makeRotatedCanvas(img, deg) {
+  const rad = deg * Math.PI / 180;
+  const sin = Math.abs(Math.sin(rad));
+  const cos = Math.abs(Math.cos(rad));
+
+  const ow = img.naturalWidth;
+  const oh = img.naturalHeight;
+  const scale = Math.min(1, MAX_DIM / Math.max(ow, oh));
+  const sw = Math.round(ow * scale);
+  const sh = Math.round(oh * scale);
+
+  const cw = Math.round(sw * cos + sh * sin);
+  const ch = Math.round(sw * sin + sh * cos);
+
+  const canvas = document.createElement('canvas');
+  canvas.width  = cw;
+  canvas.height = ch;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, cw, ch);
+  ctx.save();
+  ctx.translate(cw / 2, ch / 2);
+  ctx.rotate(rad);
+  ctx.drawImage(img, -sw/2, -sh/2, sw, sh);
+  ctx.restore();
+  return canvas;
+}
+
+// ── OCR結果から行ごとに数字を抽出（bbox Y順） ──
+function extractNums(ocrResult, pattern, totalLen) {
+  const lines = (ocrResult.data.lines || [])
+    .filter(l => l.text.trim().length > 0)
+    .sort((a, b) => {
+      const dy = a.bbox.y0 - b.bbox.y0;
+      return Math.abs(dy) < 15 ? a.bbox.x0 - b.bbox.x0 : dy;
+    });
+
+  const seen = new Set();
+  const nums = [];
+  for (const line of lines) {
+    const matches = line.text.match(pattern) || [];
+    for (const m of matches) {
+      const clean = m.replace(/\D/g, '');
+      if (clean.length === totalLen && !seen.has(clean)) {
+        seen.add(clean);
+        nums.push(clean);
+      }
+    }
+  }
+  return nums;
+}
+
+// ── メイン：4方向試行 ──
 extractBtn.addEventListener('click', async () => {
   if (!currentFile) return;
 
-  const groups    = Math.max(1, parseInt(groupCountEl.value) || 1);
-  const digits    = Math.max(1, parseInt(groupDigitsEl.value) || 1);
-  const totalLen  = groups * digits;
+  const groups   = Math.max(1, parseInt(groupCountEl.value) || 1);
+  const digits   = Math.max(1, parseInt(groupDigitsEl.value) || 1);
+  const totalLen = groups * digits;
+  const pattern  = new RegExp(
+    Array(groups).fill(`\\d{${digits}}`).join('[^\\d]{0,3}'), 'g'
+  );
 
   extractBtn.disabled = true;
+  resultSection.style.display = 'none';
   statusBox.style.display = 'block';
   progressFill.style.width = '0%';
-  statusText.textContent = 'OCR エンジンを起動中...';
-  resultSection.style.display = 'none';
+  chips.forEach(c => { c.className = 'rot-chip'; });
+  statusText.textContent = '画像を読み込み中...';
+
+  // ファイルから Image を生成（EXIF 適用前の生ピクセルで 4 方向を試す）
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = URL.createObjectURL(currentFile);
+  });
+
+  const rotations = [0, 90, 180, 270];
+  let best = { nums: [], rawText: '', rotation: 0 };
 
   try {
-    const result = await Tesseract.recognize(currentFile, 'eng', {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          const pct = Math.round(m.progress * 100);
-          progressFill.style.width = pct + '%';
-          statusText.textContent = `認識中... ${pct}%`;
-        } else {
-          statusText.textContent = m.status;
-        }
-      }
-    });
+    for (let ri = 0; ri < rotations.length; ri++) {
+      const rot = rotations[ri];
+      const chip = chips[ri];
+      chip.className = 'rot-chip active';
+      statusText.textContent = `向きを確認中... ${rot}° (${ri+1}/${rotations.length})`;
+      progressFill.style.width = '0%';
 
-    // ── 行ごとに bbox で上から順にソートして正しい順序を保証 ──
-    const lines = (result.data.lines || [])
-      .filter(l => l.text.trim().length > 0)
-      .sort((a, b) => {
-        // Y 差が小さい（同じ行とみなす）場合は X で左→右
-        const yDiff = a.bbox.y0 - b.bbox.y0;
-        if (Math.abs(yDiff) < 15) return a.bbox.x0 - b.bbox.x0;
-        return yDiff;
+      const canvas = makeRotatedCanvas(img, rot);
+
+      const result = await Tesseract.recognize(canvas, 'eng', {
+        logger: m => {
+          if (m.status === 'recognizing text') {
+            progressFill.style.width = Math.round(m.progress * 100) + '%';
+          }
+        }
       });
 
-    const rawText = lines.map(l => l.text).join('\n');
-    rawBox.textContent = result.data.text; // デバッグ用は元テキスト
+      const nums = extractNums(result, pattern, totalLen);
+      chip.className = nums.length > 0 ? 'rot-chip ok' : 'rot-chip';
 
-    // ── 正規表現：グループ間は非数字0〜3文字まで許容（OCR誤読に強く） ──
-    const grpPat = `\\d{${digits}}`;
-    const sep    = '[^\\d]{0,3}';
-    const parts  = Array(groups).fill(grpPat);
-    const pattern= new RegExp(parts.join(sep), 'g');
+      if (nums.length > best.nums.length) {
+        best = { nums, rawText: result.data.text, rotation: rot };
+      }
 
-    const seen = new Set();
-    const nums = [];
-
-    for (const line of lines) {
-      const matches = line.text.match(pattern) || [];
-      for (const m of matches) {
-        const clean = m.replace(/\D/g, ''); // 数字以外を全て除去
-        if (clean.length === totalLen && !seen.has(clean)) {
-          seen.add(clean);
-          nums.push(clean);
-        }
+      // 3件以上見つかればこの向きが正解と判断して早期終了
+      if (nums.length >= 3) {
+        chip.className = 'rot-chip best';
+        break;
       }
     }
 
-    showResults(nums);
+    // 最多件数の向きのチップをハイライト（早期終了しなかった場合）
+    const bestChipIdx = rotations.indexOf(best.rotation);
+    if (chips[bestChipIdx].className !== 'rot-chip best') {
+      chips[bestChipIdx].className = 'rot-chip best';
+    }
+
+    rawBox.textContent = best.rawText;
+    showResults(best.nums, best.rotation);
   } catch (err) {
     statusText.textContent = 'エラー: ' + err.message;
   } finally {
@@ -297,14 +380,18 @@ extractBtn.addEventListener('click', async () => {
   }
 });
 
-function showResults(nums) {
+// ── 結果表示 ──
+function showResults(nums, rotation) {
   statusBox.style.display = 'none';
   resultSection.style.display = 'block';
   resultList.innerHTML = '';
 
+  rotBadge.textContent = `${rotation}° で認識`;
+  rotBadge.style.display = '';
+
   if (nums.length === 0) {
     resultCount.textContent = '';
-    resultList.innerHTML = '<div class="empty-msg">一致する数字列が見つかりませんでした。<br>パターン設定を確認するか、下の「OCR 生テキスト」で認識内容を確認してください。</div>';
+    resultList.innerHTML = '<div class="empty-msg">一致する数字列が見つかりませんでした。<br>パターン設定を確認するか「OCR 生テキスト」で内容を確認してください。</div>';
     copyAllBtn.style.display = 'none';
     return;
   }
@@ -322,7 +409,7 @@ function showResults(nums) {
     span.className = 'num-text';
     span.textContent = num;
 
-    const btn  = document.createElement('button');
+    const btn = document.createElement('button');
     btn.className = 'copy-btn';
     btn.textContent = 'コピー';
     btn.addEventListener('click', () => copyText(num, btn, li));
@@ -334,13 +421,12 @@ function showResults(nums) {
   });
 }
 
+// ── クリップボードコピー ──
 async function copyText(text, btn, li) {
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    Object.assign(ta.style, {position:'fixed', opacity:'0'});
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const ta = Object.assign(document.createElement('textarea'),
+      { value: text, style: 'position:fixed;opacity:0' });
     document.body.appendChild(ta);
     ta.select();
     document.execCommand('copy');
@@ -349,21 +435,15 @@ async function copyText(text, btn, li) {
   btn.textContent = '✓ コピー済';
   btn.classList.add('ok');
   li.classList.add('copied');
-  setTimeout(() => {
-    btn.textContent = 'コピー';
-    btn.classList.remove('ok');
-    li.classList.remove('copied');
-  }, 2000);
+  setTimeout(() => { btn.textContent = 'コピー'; btn.classList.remove('ok'); li.classList.remove('copied'); }, 2000);
 }
 
 copyAllBtn.addEventListener('click', async () => {
   const text = [...resultList.querySelectorAll('.num-text')].map(s => s.textContent).join('\n');
-  try {
-    await navigator.clipboard.writeText(text);
-  } catch {
-    const ta = document.createElement('textarea');
-    ta.value = text;
-    Object.assign(ta.style, {position:'fixed', opacity:'0'});
+  try { await navigator.clipboard.writeText(text); }
+  catch {
+    const ta = Object.assign(document.createElement('textarea'),
+      { value: text, style: 'position:fixed;opacity:0' });
     document.body.appendChild(ta);
     ta.select();
     document.execCommand('copy');
