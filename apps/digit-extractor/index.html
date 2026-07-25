@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数字抽出ツール — Digit Extractor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0f1117;color:#e5e7eb;font-family:-apple-system,'Hiragino Sans',sans-serif;
+  padding:20px;max-width:680px;margin:0 auto;}
+
+h1{text-align:center;font-size:15px;color:#93c5fd;margin-bottom:4px;letter-spacing:.05em;}
+.subtitle{text-align:center;font-size:11px;color:#4b5563;margin-bottom:18px;}
+
+/* ── 設定パネル ── */
+.config-panel{background:#1a1f2e;border-radius:12px;padding:16px 18px;margin-bottom:14px;}
+.config-panel h2{font-size:12px;color:#60a5fa;margin-bottom:12px;letter-spacing:.04em;}
+.config-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.config-row:last-child{margin-bottom:0;}
+.config-row label{font-size:12px;color:#9ca3af;min-width:110px;}
+.config-row input[type=number]{
+  width:70px;background:#0f1117;border:1px solid #374151;border-radius:6px;
+  color:#e5e7eb;font-size:13px;padding:5px 8px;text-align:center;
+  -moz-appearance:textfield;}
+.config-row input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+.config-row input[type=number]:focus{outline:none;border-color:#60a5fa;}
+.config-hint{font-size:10px;color:#4b5563;margin-top:8px;line-height:1.5;}
+.pattern-preview{
+  display:inline-block;background:#0f1117;border:1px solid #1f2937;
+  border-radius:6px;padding:4px 10px;font-family:monospace;font-size:13px;
+  color:#34d399;letter-spacing:.1em;margin-top:4px;}
+
+/* ── ドロップゾーン ── */
+.drop-zone{
+  border:2px dashed #374151;border-radius:12px;padding:28px 20px;
+  text-align:center;cursor:pointer;margin-bottom:14px;transition:.2s;
+  position:relative;}
+.drop-zone:hover,.drop-zone.drag-over{border-color:#60a5fa;background:#1a1f2e;}
+.drop-zone input[type=file]{
+  position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-zone .icon{font-size:32px;margin-bottom:8px;}
+.drop-zone p{color:#6b7280;font-size:12px;line-height:1.8;}
+.drop-zone .hint{font-size:11px;color:#4b5563;margin-top:4px;}
+
+/* ── プレビュー ── */
+#previewWrap{display:none;margin-bottom:14px;border-radius:10px;overflow:hidden;
+  border:1px solid #1f2937;background:#080c14;text-align:center;position:relative;}
+#previewImg{max-width:100%;max-height:340px;display:block;margin:0 auto;}
+.preview-label{font-size:10px;color:#4b5563;padding:5px 10px;background:#080c14;}
+.clear-btn{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.7);
+  border:1px solid #374151;color:#9ca3af;border-radius:6px;padding:3px 8px;
+  font-size:11px;cursor:pointer;}
+.clear-btn:hover{background:#374151;color:#e5e7eb;}
+
+/* ── アクション ── */
+.action-row{display:flex;gap:10px;margin-bottom:14px;}
+#extractBtn{
+  flex:1;background:#2563eb;border:none;border-radius:10px;color:#fff;
+  font-size:14px;font-weight:700;padding:13px;cursor:pointer;
+  letter-spacing:.04em;transition:.15s;}
+#extractBtn:hover:not(:disabled){background:#1d4ed8;}
+#extractBtn:disabled{background:#1e2535;color:#374151;cursor:not-allowed;}
+
+/* ── 進捗 ── */
+#statusBox{display:none;background:#1a1f2e;border-radius:10px;
+  padding:12px 16px;margin-bottom:14px;}
+#statusText{font-size:12px;color:#60a5fa;margin-bottom:8px;}
+#progressBar{height:6px;background:#1e2535;border-radius:4px;overflow:hidden;}
+#progressFill{height:100%;background:#3b82f6;width:0%;transition:width .2s;border-radius:4px;}
+
+/* ── 結果 ── */
+#resultSection{display:none;}
+.result-header{display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:10px;}
+.result-header h2{font-size:13px;color:#93c5fd;}
+.result-count{font-size:11px;color:#4b5563;}
+.copy-all-btn{
+  background:#064e3b;border:1px solid #065f46;color:#34d399;
+  border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;
+  cursor:pointer;transition:.15s;}
+.copy-all-btn:hover{background:#065f46;}
+
+#resultList{list-style:none;}
+#resultList li{
+  display:flex;align-items:center;justify-content:space-between;
+  background:#1a1f2e;border-radius:8px;padding:10px 14px;
+  margin-bottom:6px;gap:10px;transition:.15s;}
+#resultList li.copied{background:#064e3b;}
+.num-text{font-family:monospace;font-size:15px;font-weight:700;
+  color:#e5e7eb;letter-spacing:.08em;word-break:break-all;}
+.copy-btn{
+  flex-shrink:0;background:#1e3a5f;border:1px solid #2563eb;color:#93c5fd;
+  border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;
+  cursor:pointer;transition:.15s;white-space:nowrap;}
+.copy-btn:hover{background:#2563eb;color:#fff;}
+.copy-btn.ok{background:#064e3b;border-color:#065f46;color:#34d399;}
+
+.empty-msg{text-align:center;font-size:12px;color:#6b7280;padding:20px;
+  background:#1a1f2e;border-radius:10px;}
+
+/* ── OCRデバッグ ── */
+#rawToggle{
+  margin-top:14px;font-size:11px;color:#374151;cursor:pointer;
+  text-align:center;user-select:none;}
+#rawToggle:hover{color:#6b7280;}
+#rawBox{display:none;margin-top:8px;background:#080c14;border:1px solid #1f2937;
+  border-radius:8px;padding:12px;font-family:monospace;font-size:10px;
+  color:#4b5563;white-space:pre-wrap;max-height:160px;overflow-y:auto;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<h1>数字抽出ツール</h1>
+<p class="subtitle">写真からシリアルナンバーなどの数字列を一括OCR抽出</p>
+
+<!-- 設定 -->
+<div class="config-panel">
+  <h2>抽出パターン設定</h2>
+  <div class="config-row">
+    <label>グループ数</label>
+    <input type="number" id="groupCount" value="4" min="1" max="8">
+    <span style="font-size:12px;color:#6b7280;">グループ</span>
+  </div>
+  <div class="config-row">
+    <label>1グループの桁数</label>
+    <input type="number" id="groupDigits" value="4" min="1" max="10">
+    <span style="font-size:12px;color:#6b7280;">桁</span>
+  </div>
+  <div style="margin-top:10px;">
+    <span style="font-size:11px;color:#6b7280;">抽出パターン：</span>
+    <span class="pattern-preview" id="patternPreview">XXXX-XXXX-XXXX-XXXX</span>
+    <span style="font-size:11px;color:#4b5563;margin-left:8px;">（計 <span id="totalDigits">16</span> 桁）</span>
+  </div>
+  <p class="config-hint">※ ハイフン・スペース区切りに両対応。抽出結果はハイフンなしで表示されます。</p>
+</div>
+
+<!-- 画像アップロード -->
+<div class="drop-zone" id="dropZone">
+  <input type="file" id="fileInput" accept="image/*" capture="environment">
+  <div class="icon">📷</div>
+  <p>写真をドロップ、またはタップして選択</p>
+  <p class="hint">JPEG / PNG / HEIC 対応</p>
+</div>
+
+<!-- プレビュー -->
+<div id="previewWrap">
+  <img id="previewImg" alt="プレビュー">
+  <p class="preview-label" id="previewLabel"></p>
+  <button class="clear-btn" id="clearBtn">✕ 削除</button>
+</div>
+
+<!-- 実行ボタン -->
+<div class="action-row">
+  <button id="extractBtn" disabled>📷 OCR 実行して数字を抽出</button>
+</div>
+
+<!-- 進捗 -->
+<div id="statusBox">
+  <div id="statusText">準備中...</div>
+  <div id="progressBar"><div id="progressFill"></div></div>
+</div>
+
+<!-- 結果 -->
+<div id="resultSection">
+  <div class="result-header">
+    <h2>抽出結果</h2>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <span class="result-count" id="resultCount"></span>
+      <button class="copy-all-btn" id="copyAllBtn">全てコピー</button>
+    </div>
+  </div>
+  <ul id="resultList"></ul>
+  <div id="rawToggle">▼ OCR 生テキストを表示</div>
+  <div id="rawBox" id="rawBox"></div>
+</div>
+
+<script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+<script>
+const groupCountEl = document.getElementById('groupCount');
+const groupDigitsEl = document.getElementById('groupDigits');
+const patternPreview = document.getElementById('patternPreview');
+const totalDigitsEl = document.getElementById('totalDigits');
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const previewWrap = document.getElementById('previewWrap');
+const previewImg = document.getElementById('previewImg');
+const previewLabel = document.getElementById('previewLabel');
+const clearBtn = document.getElementById('clearBtn');
+const extractBtn = document.getElementById('extractBtn');
+const statusBox = document.getElementById('statusBox');
+const statusText = document.getElementById('statusText');
+const progressFill = document.getElementById('progressFill');
+const resultSection = document.getElementById('resultSection');
+const resultList = document.getElementById('resultList');
+const resultCount = document.getElementById('resultCount');
+const copyAllBtn = document.getElementById('copyAllBtn');
+const rawToggle = document.getElementById('rawToggle');
+const rawBox = document.getElementById('rawBox');
+
+let currentFile = null;
+
+// パターンプレビュー更新
+function updatePattern() {
+  const g = Math.max(1, parseInt(groupCountEl.value) || 1);
+  const d = Math.max(1, parseInt(groupDigitsEl.value) || 1);
+  const x = 'X'.repeat(d);
+  patternPreview.textContent = Array(g).fill(x).join('-');
+  totalDigitsEl.textContent = g * d;
+}
+groupCountEl.addEventListener('input', updatePattern);
+groupDigitsEl.addEventListener('input', updatePattern);
+
+// ドラッグ＆ドロップ
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) loadFile(f);
+});
+fileInput.addEventListener('change', () => {
+  if (fileInput.files[0]) loadFile(fileInput.files[0]);
+});
+
+function loadFile(f) {
+  currentFile = f;
+  const url = URL.createObjectURL(f);
+  previewImg.src = url;
+  previewLabel.textContent = `${f.name}  (${(f.size / 1024).toFixed(0)} KB)`;
+  previewWrap.style.display = 'block';
+  dropZone.style.display = 'none';
+  extractBtn.disabled = false;
+  resultSection.style.display = 'none';
+  statusBox.style.display = 'none';
+}
+
+clearBtn.addEventListener('click', () => {
+  currentFile = null;
+  fileInput.value = '';
+  previewImg.src = '';
+  previewWrap.style.display = 'none';
+  dropZone.style.display = 'block';
+  extractBtn.disabled = true;
+  resultSection.style.display = 'none';
+  statusBox.style.display = 'none';
+});
+
+// OCR 実行
+extractBtn.addEventListener('click', async () => {
+  if (!currentFile) return;
+
+  const groups = Math.max(1, parseInt(groupCountEl.value) || 1);
+  const digits = Math.max(1, parseInt(groupDigitsEl.value) || 1);
+
+  extractBtn.disabled = true;
+  statusBox.style.display = 'block';
+  progressFill.style.width = '0%';
+  statusText.textContent = 'OCR エンジンを起動中...';
+  resultSection.style.display = 'none';
+
+  try {
+    const result = await Tesseract.recognize(currentFile, 'eng', {
+      logger: m => {
+        if (m.status === 'recognizing text') {
+          const pct = Math.round(m.progress * 100);
+          progressFill.style.width = pct + '%';
+          statusText.textContent = `認識中... ${pct}%`;
+        } else {
+          statusText.textContent = m.status;
+        }
+      }
+    });
+
+    const rawText = result.data.text;
+    rawBox.textContent = rawText;
+
+    // パターンマッチ：グループ数・桁数に応じた正規表現を構築
+    // セパレータはハイフン・スペース・なしに柔軟対応
+    const sep = '[\\-\\s]?';
+    const grpPat = `\\d{${digits}}`;
+    const parts = Array(groups).fill(grpPat);
+    const pattern = new RegExp(parts.join(sep), 'g');
+
+    let matches = rawText.match(pattern) || [];
+
+    // 重複除去（同じ数字列は1つに）
+    const totalLen = groups * digits;
+    const seen = new Set();
+    const nums = [];
+    for (const m of matches) {
+      const clean = m.replace(/[\-\s]/g, '');
+      if (clean.length === totalLen && !seen.has(clean)) {
+        seen.add(clean);
+        nums.push(clean);
+      }
+    }
+
+    showResults(nums);
+  } catch (err) {
+    statusText.textContent = 'エラー: ' + err.message;
+    progressFill.style.width = '0%';
+  } finally {
+    extractBtn.disabled = false;
+  }
+});
+
+function showResults(nums) {
+  statusBox.style.display = 'none';
+  resultSection.style.display = 'block';
+  resultList.innerHTML = '';
+
+  if (nums.length === 0) {
+    resultCount.textContent = '';
+    resultList.innerHTML = '<div class="empty-msg">一致する数字列が見つかりませんでした。<br>パターン設定を確認するか、OCR 生テキストを確認してください。</div>';
+    copyAllBtn.style.display = 'none';
+    return;
+  }
+
+  resultCount.textContent = `${nums.length} 件`;
+  copyAllBtn.style.display = '';
+
+  nums.forEach((num, i) => {
+    const li = document.createElement('li');
+    const span = document.createElement('span');
+    span.className = 'num-text';
+    span.textContent = num;
+
+    const btn = document.createElement('button');
+    btn.className = 'copy-btn';
+    btn.textContent = 'コピー';
+    btn.addEventListener('click', () => copyNum(num, btn, li));
+
+    li.appendChild(span);
+    li.appendChild(btn);
+    resultList.appendChild(li);
+  });
+}
+
+async function copyNum(text, btn, li) {
+  try {
+    await navigator.clipboard.writeText(text);
+    btn.textContent = '✓ コピー済';
+    btn.classList.add('ok');
+    li.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'コピー';
+      btn.classList.remove('ok');
+      li.classList.remove('copied');
+    }, 2000);
+  } catch {
+    // フォールバック
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✓ コピー済';
+    btn.classList.add('ok');
+    li.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'コピー';
+      btn.classList.remove('ok');
+      li.classList.remove('copied');
+    }, 2000);
+  }
+}
+
+copyAllBtn.addEventListener('click', async () => {
+  const items = [...resultList.querySelectorAll('.num-text')].map(s => s.textContent);
+  const text = items.join('\n');
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+  copyAllBtn.textContent = '✓ コピー済';
+  setTimeout(() => { copyAllBtn.textContent = '全てコピー'; }, 2000);
+});
+
+// OCR 生テキスト 開閉
+rawToggle.addEventListener('click', () => {
+  const open = rawBox.style.display === 'block';
+  rawBox.style.display = open ? 'none' : 'block';
+  rawToggle.textContent = open ? '▼ OCR 生テキストを表示' : '▲ OCR 生テキストを隠す';
+});
+</script>
+</body>
+</html>
