@@ -55,6 +55,13 @@ h1{text-align:center;font-size:15px;color:#93c5fd;margin-bottom:4px;letter-spaci
 .clear-btn2{background:transparent;border:1px solid #374151;color:#6b7280;
   border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;}
 .clear-btn2:hover{border-color:#ef4444;color:#f87171;}
+.split-bar{display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.split-label{font-size:12px;color:#6b7280;}
+.split-btn{background:#1a1f2e;border:1px solid #374151;color:#6b7280;border-radius:7px;
+  width:34px;height:32px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;}
+.split-btn:hover{background:#374151;color:#e5e7eb;}
+.split-btn.active{background:#1e3a5f;border-color:#2563eb;color:#93c5fd;}
+.split-hint{font-size:10px;color:#4b5563;}
 
 /* ── アクションボタン ── */
 .action-row{display:flex;gap:10px;margin-bottom:14px;}
@@ -136,7 +143,7 @@ h1{text-align:center;font-size:15px;color:#93c5fd;margin-bottom:4px;letter-spaci
 <!-- 準備セクション（向き指定 + 領域選択） -->
 <div id="prepSection">
   <div class="prep-hint">
-    ① 向きボタンで数字が正立するよう回転 → ② 数字の範囲をドラッグして選択 → ③ OCR実行
+    ① 向きボタンで数字が正立するよう回転 → ② 数字の範囲をドラッグして選択 → ③ 上部が取れない場合は分割数を増やす → ④ OCR実行
   </div>
   <div class="canvas-wrap" id="canvasWrap">
     <canvas id="previewCanvas"></canvas>
@@ -147,6 +154,14 @@ h1{text-align:center;font-size:15px;color:#93c5fd;margin-bottom:4px;letter-spaci
     <button class="rot-btn" id="rotRight">↻ 右90°</button>
     <button class="reset-sel-btn" id="resetSel">選択リセット</button>
     <button class="clear-btn2" id="clearBtn">✕ 画像削除</button>
+  </div>
+  <div class="split-bar">
+    <span class="split-label">分割数：</span>
+    <button class="split-btn active" data-n="1">1</button>
+    <button class="split-btn" data-n="2">2</button>
+    <button class="split-btn" data-n="3">3</button>
+    <button class="split-btn" data-n="4">4</button>
+    <span class="split-hint">上部の数字が取れない場合は 2〜4 に増やす</span>
   </div>
 </div>
 
@@ -209,10 +224,19 @@ let sourceImg = null;
 let currentRot = 0;            // 0 / 90 / 180 / 270
 let sel = null;                // {x,y,w,h} in canvas px
 let dragState = null;          // {mode, startX, startY, origSel}
+let splitCount = 1;
 const HANDLE_R = 10;
 const MAX_DIM  = 2000;
 const SHARP    = 0.5;
 const CONTRAST = 1.5;
+
+// ── 分割ボタン ──
+document.querySelectorAll('.split-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    splitCount = parseInt(btn.dataset.n);
+    document.querySelectorAll('.split-btn').forEach(b => b.classList.toggle('active', b === btn));
+  });
+});
 
 // ── パターンプレビュー ──
 function updatePattern() {
@@ -407,8 +431,33 @@ canvas.addEventListener('touchstart', onDown, {passive:false});
 canvas.addEventListener('touchmove', onMove, {passive:false});
 canvas.addEventListener('touchend', onUp);
 
-// ── OCR用キャンバス生成：回転 + 選択クロップ + 前処理 ──
-function buildOCRCanvas() {
+// ── 前処理（アンシャープマスク + コントラスト）をキャンバスに適用 ──
+function applyPreprocess(cv) {
+  const pCtx=cv.getContext('2d',{willReadFrequently:true});
+  const pw=cv.width, ph=cv.height;
+  const src=pCtx.getImageData(0,0,pw,ph).data;
+  const out=new Uint8ClampedArray(src.length);
+  for(let y=0;y<ph;y++){
+    const y0=Math.max(0,y-1),y1=Math.min(ph-1,y+1);
+    for(let x=0;x<pw;x++){
+      const x0=Math.max(0,x-1),x1=Math.min(pw-1,x+1);
+      const i=(y*pw+x)*4;
+      for(let c=0;c<3;c++){
+        const center=src[i+c];
+        const blur=(src[(y0*pw+x0)*4+c]+src[(y0*pw+x)*4+c]+src[(y0*pw+x1)*4+c]+
+                    src[(y *pw+x0)*4+c]+center            +src[(y *pw+x1)*4+c]+
+                    src[(y1*pw+x0)*4+c]+src[(y1*pw+x)*4+c]+src[(y1*pw+x1)*4+c])/9;
+        const sharp=center+SHARP*(center-blur);
+        out[i+c]=Math.min(255,Math.max(0,(sharp-128)*CONTRAST+128));
+      }
+      out[i+3]=255;
+    }
+  }
+  pCtx.putImageData(new ImageData(out,pw,ph),0,0);
+}
+
+// ── OCR用キャンバス生成：回転 + 選択クロップ + 分割 + 前処理 ──
+function buildOCRCanvases() {
   // 1. 回転キャンバス（MAX_DIM制限）
   const {naturalWidth:ow, naturalHeight:oh} = sourceImg;
   const rad = currentRot*Math.PI/180;
@@ -429,43 +478,33 @@ function buildOCRCanvas() {
   rCtx.restore();
 
   // 2. 選択領域をクロップ（display→MAX_DIM座標変換）
-  let ocrCv;
+  let baseCv;
   if(sel&&sel.w>10&&sel.h>10) {
     const dispW=canvas.width, dispH=canvas.height;
     const sx=Math.round(sel.x/dispW*cw), sy=Math.round(sel.y/dispH*ch);
     const sw=Math.round(sel.w/dispW*cw), sh=Math.round(sel.h/dispH*ch);
     const clampX=Math.max(0,sx), clampY=Math.max(0,sy);
     const clampW=Math.min(sw,cw-clampX), clampH=Math.min(sh,ch-clampY);
-    ocrCv=document.createElement('canvas');
-    ocrCv.width=clampW; ocrCv.height=clampH;
-    ocrCv.getContext('2d').drawImage(rotCv,clampX,clampY,clampW,clampH,0,0,clampW,clampH);
+    baseCv=document.createElement('canvas');
+    baseCv.width=clampW; baseCv.height=clampH;
+    baseCv.getContext('2d').drawImage(rotCv,clampX,clampY,clampW,clampH,0,0,clampW,clampH);
   } else {
-    ocrCv=rotCv;
+    baseCv=rotCv;
   }
 
-  // 3. アンシャープマスク + コントラスト（1パス）
-  const pCtx=ocrCv.getContext('2d',{willReadFrequently:true});
-  const pw=ocrCv.width, ph=ocrCv.height;
-  const src=pCtx.getImageData(0,0,pw,ph).data;
-  const out=new Uint8ClampedArray(src.length);
-  for(let y=0;y<ph;y++){
-    const y0=Math.max(0,y-1),y1=Math.min(ph-1,y+1);
-    for(let x=0;x<pw;x++){
-      const x0=Math.max(0,x-1),x1=Math.min(pw-1,x+1);
-      const i=(y*pw+x)*4;
-      for(let c=0;c<3;c++){
-        const center=src[i+c];
-        const blur=(src[(y0*pw+x0)*4+c]+src[(y0*pw+x)*4+c]+src[(y0*pw+x1)*4+c]+
-                    src[(y *pw+x0)*4+c]+center            +src[(y *pw+x1)*4+c]+
-                    src[(y1*pw+x0)*4+c]+src[(y1*pw+x)*4+c]+src[(y1*pw+x1)*4+c])/9;
-        const sharp=center+SHARP*(center-blur);
-        out[i+c]=Math.min(255,Math.max(0,(sharp-128)*CONTRAST+128));
-      }
-      out[i+3]=255;
-    }
+  // 3. 水平分割 → 各ストリップに前処理適用
+  const bw=baseCv.width, bh=baseCv.height;
+  const strips=[];
+  for(let i=0;i<splitCount;i++){
+    const sy0=Math.round(i*bh/splitCount);
+    const shy=Math.round((i+1)*bh/splitCount)-sy0;
+    const stripCv=document.createElement('canvas');
+    stripCv.width=bw; stripCv.height=shy;
+    stripCv.getContext('2d').drawImage(baseCv,0,sy0,bw,shy,0,0,bw,shy);
+    applyPreprocess(stripCv);
+    strips.push(stripCv);
   }
-  pCtx.putImageData(new ImageData(out,pw,ph),0,0);
-  return ocrCv;
+  return strips;
 }
 
 // ── OCR実行 ──
@@ -484,30 +523,38 @@ extractBtn.addEventListener('click', async()=>{
 
   try {
     await new Promise(r=>requestAnimationFrame(r));
-    const ocrCanvas=buildOCRCanvas();
+    const strips=buildOCRCanvases();
+    const seen=new Set(),nums=[],rawParts=[];
 
-    const result=await Tesseract.recognize(ocrCanvas,'eng',{
-      logger: m=>{
-        if(m.status==='recognizing text'){
-          statusText.textContent=`認識中... ${Math.round(m.progress*100)}%`;
-          progressFill.style.width=Math.round(m.progress*100)+'%';
+    for(let i=0;i<strips.length;i++){
+      const result=await Tesseract.recognize(strips[i],'eng',{
+        logger: m=>{
+          if(m.status==='recognizing text'){
+            const overall=(i+m.progress)/strips.length;
+            statusText.textContent=strips.length>1
+              ?`ストリップ ${i+1}/${strips.length} 認識中... ${Math.round(m.progress*100)}%`
+              :`認識中... ${Math.round(m.progress*100)}%`;
+            progressFill.style.width=Math.round(overall*100)+'%';
+          }
+        }
+      });
+      rawParts.push(result.data.text);
+
+      // bbox Y→X順でソートして上から順に抽出
+      const lines=(result.data.lines||[])
+        .filter(l=>l.text.trim())
+        .sort((a,b)=>Math.abs(a.bbox.y0-b.bbox.y0)<15?a.bbox.x0-b.bbox.x0:a.bbox.y0-b.bbox.y0);
+      for(const line of lines){
+        for(const m of (line.text.match(pattern)||[])){
+          const clean=m.replace(/\D/g,'');
+          if(clean.length===totalLen&&!seen.has(clean)){seen.add(clean);nums.push(clean);}
         }
       }
-    });
-
-    rawBox.textContent=result.data.text;
-
-    // bbox Y→X順でソートして上から順に抽出
-    const lines=(result.data.lines||[])
-      .filter(l=>l.text.trim())
-      .sort((a,b)=>Math.abs(a.bbox.y0-b.bbox.y0)<15?a.bbox.x0-b.bbox.x0:a.bbox.y0-b.bbox.y0);
-    const seen=new Set(),nums=[];
-    for(const line of lines){
-      for(const m of (line.text.match(pattern)||[])){
-        const clean=m.replace(/\D/g,'');
-        if(clean.length===totalLen&&!seen.has(clean)){seen.add(clean);nums.push(clean);}
-      }
     }
+
+    rawBox.textContent=strips.length>1
+      ?rawParts.map((t,i)=>`=== ストリップ ${i+1}/${strips.length} ===\n${t}`).join('\n')
+      :rawParts[0];
     showResults(nums);
   } catch(err){
     statusText.textContent='エラー: '+err.message;
