@@ -431,12 +431,14 @@ canvas.addEventListener('touchstart', onDown, {passive:false});
 canvas.addEventListener('touchmove', onMove, {passive:false});
 canvas.addEventListener('touchend', onUp);
 
-// ── 前処理（アンシャープマスク + コントラスト）をキャンバスに適用 ──
+// ── 前処理（アンシャープマスク + コントラスト + Otsu2値化）をキャンバスに適用 ──
 function applyPreprocess(cv) {
   const pCtx=cv.getContext('2d',{willReadFrequently:true});
   const pw=cv.width, ph=cv.height;
   const src=pCtx.getImageData(0,0,pw,ph).data;
   const out=new Uint8ClampedArray(src.length);
+
+  // パス1: アンシャープマスク + コントラスト
   for(let y=0;y<ph;y++){
     const y0=Math.max(0,y-1),y1=Math.min(ph-1,y+1);
     for(let x=0;x<pw;x++){
@@ -453,6 +455,36 @@ function applyPreprocess(cv) {
       out[i+3]=255;
     }
   }
+
+  // パス2: 大津法でOtsu閾値を算出
+  const hist=new Array(256).fill(0);
+  for(let i=0;i<pw*ph;i++){
+    const g=Math.round(0.299*out[i*4]+0.587*out[i*4+1]+0.114*out[i*4+2]);
+    hist[g]++;
+  }
+  const total=pw*ph;
+  let sum=0;
+  for(let i=0;i<256;i++) sum+=i*hist[i];
+  let sumB=0,wB=0,maxVar=0,thresh=128;
+  for(let t=0;t<256;t++){
+    wB+=hist[t];
+    if(!wB) continue;
+    const wF=total-wB;
+    if(!wF) break;
+    sumB+=t*hist[t];
+    const mB=sumB/wB, mF=(sum-sumB)/wF;
+    const between=wB*wF*(mB-mF)*(mB-mF);
+    if(between>maxVar){maxVar=between;thresh=t;}
+  }
+
+  // パス3: 2値化（白地黒文字に統一）
+  for(let i=0;i<pw*ph;i++){
+    const g=Math.round(0.299*out[i*4]+0.587*out[i*4+1]+0.114*out[i*4+2]);
+    const v=g>thresh?255:0;
+    out[i*4]=out[i*4+1]=out[i*4+2]=v;
+    out[i*4+3]=255;
+  }
+
   pCtx.putImageData(new ImageData(out,pw,ph),0,0);
 }
 
@@ -536,7 +568,9 @@ extractBtn.addEventListener('click', async()=>{
               :`認識中... ${Math.round(m.progress*100)}%`;
             progressFill.style.width=Math.round(overall*100)+'%';
           }
-        }
+        },
+        tessedit_char_whitelist: '0123456789',
+        tessedit_pageseg_mode: '6',
       });
       rawParts.push(result.data.text);
 
