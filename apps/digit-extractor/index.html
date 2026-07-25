@@ -97,6 +97,14 @@ h1{text-align:center;font-size:15px;color:#93c5fd;margin-bottom:4px;letter-spaci
   transition:.15s;white-space:nowrap;}
 .copy-btn:hover{background:#2563eb;color:#fff;}
 .copy-btn.ok{background:#064e3b;border-color:#065f46;color:#34d399;}
+.edit-btn{flex-shrink:0;background:transparent;border:1px solid #374151;color:#6b7280;
+  border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer;transition:.15s;white-space:nowrap;}
+.edit-btn:hover{border-color:#60a5fa;color:#93c5fd;}
+.edit-btn.confirm{border-color:#f59e0b;color:#fbbf24;}
+.edit-btn.confirm:hover{background:#78350f;color:#fcd34d;}
+.num-edit-input{font-family:monospace;font-size:15px;font-weight:700;color:#fbbf24;
+  background:#0f1117;border:1px solid #60a5fa;border-radius:6px;padding:2px 6px;
+  flex:1;letter-spacing:.08em;outline:none;min-width:0;}
 .empty-msg{text-align:center;font-size:12px;color:#6b7280;padding:20px;
   background:#1a1f2e;border-radius:10px;line-height:1.8;}
 #rawToggle{margin-top:14px;font-size:11px;color:#374151;cursor:pointer;text-align:center;user-select:none;}
@@ -614,11 +622,39 @@ function showResults(nums){
     const li=document.createElement('li');
     const idx=document.createElement('span'); idx.className='row-num'; idx.textContent=i+1;
     const span=document.createElement('span'); span.className='num-text'; span.textContent=num;
-    const btn=document.createElement('button'); btn.className='copy-btn'; btn.textContent='コピー';
-    btn.addEventListener('click',()=>copyText(num,btn,li));
-    li.appendChild(idx); li.appendChild(span); li.appendChild(btn);
+    const editBtn=document.createElement('button'); editBtn.className='edit-btn'; editBtn.textContent='編集';
+    const copyBtn=document.createElement('button'); copyBtn.className='copy-btn'; copyBtn.textContent='コピー';
+    copyBtn.addEventListener('click',()=>copyText(span.textContent,copyBtn,li));
+    editBtn.addEventListener('click',()=>startEdit(li,span,editBtn,copyBtn));
+    li.appendChild(idx); li.appendChild(span); li.appendChild(editBtn); li.appendChild(copyBtn);
     resultList.appendChild(li);
   });
+}
+
+// ── インライン編集 ──
+function startEdit(li, span, editBtn, copyBtn) {
+  const input=document.createElement('input');
+  input.type='text';
+  input.value=span.textContent;
+  input.className='num-edit-input';
+  input.inputMode='numeric';
+  span.replaceWith(input);
+  editBtn.textContent='確定';
+  editBtn.classList.add('confirm');
+  input.focus();
+  input.select();
+
+  const finish=()=>{
+    const val=input.value.replace(/\D/g,'')||span.textContent;
+    span.textContent=val;
+    input.replaceWith(span);
+    editBtn.textContent='編集';
+    editBtn.classList.remove('confirm');
+    editBtn.onclick=null;
+    editBtn.addEventListener('click',()=>startEdit(li,span,editBtn,copyBtn));
+  };
+  editBtn.onclick=finish;
+  input.addEventListener('keydown',e=>{if(e.key==='Enter') finish();});
 }
 
 // ── コピー ──
