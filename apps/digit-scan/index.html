@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数字スキャン — サポート</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0f1117;color:#e5e7eb;font-family:-apple-system,'Hiragino Sans',sans-serif;
+  padding:24px 20px;max-width:680px;margin:0 auto;line-height:1.7;}
+
+h1{font-size:20px;color:#93c5fd;margin-bottom:4px;}
+.subtitle{font-size:13px;color:#4b5563;margin-bottom:28px;}
+
+h2{font-size:14px;color:#60a5fa;margin:24px 0 10px;border-left:3px solid #2563eb;
+  padding-left:10px;}
+
+p{font-size:13px;color:#d1d5db;margin-bottom:10px;}
+
+ol,ul{font-size:13px;color:#d1d5db;padding-left:1.4em;margin-bottom:10px;}
+li{margin-bottom:6px;}
+
+.card{background:#1a1f2e;border-radius:12px;padding:16px 18px;margin-bottom:14px;}
+
+.qa{margin-bottom:18px;}
+.qa .q{font-size:13px;font-weight:700;color:#e5e7eb;margin-bottom:6px;}
+.qa .a{font-size:13px;color:#9ca3af;}
+
+.contact{background:#111827;border:1px solid #1f2937;border-radius:10px;
+  padding:16px 18px;margin-top:28px;}
+.contact a{color:#60a5fa;text-decoration:none;}
+.contact a:hover{text-decoration:underline;}
+
+footer{text-align:center;font-size:11px;color:#374151;margin-top:32px;}
+</style>
+</head>
+<body>
+
+<h1>数字スキャン</h1>
+<p class="subtitle">写真からシリアルナンバーを OCR で自動抽出する iOS アプリ</p>
+
+<h2>使い方</h2>
+<div class="card">
+  <ol>
+    <li>「写真を選択」をタップして、シリアルナンバーが写った写真を選ぶ</li>
+    <li>「画像を調整」画面で傾きを補正し、必要なら数字部分をドラッグで範囲選択する</li>
+    <li>「OCR 実行」をタップすると数字列が自動抽出される</li>
+    <li>各行の「コピー」ボタンでクリップボードにコピーできる</li>
+  </ol>
+</div>
+
+<h2>抽出パターン設定</h2>
+<div class="card">
+  <p>グループ数と 1 グループの桁数を変更することで、さまざまな形式のシリアルナンバーに対応できます。</p>
+  <ul>
+    <li>16 桁（4×4）: グループ数 4、1 グループ 4 桁（初期設定）</li>
+    <li>12 桁（3×4）: グループ数 3、1 グループ 4 桁</li>
+    <li>8 桁（2×4）: グループ数 2、1 グループ 4 桁</li>
+  </ul>
+</div>
+
+<h2>よくある質問</h2>
+
+<div class="qa">
+  <p class="q">Q. 数字が正しく読み取れません</p>
+  <p class="a">照明が暗い・手ブレ・文字が小さいと精度が下がります。明るい場所で撮影し直すか、「画像を調整」画面で範囲選択してシリアルナンバー部分だけを指定してください。</p>
+</div>
+
+<div class="qa">
+  <p class="q">Q. 抽出結果が多すぎる・少なすぎる</p>
+  <p class="a">パターン設定（グループ数・桁数）が対象のシリアルナンバーと合っているか確認してください。「OCR 生テキスト」を展開すると、認識された文字列を確認できます。</p>
+</div>
+
+<div class="qa">
+  <p class="q">Q. 写真へのアクセス許可が必要ですか？</p>
+  <p class="a">はい。写真ライブラリから画像を読み込むため、フォトライブラリへのアクセスを許可してください。画像はデバイス内でのみ処理され、外部サーバーには送信されません。</p>
+</div>
+
+<div class="qa">
+  <p class="q">Q. 対応している言語・文字は？</p>
+  <p class="a">数字（0〜9）の抽出に特化しています。ハイフンやスペース区切りのフォーマットにも対応しています。</p>
+</div>
+
+<h2>プライバシー</h2>
+<div class="card">
+  <p>選択した写真はすべてデバイス上でのみ処理されます。画像・認識結果ともに外部に送信されることはありません。</p>
+  <p>詳細は <a href="https://tail-studio.com/privacy-policy.html" style="color:#60a5fa;">プライバシーポリシー</a> をご覧ください。</p>
+</div>
+
+<div class="contact">
+  <p style="font-size:13px;color:#9ca3af;margin-bottom:6px;">お問い合わせ</p>
+  <p style="font-size:13px;">ご意見・不具合報告は <a href="mailto:wataru@callisto-ai.com">wataru@callisto-ai.com</a> までお気軽にご連絡ください。</p>
+</div>
+
+<footer>© 2026 Tail Studio</footer>
+
+</body>
+</html>
