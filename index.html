@@ -13,7 +13,6 @@
     <link rel="shortcut icon" href="/favicon/favicon.ico" />
     <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
     <link rel="manifest" href="/favicon/site.webmanifest" />
-    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1127768628418295" crossorigin="anonymous"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -630,17 +629,6 @@
         </center>
     </section>
 
-    <section class="ad-wrap" aria-label="広告枠">
-        <p class="ad-label">Advertisement</p>
-        <ins
-            class="adsbygoogle"
-            style="display:block"
-            data-ad-client="ca-pub-1127768628418295"
-            data-ad-slot="8000243702"
-            data-ad-format="auto"
-            data-full-width-responsive="true"></ins>
-    </section>
-
     <footer>
         <div class="footer-links">
             <a href="/about.html">運営者情報</a>
@@ -679,21 +667,6 @@
         function closeAndroidModal() {
             document.getElementById('android-modal-overlay').classList.remove('open');
         }
-
-        function initAds() {
-            document.querySelectorAll('.adsbygoogle').forEach((adElement) => {
-                if (adElement.dataset.adInit === 'done') return;
-                try {
-                    (window.adsbygoogle = window.adsbygoogle || []).push({});
-                    adElement.dataset.adInit = 'done';
-                } catch (error) {
-                    // Keep page usable even if ads fail to initialize.
-                }
-            });
-        }
-
-        initAds();
-        window.addEventListener('load', initAds);
 
         fetch('apps.json')
             .then(res => res.json())

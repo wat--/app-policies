@@ -4,7 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>App Store スクリーンショットメーカー</title>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1127768628418295" crossorigin="anonymous"></script>
   <style>
     * {
       box-sizing: border-box;
@@ -470,17 +469,6 @@
     </section>
   </div>
 
-  <section class="ad-wrap bottom" aria-label="広告枠">
-    <p class="ad-label">Advertisement</p>
-    <ins
-      class="adsbygoogle"
-      style="display:block"
-      data-ad-client="ca-pub-1127768628418295"
-      data-ad-slot="8000243702"
-      data-ad-format="auto"
-      data-full-width-responsive="true"></ins>
-  </section>
-
   <section class="privacy" id="privacy-policy">
     <h2>プライバシーポリシー</h2>
     <p>最終更新日: 2026年4月18日</p>
@@ -846,21 +834,6 @@
       setActiveIndex(prevIndex === -1 ? 0 : prevIndex);
       downloadAllBtn.disabled = images.length < 2;
     });
-
-    function initAds() {
-      document.querySelectorAll(".adsbygoogle").forEach((adElement) => {
-        if (adElement.dataset.adInit === "done") return;
-        try {
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-          adElement.dataset.adInit = "done";
-        } catch (error) {
-          // Placeholder ID or script timing issue: keep app usable.
-        }
-      });
-    }
-
-    initAds();
-    window.addEventListener("load", initAds);
 
     render();
   </script>

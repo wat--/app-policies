@@ -8,9 +8,6 @@
   <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
   <link rel="shortcut icon" href="/favicon/favicon.ico" />
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
-  {% if page.layout == 'post' or page.show_ads %}
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-1127768628418295" crossorigin="anonymous"></script>
-  {% endif %}
   {% feed_meta %}
   {% seo %}
 </head>
@@ -42,18 +39,5 @@
     <p style="margin-top:0.5rem">&copy; {{ 'now' | date: '%Y' }} Tail Studio</p>
   </footer>
 
-  {% if page.layout == 'post' or page.show_ads %}
-  <script>
-    (function () {
-      document.querySelectorAll('.adsbygoogle').forEach((adElement) => {
-        if (adElement.dataset.adInit === 'done') return;
-        try {
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-          adElement.dataset.adInit = 'done';
-        } catch (error) {}
-      });
-    })();
-  </script>
-  {% endif %}
 </body>
 </html>
