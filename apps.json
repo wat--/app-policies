@@ -156,6 +156,20 @@
     ]
   },
   {
+    "id": "digit-scan",
+    "name": "数字スキャン",
+    "type": "ios",
+    "icon": "🔢",
+    "appStoreUrl": "https://apps.apple.com/app/id6794667514",
+    "description": "写真からシリアルナンバーを OCR で自動抽出する iOS アプリ。傾き補正や範囲選択、桁数・グループ数のパターン設定に対応し、認識結果はワンタップでコピーできます。画像はすべてデバイス内で処理され、外部サーバーには送信されません。",
+    "links": [
+      {
+        "label": "サポート・プライバシーポリシー",
+        "url": "apps/digit-scan/index.html"
+      }
+    ]
+  },
+  {
     "id": "kumasuzu",
     "name": "熊よけベル",
     "type": "ios",
