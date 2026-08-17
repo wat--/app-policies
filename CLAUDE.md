@@ -63,6 +63,7 @@ description: 記事の概要（検索結果に表示される）
 - `post-NN` の在庫が尽きたら、[app.counterapi.dev](https://app.counterapi.dev/team/ws-team-1/counters) の workspace で新しい番号の counter をまとめて作成してから `_data/like-counters.yml` に追記する（counterapi.dev には新規カウンター作成 API がなく、ダッシュボードでの手動作成が必須）。
 - **counterapi.dev はスコープを絞ったトークンを発行できず、常に Full Access（アカウント全体への完全アクセス権限）になる。** リポジトリが public のため、`_config.yml` の `likes.token` は空のままにし、絶対にコミットしない。
 - 実際のトークンは GitHub Secrets の `COUNTERAPI_TOKEN` に登録し、`.github/workflows/pages.yml` のビルドステップで `_config.yml` に注入してからデプロイする。この仕組みのため、GitHub Pages のビルド方式は Legacy ではなく GitHub Actions（Settings > Pages > Source: GitHub Actions）である必要がある。
+- 注意: この対応で防げるのは **Git のソースコード履歴にトークンが残らないこと** だけ。いいねボタンはブラウザから直接 counterapi.dev の API を叫ぶ実装のため、**公開されているブログの HTML ページ自体には Full Access トークンが平文で表示される**（避けられない）。万一悪用が発覚したらダッシュボードでトークンを失効し、新しいトークンを発行して Secrets を更新する。
 
 ## 記事コメント欄
 
