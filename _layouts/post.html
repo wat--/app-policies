@@ -66,7 +66,7 @@ layout: default
     </div>
   </div>
 
-  {% if site.disqus.shortname %}
+  {% if site.disqus.shortname != "" %}
   <section class="comments-wrap">
     <h2 class="comments-title">コメント</h2>
     <div id="disqus_thread"></div>
@@ -202,7 +202,7 @@ layout: default
   })();
 </script>
 
-{% if site.disqus.shortname %}
+{% if site.disqus.shortname != "" %}
 <script>
   var disqus_config = function () {
     this.page.url = "{{ page.url | absolute_url }}";
