@@ -124,7 +124,6 @@ layout: default
     if (!button || !countEl) return;
 
     var workspace = {{ site.likes.workspace | jsonify }};
-    var token = {{ site.likes.token | jsonify }};
     var postKey = button.dataset.postKey;
     var counterName = button.dataset.counterName;
     var storageKey = 'liked:' + postKey;
@@ -144,11 +143,8 @@ layout: default
     }
 
     function apiUrl(action) {
-      return 'https://api.counterapi.dev/v2/' + encodeURIComponent(workspace) + '/' + encodeURIComponent(counterName) + (action ? '/' + action : '');
-    }
-
-    function authHeaders() {
-      return token ? { Authorization: 'Bearer ' + token } : {};
+      var base = 'https://api.counterapi.dev/v2/' + encodeURIComponent(workspace) + '/' + encodeURIComponent(counterName) + (action ? '/' + action : '');
+      return base + '?cb=' + Date.now();
     }
 
     function upCount(payload) {
@@ -166,7 +162,7 @@ layout: default
         localFallback();
         return;
       }
-      fetch(apiUrl(''), { headers: authHeaders() })
+      fetch(apiUrl(''))
         .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
         .then(function (payload) {
           var count = upCount(payload);
@@ -192,7 +188,7 @@ layout: default
       var optimistic = prevText === '-' ? 1 : Number(prevText) + 1;
       render(optimistic, true);
 
-      fetch(apiUrl('up'), { headers: authHeaders() })
+      fetch(apiUrl('up'))
         .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
         .then(function (payload) {
           var count = upCount(payload);
