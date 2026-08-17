@@ -8,6 +8,25 @@ author:
 lang: ja
 timezone: Asia/Tokyo
 
+# 記事の「いいね」機能。counterapi.dev の workspace とアクセストークンを設定すると
+# 全訪問者で共有されるカウントになる。空のまま、または記事が _data/like-counters.yml に
+# 未登録の場合は localStorage のみのローカル表示にフォールバックする。
+# 記事ごとのカウンター名(post-01, post-02, ...)との対応は _data/like-counters.yml で管理する。
+# counterapi.dev には新規カウンター作成 API が無いため、post-NN の在庫が尽きたら
+# app.counterapi.dev の workspace でまとめて New Counter を作成してから追記する。
+#
+# token は空のままにしておくこと。counterapi.dev はスコープを絞ったトークンを発行できず
+# 常に Full Access になるため、リポジトリには含めず GitHub Actions のビルド時に
+# secrets.COUNTERAPI_TOKEN から注入する(.github/workflows/pages.yml 参照)。
+likes:
+  workspace: "ws-team-1-5136"
+  token: ""
+
+# 記事コメント欄(Disqus)。disqus.com でサイト登録して発行される shortname を設定すると
+# 記事ページにコメント欄が表示される。空のままなら非表示。
+disqus:
+  shortname: ""
+
 # Build
 markdown: kramdown
 highlighter: rouge

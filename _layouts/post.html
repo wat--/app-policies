@@ -34,6 +34,15 @@ layout: default
     {{ content }}
   </div>
 
+  <div class="like-wrap">
+    {% assign counter_name = site.data['like-counters'][page.url] %}
+    <button type="button" class="like-button" id="like-button" data-post-key="{{ page.url }}" data-counter-name="{{ counter_name }}" aria-pressed="false">
+      <span class="like-icon">🤍</span>
+      <span class="like-label">いいね</span>
+      <span class="like-count" id="like-count">-</span>
+    </button>
+  </div>
+
   <nav class="post-nav">
     <div class="post-nav-prev">
       {% if page.previous %}
@@ -56,6 +65,13 @@ layout: default
       <p>開発・生成AIにまつわるノート。アプリ一覧は <a href="{{ '/' | relative_url }}">トップページ</a> をどうぞ。</p>
     </div>
   </div>
+
+  {% if site.disqus.shortname %}
+  <section class="comments-wrap">
+    <h2 class="comments-title">コメント</h2>
+    <div id="disqus_thread"></div>
+  </section>
+  {% endif %}
 
   <section class="ad-wrap ad-rakuten" aria-label="広告枠">
     <p class="ad-label">Advertisement</p>
@@ -100,3 +116,107 @@ layout: default
     toc.hidden = false;
   })();
 </script>
+
+<script>
+  (function () {
+    var button = document.getElementById('like-button');
+    var countEl = document.getElementById('like-count');
+    if (!button || !countEl) return;
+
+    var workspace = {{ site.likes.workspace | jsonify }};
+    var token = {{ site.likes.token | jsonify }};
+    var postKey = button.dataset.postKey;
+    var counterName = button.dataset.counterName;
+    var storageKey = 'liked:' + postKey;
+    var liked = localStorage.getItem(storageKey) === '1';
+    var useApi = Boolean(workspace && counterName);
+
+    function render(count, animate) {
+      countEl.textContent = count === null ? '-' : count;
+      button.classList.toggle('is-liked', liked);
+      button.setAttribute('aria-pressed', String(liked));
+      button.querySelector('.like-icon').textContent = liked ? '❤️' : '🤍';
+      if (animate) {
+        button.classList.remove('is-animating');
+        void button.offsetWidth;
+        button.classList.add('is-animating');
+      }
+    }
+
+    function apiUrl(action) {
+      return 'https://api.counterapi.dev/v2/' + encodeURIComponent(workspace) + '/' + encodeURIComponent(counterName) + (action ? '/' + action : '');
+    }
+
+    function authHeaders() {
+      return token ? { Authorization: 'Bearer ' + token } : {};
+    }
+
+    function upCount(payload) {
+      return payload && payload.data && typeof payload.data.up_count === 'number' ? payload.data.up_count : null;
+    }
+
+    function localFallback() {
+      useApi = false;
+      var local = localStorage.getItem('likeCount:' + postKey);
+      render(local ? Number(local) : 0, false);
+    }
+
+    function fetchCount() {
+      if (!useApi) {
+        localFallback();
+        return;
+      }
+      fetch(apiUrl(''), { headers: authHeaders() })
+        .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
+        .then(function (payload) {
+          var count = upCount(payload);
+          if (count === null) { localFallback(); return; }
+          render(count, false);
+        })
+        .catch(localFallback);
+    }
+
+    button.addEventListener('click', function () {
+      if (liked) return;
+      liked = true;
+      localStorage.setItem(storageKey, '1');
+
+      if (!useApi) {
+        var current = Number(localStorage.getItem('likeCount:' + postKey) || '0') + 1;
+        localStorage.setItem('likeCount:' + postKey, String(current));
+        render(current, true);
+        return;
+      }
+
+      var prevText = countEl.textContent;
+      var optimistic = prevText === '-' ? 1 : Number(prevText) + 1;
+      render(optimistic, true);
+
+      fetch(apiUrl('up'), { headers: authHeaders() })
+        .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
+        .then(function (payload) {
+          var count = upCount(payload);
+          if (count !== null) render(count, false);
+        })
+        .catch(function () {});
+    });
+
+    render(null, false);
+    fetchCount();
+  })();
+</script>
+
+{% if site.disqus.shortname %}
+<script>
+  var disqus_config = function () {
+    this.page.url = "{{ page.url | absolute_url }}";
+    this.page.identifier = "{{ page.url }}";
+  };
+  (function () {
+    var d = document, s = d.createElement('script');
+    s.src = 'https://{{ site.disqus.shortname }}.disqus.com/embed.js';
+    s.setAttribute('data-timestamp', +new Date());
+    (d.head || d.body).appendChild(s);
+  })();
+</script>
+{% endif %}

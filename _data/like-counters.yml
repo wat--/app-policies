@@ -1,0 +1,23 @@
+# 各記事の URL と counterapi.dev 上のカウンター名(API Slug)の対応表。
+# 新しい記事を公開するときは、未使用の post-NN を1行追加するだけでよい。
+# post-NN が足りなくなったら app.counterapi.dev の workspace で New Counter を
+# まとめて追加作成してから、その分を追記する。
+"/blog/2025/12/17/app-koyomi-ai/": post-01
+"/blog/2026/01/16/app-smart-shopping-list/": post-02
+"/blog/2026/03/03/app-boardgame-ai/": post-03
+"/blog/2026/04/11/app-wild-bird-voice-search/": post-04
+"/blog/2026/04/15/app-fire-simulator/": post-05
+"/blog/2026/04/16/app-money-quiz/": post-06
+"/blog/2026/04/18/app-appstore-screenshot-maker/": post-07
+"/blog/2026/04/23/app-localmahjong/": post-08
+"/blog/2026/05/14/app-kumasuzu/": post-09
+"/blog/2026/05/22/android-google-play-giveup/": post-10
+"/blog/2026/05/26/ovms-npu-qwen3/": post-11
+"/blog/2026/05/31/appstore-release-all/": post-12
+"/blog/2026/05/31/ios-dev-peripherals/": post-13
+"/blog/2026/05/31/iphone-claude-code-dev/": post-14
+"/blog/2026/06/04/app-bird-audio-extractor/": post-15
+"/blog/2026/06/09/app-image-text-editor/": post-16
+"/blog/2026/06/11/app-smart-page-memo/": post-17
+"/blog/2026/06/17/bird-voice-search-tech/": post-18
+"/blog/2026/07/29/app-digit-scan/": post-19

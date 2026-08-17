@@ -298,6 +298,46 @@ main {
   margin: 1.5rem 0;
 }
 
+/* Like button */
+.like-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 2.5rem 0;
+}
+.like-button {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1.5rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-card);
+  cursor: pointer;
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  transition: border-color 0.15s, color 0.15s, transform 0.1s;
+}
+.like-button:hover { border-color: var(--accent); color: var(--accent); }
+.like-button:active { transform: scale(0.96); }
+.like-button .like-icon {
+  font-size: 1.1rem;
+  line-height: 1;
+  transition: transform 0.2s;
+}
+.like-button.is-liked {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: var(--accent-light);
+}
+.like-button.is-liked .like-icon { transform: scale(1.15); }
+.like-button.is-animating .like-icon { animation: like-pop 0.35s ease; }
+.like-button .like-count { font-weight: 700; font-variant-numeric: tabular-nums; }
+@keyframes like-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.4); }
+  100% { transform: scale(1.15); }
+}
+
 /* Post navigation */
 .post-nav {
   display: grid;
@@ -361,6 +401,17 @@ main {
 }
 .author-card-info h3 { font-size: 0.95rem; font-weight: 700; margin-bottom: 0.25rem; }
 .author-card-info p { font-size: 0.875rem; color: var(--text-muted); }
+
+/* Comments */
+.comments-wrap { margin-top: 3rem; }
+.comments-title {
+  font-family: 'Noto Serif JP', serif;
+  font-size: 1.15rem;
+  font-weight: 700;
+  margin-bottom: 1.25rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--border);
+}
 
 /* Pages */
 .page-header { margin-bottom: 2rem; }
