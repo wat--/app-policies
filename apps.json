@@ -195,5 +195,22 @@
         "url": "apps/kumasuzu/privacy-policy.html"
       }
     ]
+  },
+  {
+    "id": "rimoroku",
+    "name": "リモ録",
+    "type": "ios",
+    "icon": "📺",
+    "description": "ソニー製テレビ BRAVIA の録画予約とリモコン操作を iPhone から行うアプリ。番組表から番組を選ぶだけで予約でき、予約一覧・録画済み番組の管理、テレビにインストールされた動画アプリの起動にも対応します。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/rimoroku/privacy-policy.html"
+      },
+      {
+        "label": "使い方・接続ガイド",
+        "url": "apps/rimoroku/guide.html"
+      }
+    ]
   }
 ]
