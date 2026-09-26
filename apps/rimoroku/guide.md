@@ -100,15 +100,15 @@ VPN の条件は「iPhone から自宅 LAN のアドレス（192.168.x.x）に�
 - Mac: ターミナルで `tailscale set --advertise-routes=192.168.1.0/24` を実行します。
 - Windows: 管理者権限のコマンドプロンプトで同じコマンドを実行します。
 - 「192.168.1.0/24」の部分は、自宅の LAN に合わせます。iPhone の「設定」→「Wi‑Fi」→ 接続中のネットワークの「IP アドレス」が 192.168.1.x なら 192.168.1.0/24、192.168.0.x なら 192.168.0.0/24 です。
-- 設定できたかは、③ の管理画面の「Subnets」の欄で確認できます。「This machine does not expose any routes.」と表示される場合は、まだ設定されていません。
 
 ③ 管理画面で、自宅の LAN への経路を許可します。Tailscale では ② の設定をしただけでは使えず、管理画面で許可して初めて有効になります（知らないうちに経路が開かないための仕組みです）。
 
 - パソコンか iPhone のブラウザで https://login.tailscale.com/admin/machines を開き、① と同じアカウントでログインします。
-- 「Machines」の一覧で、② の PC の名前を押します（一覧では「Subnets」という印が付いています）。
-- 開いたページの下部にある「Subnets」の欄で「Edit」を押します。「Edit route settings」という画面が開きます。
-- 「Subnet routes」の下にある「192.168.1.0/24」にチェックを入れ、「Save」を押します。
-- 「Machine settings」など、ほかの欄は変更不要です。
+- 「Machines」の一覧で、② の PC の名前を押します。
+- 開いたページの下部にある「Subnets」の欄を見ます。「Awaiting Approval」（承認待ち）の下に「192.168.1.0/24」が表示されているので、「Edit」を押します。
+- 「Edit route settings of（PC の名前）」という画面が開きます。「Subnet routes」の下にある「192.168.1.0/24」にチェックを入れ、「Save」を押します。
+- 同じ画面の「Exit node」（Use as exit node）はチェック不要です。「Machine settings」など、ほかの欄も変更不要です。
+- 「Subnets」の欄に「This machine does not expose any routes.」と表示される場合は、② の設定がまだ反映されていません。② をやり直してください。
 
 画面の表記は Tailscale 側の変更で変わることがあります。最新の手順は Tailscale 公式の説明（https://tailscale.com/kb/1019/subnets）の「Enable subnet routes from the admin console」を参照してください。
 
