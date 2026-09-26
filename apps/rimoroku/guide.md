@@ -100,7 +100,15 @@ VPN の条件は「iPhone から自宅 LAN のアドレス（192.168.x.x）に�
 - Mac: ターミナルで `tailscale up --advertise-routes=192.168.1.0/24` を実行します（Tailscale アプリの設定からも可能）。
 - Windows: 管理者権限のコマンドプロンプトで同じコマンドを実行します。
 
-③ Tailscale の管理画面（https://login.tailscale.com/admin/machines）で、その PC の「Subnet routes」を承認（Approve）します。
+③ 管理画面で、自宅の LAN への経路を許可します。Tailscale では ② の設定をしただけでは使えず、管理画面で許可して初めて有効になります（知らないうちに経路が開かないための仕組みです）。
+
+- パソコンか iPhone のブラウザで https://login.tailscale.com/admin/machines を開き、① と同じアカウントでログインします。
+- 「Machines」の一覧から ② の PC を探します。名前の下に「Subnets」と表示されています。
+- その行の右端にある「…」を押し、「Edit route settings…」を選びます。
+- 表示された「192.168.1.0/24」にチェックを入れ、「Save」を押します。
+- 一覧に戻り、「Subnets」の横の注意マーク（!）が消えていれば完了です。
+
+画面の表記は Tailscale 側の変更で変わることがあります。
 
 ④ iPhone に Tailscale アプリを入れ、同じアカウントでログインして接続をオンにします。
 
