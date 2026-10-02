@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "リモ録 — SideView 終了後も BRAVIA を iPhone から操作するために作った"
-date: 2026-10-02 10:00:00 +0900
+date: 2026-10-02 08:30:00 +0900
 tags: [アプリ開発, iOSアプリ]
 description: 2027年3月30日で終了するソニーの「Video & TV SideView」の代わりに、BRAVIA と nasne の録画予約・リモコン操作を iPhone から行えるようにしたアプリ「リモ録」の開発経緯です。
 ---
