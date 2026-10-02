@@ -58,6 +58,20 @@
     ]
   },
   {
+    "id": "hana-search",
+    "name": "花サーチ",
+    "type": "ios",
+    "icon": "🌸",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E8%8A%B1%E3%82%B5%E3%83%BC%E3%83%81/id6802036544",
+    "description": "撮った花の名前をオンデバイスAIで推定し、観察記録として保存できる iOS アプリ。日本で身近な花・野草・樹木・野菜 622 種をこのアプリのために独自学習し、認識はすべて端末内で完結、写真は外部に送信されません。圏外でも使えます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/hana-search/privacy-policy.html"
+      }
+    ]
+  },
+  {
     "id": "localmahjong",
     "name": "スマホで麻雀",
     "type": "ios",
