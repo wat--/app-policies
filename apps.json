@@ -242,5 +242,19 @@
         "url": "apps/rimoroku/guide/"
       }
     ]
+  },
+  {
+    "id": "ai-usage",
+    "name": "AI使用量",
+    "type": "ios",
+    "icon": "📊",
+    "appStoreUrl": "",
+    "description": "Claude（5時間枠・週間枠・Fable枠）と ChatGPT（エージェント機能の 5 時間枠・週間枠）の使用量を、iPhone のアプリとホーム画面・ロック画面ウィジェットで確認する非公式アプリ。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/ai-usage/privacy-policy.html"
+      }
+    ]
   }
 ]
