@@ -1,5 +1,19 @@
 [
   {
+    "id": "daily-note",
+    "name": "デイリーノート",
+    "type": "ios",
+    "icon": "📓",
+    "appStoreUrl": "https://apps.apple.com/jp/app/id6822274695",
+    "description": "日記を書くだけで、オンデバイス AI（Apple Intelligence）があなたの過去の note 記事の文体を学習して note 記事の下書きを提案する iOS アプリ。Apple「ジャーナル」との読み込み・書き出し、note の記事取り込みにも対応。日記も AI 処理もすべて端末内で完結します。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/daily-note/privacy-policy.html"
+      }
+    ]
+  },
+  {
     "id": "koyomi-ai",
     "name": "暦変換AI",
     "type": "ios",
