@@ -1,11 +1,11 @@
 [
   {
     "id": "daily-note",
-    "name": "デイリーノート",
+    "name": "nikkiji（にっきじ）",
     "type": "ios",
     "icon": "📓",
     "appStoreUrl": "https://apps.apple.com/jp/app/id6822274695",
-    "description": "日記を書くだけで、オンデバイス AI（Apple Intelligence）があなたの過去の note 記事の文体を学習して note 記事の下書きを提案する iOS アプリ。Apple「ジャーナル」との読み込み・書き出し、note の記事取り込みにも対応。日記も AI 処理もすべて端末内で完結します。",
+    "description": "日記を書くだけで、オンデバイス AI（Apple Intelligence）があなたの過去記事の文体を学習してブログ記事の下書きを提案する iOS アプリ。公開前チェックは誤字脱字など選んだ観点だけ。Apple「ジャーナル」との読み込み・書き出しにも対応。日記も AI 処理もすべて端末内で完結します。",
     "links": [
       {
         "label": "プライバシーポリシー",
