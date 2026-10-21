@@ -245,10 +245,10 @@
   },
   {
     "id": "ai-usage",
-    "name": "AI使用量",
+    "name": "AI使用量メーター",
     "type": "ios",
     "icon": "📊",
-    "appStoreUrl": "",
+    "appStoreUrl": "https://apps.apple.com/app/id6824224890",
     "description": "Claude（5時間枠・週間枠・Fable枠）と ChatGPT（エージェント機能の 5 時間枠・週間枠）の使用量を、iPhone のアプリとホーム画面・ロック画面ウィジェットで確認する非公式アプリ。",
     "links": [
       {
