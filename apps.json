@@ -1,5 +1,22 @@
 [
   {
+    "id": "teiji-photo",
+    "name": "定時フォト転送",
+    "type": "ios",
+    "icon": "🖼️",
+    "description": "同じ Wi-Fi の端末どうしで、写真を決まった時刻や自宅の Wi-Fi への接続時に自動で送るアプリ。新しく撮った写真だけを、インターネットを経由せず端末どうしで直接転送します。",
+    "links": [
+      {
+        "label": "iOS以外のスマホ用アプリ",
+        "url": "apps/teiji-photo/download.html"
+      },
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/teiji-photo/privacy-policy.html"
+      }
+    ]
+  },
+  {
     "id": "daily-note",
     "name": "nikkiji（にっきじ）",
     "type": "ios",
