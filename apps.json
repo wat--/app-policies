@@ -4,6 +4,7 @@
     "name": "定時フォト転送",
     "type": "ios",
     "icon": "🖼️",
+    "appStoreUrl": "https://apps.apple.com/jp/app/id6826420187",
     "description": "同じ Wi-Fi の端末どうしで、写真を決まった時刻や自宅の Wi-Fi への接続時に自動で送るアプリ。新しく撮った写真だけを、インターネットを経由せず端末どうしで直接転送します。",
     "links": [
       {
