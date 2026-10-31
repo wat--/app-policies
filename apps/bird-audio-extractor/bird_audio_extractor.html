@@ -58,6 +58,35 @@ h1{text-align:center;font-size:16px;color:#93c5fd;margin-bottom:16px;letter-spac
 #spectrumCanvas{display:block;width:100%;}
 
 .band-panel{background:#1a1f2e;border-radius:12px;padding:18px 20px;margin-bottom:14px;}
+
+/* 範囲選択・区間抽出 */
+.range-panel{background:#1a1f2e;border-radius:12px;padding:14px 18px;margin-bottom:14px;border:1px solid #2d3748;}
+.range-panel h2{font-size:13px;color:#34d399;margin-bottom:10px;}
+.range-row,.seg-ctrl,.seg-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+.range-hint{font-size:10px;color:#6b7280;}
+.range-info{font-size:11px;color:#93c5fd;font-family:monospace;min-width:150px;}
+.btn-sm{background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:7px;padding:5px 10px;
+  cursor:pointer;font-size:11px;white-space:nowrap;}
+.btn-sm:hover{border-color:#60a5fa;color:#fff;}
+.btn-sm:disabled{opacity:.4;cursor:not-allowed;}
+.btn-sm.dl{background:#065f46;border-color:#047857;color:#6ee7b7;}
+.btn-sm.dl:hover{background:#047857;color:#fff;}
+.seg-ctrl label{font-size:10px;color:#9ca3af;display:flex;align-items:center;gap:3px;}
+.seg-ctrl input[type=number]{width:52px;background:#0f172a;border:1px solid #374151;color:#e5e7eb;
+  border-radius:5px;padding:2px 4px;font-size:11px;font-family:monospace;}
+.seg-status{font-size:10px;color:#6b7280;}
+.seg-list{max-height:200px;overflow-y:auto;display:none;margin-bottom:8px;border:1px solid #1e2535;border-radius:8px;}
+.seg-row{display:flex;gap:8px;align-items:center;padding:4px 8px;border-bottom:1px solid #111827;font-size:11px;}
+.seg-row:last-child{border-bottom:none;}
+.seg-row:hover{background:#1f2937;}
+.seg-row.current{background:#1e3a5f;}
+.seg-row .seg-idx{color:#6b7280;font-family:monospace;min-width:24px;}
+.seg-row .seg-time{color:#34d399;font-family:monospace;min-width:150px;cursor:pointer;}
+.seg-row .seg-dur{color:#9ca3af;font-family:monospace;min-width:48px;}
+.seg-row .seg-lv{color:#fbbf24;font-family:monospace;min-width:48px;}
+.seg-row button{background:#111827;border:1px solid #374151;color:#9ca3af;border-radius:5px;padding:1px 6px;cursor:pointer;font-size:10px;}
+.seg-row button:hover{color:#fff;border-color:#60a5fa;}
+.seg-row input[type=checkbox]{accent-color:#34d399;}
 .band-panel h2{font-size:13px;color:#93c5fd;margin-bottom:14px;}
 .band-range-display{display:flex;align-items:center;justify-content:center;gap:8px;
   background:#0f1117;border-radius:8px;padding:10px;margin-bottom:14px;
@@ -125,11 +154,12 @@ h1{text-align:center;font-size:16px;color:#93c5fd;margin-bottom:16px;letter-spac
 </head>
 <body>
 <h1>🐦 鳴き声・音声抽出ツール</h1>
-<div class="version">v0.5.0</div>
+<div class="version">v0.6.0</div>
 
 <div class="drop-zone" id="dropZone">
   <div class="icon">🎵</div>
   <p>音声ファイルをここにドロップ、またはクリックして選択（m4a / mp3 / wav）</p>
+  <p style="font-size:10px;color:#6b7280;margin-top:4px;">波形をドラッグして範囲を選ぶ / 鳴き声の区間を自動検出して区間ごとに保存できます</p>
   <p style="font-size:10px;color:#4b5563;margin-top:6px;">🔒 すべての処理はブラウザ内で完結します。ファイルはサーバに送信されません。</p>
   <div class="loaded" id="fileName"></div>
   <input type="file" id="fileInput" accept="audio/*" style="display:none">
@@ -151,6 +181,31 @@ h1{text-align:center;font-size:16px;color:#93c5fd;margin-bottom:16px;letter-spac
   <div id="bgScanLabel"></div>
   <div id="waveScrollTrack">
     <div id="waveScrollThumb"></div>
+  </div>
+</div>
+
+<div class="range-panel" id="rangePanel">
+  <h2>✂️ 範囲選択・鳴き声区間の抽出</h2>
+  <div class="range-row">
+    <span class="range-hint">波形をドラッグすると範囲選択（クリックはシーク）</span>
+    <span class="range-info" id="rangeInfo">範囲: 未選択</span>
+    <button class="btn-sm" onclick="playSelection()">▶ 範囲を再生</button>
+    <button class="btn-sm" onclick="clearSelection()">解除</button>
+    <button class="btn-sm dl" onclick="extractSelection()">⬇ 範囲を抽出・DL</button>
+  </div>
+  <div class="seg-ctrl">
+    <button class="btn-sm" onclick="detectSegments()">🔎 鳴き声の区間を自動検出</button>
+    <label>最小長 <input type="number" id="segMinLen" value="0.3" step="0.1" min="0.05"> 秒</label>
+    <label>結合間隔 <input type="number" id="segGap" value="0.5" step="0.1" min="0"> 秒</label>
+    <label>前後の余白 <input type="number" id="segPad" value="0.2" step="0.05" min="0"> 秒</label>
+    <span class="seg-status" id="segStatus">帯域とスパイク感度の設定に連動して検出します</span>
+  </div>
+  <div class="seg-list" id="segList"></div>
+  <div class="seg-actions" id="segActions" style="display:none">
+    <button class="btn-sm dl" onclick="downloadSegmentsJoined()">⬇ 選んだ区間をつなげて1本でDL</button>
+    <button class="btn-sm dl" onclick="downloadSegmentsZip()">⬇ 区間ごとにZIPでDL</button>
+    <button class="btn-sm" onclick="downloadSegmentsCsv()">CSV</button>
+    <button class="btn-sm" onclick="clearSegments()">クリア</button>
   </div>
 </div>
 
@@ -259,6 +314,11 @@ let voiceSegments = [];  // [{start, end, text}]
 
 let playing = false;
 let startAt = 0, pauseAt = 0;
+
+// 範囲選択・区間検出
+let selStart = null, selEnd = null;   // 秒。null = 未選択
+let selPlayEnd = null;                // 「範囲を再生」中の停止位置
+let segments = [];                    // [{start, end, peakDb, include}]
 
 // フィルタノード（buildGraph で生成、周波数だけ動的に変更）
 let hp1, hp2, lp1, lp2, bandComp, bandGain, bandLim, analyserNode;
@@ -643,24 +703,15 @@ function stop() {
   } else {
     if (srcNode) { try { srcNode.stop(); } catch(e){} srcNode = null; }
   }
-  playing = false; pauseAt = 0;
+  playing = false; pauseAt = 0; selPlayEnd = null;
   setStatus('');
 }
 
 // ════════════════════════════════════════════
 //  Extract & Download（オフラインレンダリング）
 // ════════════════════════════════════════════
-async function extractAndDownload() {
-  if (!audioDuration) { setStatus('まずファイルを読み込んでください'); return; }
-  if (streamMode) {
-    setStatus('⚠ 大きなファイルはダウンロード非対応です。100MB未満のファイルを使用してください。');
-    return;
-  }
-  setStatus('⏳ 抽出処理中...');
-  const offline = new OfflineAudioContext(
-    audioBuf.numberOfChannels, audioBuf.length, audioBuf.sampleRate);
-  const src = offline.createBufferSource();
-  src.buffer = audioBuf;
+// 現在の帯域・ゲイン設定と同じチェーンをオフラインで組む
+function connectExtractChain(offline, src) {
   if (fullBandMode) {
     const comp = offline.createDynamicsCompressor();
     comp.threshold.value = -30; comp.ratio.value = 4; comp.knee.value = 6;
@@ -680,15 +731,339 @@ async function extractAndDownload() {
     src.connect(fh1); fh1.connect(fh2); fh2.connect(fl1); fl1.connect(fl2);
     fl2.connect(comp); comp.connect(g); g.connect(lim); lim.connect(offline.destination);
   }
-  src.start(0);
-  const buf  = await offline.startRendering();
-  const wav  = encodeWAV(buf);
-  const name = fullBandMode ? '抽出_全帯域.wav' : `抽出_${fmtFreq(bandLow)}-${fmtFreq(bandHigh)}.wav`;
-  const url  = URL.createObjectURL(new Blob([wav], {type:'audio/wav'}));
-  const a    = document.createElement('a');
+}
+
+// [start, end) 秒の範囲を現在の設定でレンダリングして AudioBuffer を返す
+async function renderRange(start, end) {
+  const sr  = audioBuf.sampleRate;
+  const s0  = Math.max(0, Math.min(audioBuf.duration, start));
+  const e0  = Math.max(s0 + 0.01, Math.min(audioBuf.duration, end));
+  const len = Math.max(1, Math.round((e0 - s0) * sr));
+  const offline = new OfflineAudioContext(audioBuf.numberOfChannels, len, sr);
+  const src = offline.createBufferSource();
+  src.buffer = audioBuf;
+  connectExtractChain(offline, src);
+  src.start(0, s0, e0 - s0);
+  return offline.startRendering();
+}
+
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
   a.href = url; a.download = name; a.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function bandLabel() {
+  return fullBandMode ? '全帯域' : `${fmtFreq(bandLow)}-${fmtFreq(bandHigh)}`;
+}
+
+function fmtTimeMs(t) {
+  // 0:12.3 のような表示
+  const m = Math.floor(t / 60), sec = t - m * 60;
+  return `${m}:${sec.toFixed(1).padStart(4, '0')}`;
+}
+function fmtTimeFile(t) {
+  // ファイル名用 00m12.3s
+  const m = Math.floor(t / 60), sec = t - m * 60;
+  return `${String(m).padStart(2,'0')}m${sec.toFixed(1).padStart(4,'0')}s`;
+}
+
+// 抽出・DL: 範囲が選択されていればその範囲、なければ全体
+async function extractAndDownload() {
+  if (!audioDuration) { setStatus('まずファイルを読み込んでください'); return; }
+  if (streamMode) {
+    setStatus('⚠ 大きなファイルはダウンロード非対応です。100MB未満のファイルを使用してください。');
+    return;
+  }
+  const hasSel = selStart != null && selEnd != null;
+  setStatus(hasSel ? '⏳ 選択範囲を抽出中...' : '⏳ 抽出処理中...');
+  const buf  = await renderRange(hasSel ? selStart : 0, hasSel ? selEnd : audioBuf.duration);
+  const name = hasSel
+    ? `抽出_${bandLabel()}_${fmtTimeFile(selStart)}-${fmtTimeFile(selEnd)}.wav`
+    : `抽出_${bandLabel()}.wav`;
+  downloadBlob(new Blob([encodeWAV(buf)], {type:'audio/wav'}), name);
   setStatus(`✅ 保存しました: ${name}`);
+}
+
+// ════════════════════════════════════════════
+//  範囲選択
+// ════════════════════════════════════════════
+function updateRangeInfo() {
+  const el = id('rangeInfo');
+  if (selStart == null || selEnd == null) { el.textContent = '範囲: 未選択'; return; }
+  el.textContent = `範囲: ${fmtTimeMs(selStart)} – ${fmtTimeMs(selEnd)}（${(selEnd - selStart).toFixed(1)}秒）`;
+}
+function setSelection(a, b) {
+  if (!audioDuration) return;
+  selStart = Math.max(0, Math.min(a, b));
+  selEnd   = Math.min(audioDuration, Math.max(a, b));
+  if (selEnd - selStart < 0.05) { selStart = selEnd = null; }
+  updateRangeInfo();
+}
+function clearSelection() {
+  selStart = selEnd = null; selPlayEnd = null;
+  updateRangeInfo();
+}
+function playSelection() {
+  if (!audioDuration) { setStatus('まずファイルを読み込んでください'); return; }
+  if (selStart == null) { setStatus('波形をドラッグして範囲を選択してください'); return; }
+  if (playing) pause();
+  pauseAt = selStart;
+  selPlayEnd = selEnd;
+  play();
+  setStatus(`▶ 範囲を再生中: ${fmtTimeMs(selStart)} – ${fmtTimeMs(selEnd)}`);
+}
+function extractSelection() {
+  if (selStart == null) { setStatus('波形をドラッグして範囲を選択してください'); return; }
+  extractAndDownload();
+}
+// 「範囲を再生」の終端で止める（drawLoop から毎フレーム呼ぶ）
+function checkSelectionEnd() {
+  if (selPlayEnd == null || !playing) return;
+  if (getCurrentTime() >= selPlayEnd) {
+    pause();
+    pauseAt = selStart ?? 0;
+    selPlayEnd = null;
+    setStatus('⏹ 範囲の再生が終わりました');
+  }
+}
+
+// ════════════════════════════════════════════
+//  鳴き声区間の自動検出
+// ════════════════════════════════════════════
+function detectSegments() {
+  if (!audioDuration) { setStatus('まずファイルを読み込んでください'); return; }
+  if (streamMode || !audioBuf) {
+    id('segStatus').textContent = '⚠ 100MB以上のファイルでは自動検出・抽出は使えません';
+    return;
+  }
+  const minLen = Math.max(0.05, parseFloat(id('segMinLen').value) || 0.3);
+  const gapSec = Math.max(0,    parseFloat(id('segGap').value)    || 0);
+  const padSec = Math.max(0,    parseFloat(id('segPad').value)    || 0);
+  id('segStatus').textContent = '⏳ 検出中...';
+
+  // 波形表示と同じ 2 次バターワースで帯域を絞り、20ms ごとの RMS(dB) を求める
+  const L  = audioBuf.getChannelData(0);
+  const R  = audioBuf.numberOfChannels > 1 ? audioBuf.getChannelData(1) : L;
+  const sr = audioBuf.sampleRate;
+  const loHz = fullBandMode ? 0    : bandLow;
+  const hiHz = fullBandMode ? sr/2 : bandHigh;
+  const targetSR = fullBandMode ? sr : Math.min(sr, Math.max(4000, hiHz * 4));
+  const stride = Math.max(1, Math.floor(sr / targetSR));
+  const dsSR = sr / stride;
+  const mk = (type, fc) => {
+    const w0 = 2 * Math.PI * fc / dsSR, c = Math.cos(w0), a = Math.sin(w0) / (2 * 0.7071);
+    const a0 = 1 + a;
+    return type === 'hp'
+      ? { b0: (1 + c) / 2 / a0, b1: -(1 + c) / a0, b2: (1 + c) / 2 / a0, a1: -2 * c / a0, a2: (1 - a) / a0 }
+      : { b0: (1 - c) / 2 / a0, b1:  (1 - c) / a0, b2: (1 - c) / 2 / a0, a1: -2 * c / a0, a2: (1 - a) / a0 };
+  };
+  const hp = loHz > 10 ? mk('hp', loHz) : null;
+  const lp = hiHz < dsSR / 2 - 1 ? mk('lp', hiHz) : null;
+  let hx1=0,hx2=0,hy1=0,hy2=0, lx1=0,lx2=0,ly1=0,ly2=0;
+  const hop = 0.02; // 20ms
+  const frameLen = Math.max(1, Math.round(dsSR * hop));
+  const nFrames = Math.ceil(L.length / stride / frameLen);
+  const db = new Float32Array(nFrames);
+  let acc = 0, cnt = 0, fi = 0;
+  for (let di = 0, n = Math.floor(L.length / stride); di < n; di++) {
+    const i = di * stride;
+    let v = (L[i] + R[i]) * 0.5;
+    if (hp) { const y = hp.b0*v + hp.b1*hx1 + hp.b2*hx2 - hp.a1*hy1 - hp.a2*hy2; hx2=hx1; hx1=v; hy2=hy1; hy1=y; v=y; }
+    if (lp) { const y = lp.b0*v + lp.b1*lx1 + lp.b2*lx2 - lp.a1*ly1 - lp.a2*ly2; lx2=lx1; lx1=v; ly2=ly1; ly1=y; v=y; }
+    acc += v * v; cnt++;
+    if (cnt >= frameLen) { db[fi++] = 10 * Math.log10(acc / cnt + 1e-12); acc = 0; cnt = 0; }
+  }
+  if (cnt > 0 && fi < nFrames) db[fi++] = 10 * Math.log10(acc / cnt + 1e-12);
+  const frames = fi;
+
+  // ノイズ床 = 20 パーセンタイル。閾値はスパイク感度で 床+16dB（0）〜 床+4dB（100）
+  const sorted = Array.from(db.subarray(0, frames)).sort((a, b) => a - b);
+  const floor  = sorted[Math.floor(sorted.length * 0.2)] ?? -80;
+  const t = spikeSensitivity / 100;
+  const thr = floor + (16 - 12 * t);
+
+  // 閾値を超えたフレームを区間にまとめる
+  const raw = [];
+  let cur = null;
+  for (let f = 0; f < frames; f++) {
+    const on = db[f] > thr;
+    if (on && !cur) cur = { s: f, e: f + 1, peak: db[f] };
+    else if (on) { cur.e = f + 1; if (db[f] > cur.peak) cur.peak = db[f]; }
+    else if (cur) { raw.push(cur); cur = null; }
+  }
+  if (cur) raw.push(cur);
+
+  // 近い区間を結合 → 短い区間を捨てる → 余白を付ける
+  const merged = [];
+  for (const r of raw) {
+    const last = merged[merged.length - 1];
+    if (last && (r.s - last.e) * hop <= gapSec) { last.e = r.e; last.peak = Math.max(last.peak, r.peak); }
+    else merged.push({ ...r });
+  }
+  segments = merged
+    .filter(r => (r.e - r.s) * hop >= minLen)
+    .map(r => ({
+      start: Math.max(0, r.s * hop - padSec),
+      end:   Math.min(audioDuration, r.e * hop + padSec),
+      peakDb: r.peak - floor,
+      include: true,
+    }));
+  // 余白で重なったものをもう一度結合
+  for (let i = segments.length - 1; i > 0; i--) {
+    if (segments[i].start <= segments[i - 1].end) {
+      segments[i - 1].end = Math.max(segments[i - 1].end, segments[i].end);
+      segments[i - 1].peakDb = Math.max(segments[i - 1].peakDb, segments[i].peakDb);
+      segments.splice(i, 1);
+    }
+  }
+  const total = segments.reduce((a, g) => a + (g.end - g.start), 0);
+  id('segStatus').textContent = segments.length
+    ? `${segments.length} 区間（合計 ${total.toFixed(1)} 秒 / ${fmtTime(audioDuration)}）　閾値: ノイズ床 +${(thr - floor).toFixed(0)}dB`
+    : '区間が見つかりませんでした。スパイク感度を上げるか、帯域を見直してください';
+  renderSegmentList();
+}
+
+function renderSegmentList() {
+  const list = id('segList'), actions = id('segActions');
+  if (!segments.length) { list.style.display = 'none'; list.innerHTML = ''; actions.style.display = 'none'; return; }
+  list.style.display = 'block'; actions.style.display = 'flex';
+  list.innerHTML = segments.map((g, i) => `
+    <div class="seg-row" id="segRow${i}">
+      <input type="checkbox" ${g.include ? 'checked' : ''} onchange="segments[${i}].include=this.checked" title="DL対象">
+      <span class="seg-idx">${String(i + 1).padStart(2, '0')}</span>
+      <span class="seg-time" onclick="seekTo(${g.start})" title="クリックでこの位置へ">${fmtTimeMs(g.start)} – ${fmtTimeMs(g.end)}${fmtClockAt(g.start)}</span>
+      <span class="seg-dur">${(g.end - g.start).toFixed(1)}s</span>
+      <span class="seg-lv">+${g.peakDb.toFixed(0)}dB</span>
+      <button onclick="playSegment(${i})">▶</button>
+      <button onclick="selectSegment(${i})">範囲に</button>
+    </div>`).join('');
+}
+function seekTo(t) {
+  if (!audioDuration) return;
+  pauseAt = t;
+  if (playing) { if (streamMode) mediaAudio.currentTime = t; else startFrom(t); }
+}
+function playSegment(i) {
+  const g = segments[i]; if (!g) return;
+  setSelection(g.start, g.end);
+  playSelection();
+}
+function selectSegment(i) {
+  const g = segments[i]; if (!g) return;
+  setSelection(g.start, g.end);
+  setStatus(`範囲に設定: ${fmtTimeMs(g.start)} – ${fmtTimeMs(g.end)}`);
+}
+function clearSegments() {
+  segments = [];
+  renderSegmentList();
+  id('segStatus').textContent = '帯域とスパイク感度の設定に連動して検出します';
+}
+function includedSegments() { return segments.filter(g => g.include); }
+
+// 区間をつなげて 1 本に（各区間の前後 20ms をフェード）
+async function downloadSegmentsJoined() {
+  if (streamMode || !audioBuf) return;
+  const segs = includedSegments();
+  if (!segs.length) { setStatus('DL対象の区間がありません'); return; }
+  setStatus(`⏳ ${segs.length} 区間をレンダリング中...`);
+  const parts = [];
+  for (const g of segs) parts.push(await renderRange(g.start, g.end));
+  const sr = audioBuf.sampleRate, ch = audioBuf.numberOfChannels;
+  const total = parts.reduce((a, b) => a + b.length, 0);
+  const out = new AudioBuffer({ numberOfChannels: ch, length: total, sampleRate: sr });
+  const fade = Math.min(Math.round(sr * 0.02), 2000);
+  let off = 0;
+  for (const b of parts) {
+    for (let c = 0; c < ch; c++) {
+      const src = b.getChannelData(c), dst = out.getChannelData(c);
+      const n = b.length;
+      for (let i = 0; i < n; i++) {
+        let v = src[i];
+        if (i < fade) v *= i / fade;
+        if (n - 1 - i < fade) v *= (n - 1 - i) / fade;
+        dst[off + i] = v;
+      }
+    }
+    off += b.length;
+  }
+  const name = `抽出_${bandLabel()}_区間${segs.length}件つなぎ.wav`;
+  downloadBlob(new Blob([encodeWAV(out)], {type:'audio/wav'}), name);
+  setStatus(`✅ 保存しました: ${name}（${fmtTime(total / sr)}）`);
+}
+
+// 区間ごとの WAV を ZIP（無圧縮）にまとめる
+async function downloadSegmentsZip() {
+  if (streamMode || !audioBuf) return;
+  const segs = includedSegments();
+  if (!segs.length) { setStatus('DL対象の区間がありません'); return; }
+  setStatus(`⏳ ${segs.length} 区間をレンダリング中...`);
+  const files = [];
+  for (let i = 0; i < segs.length; i++) {
+    const g = segs[i];
+    const buf = await renderRange(g.start, g.end);
+    files.push({ name: `seg_${String(i + 1).padStart(2, '0')}_${fmtTimeFile(g.start)}-${fmtTimeFile(g.end)}.wav`, data: new Uint8Array(encodeWAV(buf)) });
+  }
+  const name = `抽出_${bandLabel()}_区間${segs.length}件.zip`;
+  downloadBlob(new Blob([buildZip(files)], {type:'application/zip'}), name);
+  setStatus(`✅ 保存しました: ${name}`);
+}
+
+function downloadSegmentsCsv() {
+  if (!segments.length) return;
+  const rows = ['index,start_sec,end_sec,duration_sec,start_clock,peak_above_floor_db,included'];
+  segments.forEach((g, i) => rows.push([
+    i + 1, g.start.toFixed(2), g.end.toFixed(2), (g.end - g.start).toFixed(2),
+    fmtClockAt(g.start).replace(' @ ', ''), g.peakDb.toFixed(1), g.include ? 1 : 0,
+  ].join(',')));
+  downloadBlob(new Blob(['﻿' + rows.join('\n')], {type:'text/csv'}), `区間一覧_${bandLabel()}.csv`);
+}
+
+// 最小限の ZIP ライター（STORE、UTF-8 ファイル名）
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(u8) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function buildZip(files) {
+  const enc = new TextEncoder();
+  const locals = [], centrals = [];
+  let offset = 0;
+  const d = new Date();
+  const dosTime = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xFFFF;
+  const dosDate = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xFFFF;
+  for (const f of files) {
+    const nameB = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+    lh.setUint16(8, 0, true); lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true);
+    lh.setUint32(14, crc, true); lh.setUint32(18, size, true); lh.setUint32(22, size, true);
+    lh.setUint16(26, nameB.length, true); lh.setUint16(28, 0, true);
+    locals.push(new Uint8Array(lh.buffer), nameB, f.data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+    ch.setUint16(10, 0, true); ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true);
+    ch.setUint32(16, crc, true); ch.setUint32(20, size, true); ch.setUint32(24, size, true);
+    ch.setUint16(28, nameB.length, true); ch.setUint16(30, 0, true); ch.setUint16(32, 0, true);
+    ch.setUint16(34, 0, true); ch.setUint16(36, 0, true); ch.setUint32(38, 0, true); ch.setUint32(42, offset, true);
+    centrals.push(new Uint8Array(ch.buffer), nameB);
+    offset += 30 + nameB.length + size;
+  }
+  const cdSize = centrals.reduce((a, b) => a + b.length, 0);
+  const eocd = new DataView(new ArrayBuffer(22));
+  eocd.setUint32(0, 0x06054b50, true); eocd.setUint16(4, 0, true); eocd.setUint16(6, 0, true);
+  eocd.setUint16(8, files.length, true); eocd.setUint16(10, files.length, true);
+  eocd.setUint32(12, cdSize, true); eocd.setUint32(16, offset, true); eocd.setUint16(20, 0, true);
+  const parts = [...locals, ...centrals, new Uint8Array(eocd.buffer)];
+  const out = new Uint8Array(parts.reduce((a, b) => a + b.length, 0));
+  let o = 0; for (const p of parts) { out.set(p, o); o += p.length; }
+  return out;
 }
 
 // ════════════════════════════════════════════
@@ -1398,6 +1773,30 @@ function drawWaveform() {
   wvCtx.fillStyle = 'rgba(0,0,0,0.35)';
   wvCtx.fillRect(Math.ceil(px), 0, wvW - Math.ceil(px), wvH);
 
+  // 検出した鳴き声区間（上端の緑の帯 + 薄い塗り）
+  const viewStart = zoomLevel <= 1 ? 0 : zoomStart;
+  const t2x = t => ((t - viewStart) / visibleDur) * wvW;
+  if (segments.length) {
+    for (const g of segments) {
+      const x0 = t2x(g.start), x1 = t2x(g.end);
+      if (x1 < 0 || x0 > wvW) continue;
+      wvCtx.fillStyle = g.include ? 'rgba(52,211,153,0.12)' : 'rgba(107,114,128,0.10)';
+      wvCtx.fillRect(x0, 0, Math.max(1, x1 - x0), wvH);
+      wvCtx.fillStyle = g.include ? 'rgba(52,211,153,0.9)' : 'rgba(107,114,128,0.7)';
+      wvCtx.fillRect(x0, 22, Math.max(1, x1 - x0), 4);
+    }
+  }
+  // 選択範囲
+  if (selStart != null && selEnd != null) {
+    const x0 = t2x(selStart), x1 = t2x(selEnd);
+    if (!(x1 < 0 || x0 > wvW)) {
+      wvCtx.fillStyle = 'rgba(59,130,246,0.22)';
+      wvCtx.fillRect(x0, 0, Math.max(1, x1 - x0), wvH);
+      wvCtx.fillStyle = 'rgba(147,197,253,0.95)';
+      wvCtx.fillRect(x0 - 1, 0, 2, wvH); wvCtx.fillRect(x1 - 1, 0, 2, wvH);
+    }
+  }
+
   // 現在位置のonset強度（全体キャッシュ座標で引く）
   const globalPx = (cur / audioDuration) * wvW;
   let rise = 0;
@@ -1463,9 +1862,37 @@ function wvSeek(e) {
     else { startFrom(t); }
   }
 }
-wvCanvas.addEventListener('mousedown', e => { wvDragging = true; wvSeek(e); wvCanvas.style.cursor = 'grabbing'; });
-document.addEventListener('mousemove', e => { if (wvDragging) wvSeek(e); });
-document.addEventListener('mouseup',   () => { wvDragging = false; wvCanvas.style.cursor = 'col-resize'; });
+// ドラッグ = 範囲選択、クリック（4px 未満の移動）= シーク。タッチも同じ扱い
+let wvDownX = 0, wvDownT = 0, wvMoved = false;
+const ptX = e => (e.touches && e.touches[0]) ? e.touches[0].clientX : (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : e.clientX;
+function wvPointerDown(e) {
+  if (!audioDuration) return;
+  wvDragging = true; wvMoved = false;
+  wvDownX = ptX(e);
+  wvDownT = wvTimeFromEvent({ clientX: wvDownX });
+  wvCanvas.style.cursor = 'grabbing';
+}
+function wvPointerMove(e) {
+  if (!wvDragging) return;
+  const x = ptX(e);
+  if (!wvMoved && Math.abs(x - wvDownX) >= 4) wvMoved = true;
+  if (wvMoved) {
+    setSelection(wvDownT, wvTimeFromEvent({ clientX: x }));
+    if (e.cancelable) e.preventDefault();
+  }
+}
+function wvPointerUp(e) {
+  if (!wvDragging) return;
+  wvDragging = false;
+  wvCanvas.style.cursor = 'col-resize';
+  if (!wvMoved) { selPlayEnd = null; wvSeek({ clientX: ptX(e) }); }
+}
+wvCanvas.addEventListener('mousedown', wvPointerDown);
+document.addEventListener('mousemove', wvPointerMove);
+document.addEventListener('mouseup',   wvPointerUp);
+wvCanvas.addEventListener('touchstart', wvPointerDown, { passive: true });
+document.addEventListener('touchmove',  wvPointerMove, { passive: false });
+document.addEventListener('touchend',   wvPointerUp);
 wvCanvas.addEventListener('mousemove', e => {
   if (wvDragging || !audioDuration) return;
   const t = wvTimeFromEvent(e);
@@ -1745,6 +2172,7 @@ function drawSpectrum() {
 function drawLoop() {
   requestAnimationFrame(drawLoop);
   accumOnset(); // ストリーミング再生中のonset蓄積
+  checkSelectionEnd();
   drawWaveform(); drawSgram(); drawSpectrum();
   if (analyserNode) {
     const fd = new Uint8Array(analyserNode.frequencyBinCount);
@@ -1766,6 +2194,7 @@ function loadFile(file) {
   buildGraph();
   audioBuf = null; pauseAt = 0; streamSamples = null;
   rtOnset = null; rtCovered = null;
+  clearSelection(); clearSegments();
   sgCache = null; id('sgramWrap').style.display = 'none';
   bgWorkers.forEach(w => { w.audio.pause(); w.audio.src = ''; }); bgWorkers = [];
   if (bgAudio) { bgAudio.pause(); bgAudio.src = ''; bgAudio = null; }
