@@ -270,6 +270,31 @@ main {
   margin: 0 0 1.5rem 1.5rem;
 }
 .article-body li { margin-bottom: 0.4rem; }
+
+/* 表: 罫線と見出し行の背景で見やすくする。幅が足りない場合は横スクロール */
+.article-body table {
+  display: block;
+  overflow-x: auto;
+  width: 100%;
+  margin-bottom: 1.5rem;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 0.95rem;
+  line-height: 1.7;
+}
+.article-body th,
+.article-body td {
+  border: 1px solid var(--border);
+  padding: 0.6rem 0.85rem;
+  text-align: left;
+  vertical-align: top;
+}
+.article-body th {
+  background: var(--tag-bg);
+  font-weight: 700;
+  white-space: nowrap;
+}
+.article-body tbody tr:nth-child(even) td { background: #fcfcfb; }
 .article-body a { color: var(--accent); }
 .article-body blockquote {
   border-left: 3px solid var(--border);
