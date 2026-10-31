@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "iOS 27 の Foundation Models で Private Cloud Compute を使おうとして分かったこと【entitlement と Small Business Program の壁】"
-date: 2026-10-31 09:30:00 +0900
+date: 2026-10-31 09:00:00 +0900
 tags: [アプリ開発, iOSアプリ, 生成AI]
 description: iOS 27 の Foundation Models フレームワークで Apple の Private Cloud Compute（PCC）上のモデルを呼び出そうとしたら、実機でアプリが落ちました。原因は管理対象 entitlement の不足で、その申請には App Store Small Business Program への加入、さらに有料アプリ契約の承諾と法人情報のコンプライアンス審査が必要でした。無料アプリしか出していない個人開発者がつまずいた点を順に記録します。
 ---
