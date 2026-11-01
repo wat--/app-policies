@@ -28,6 +28,12 @@ description: 記事の概要（検索結果に表示される）
 
 - `date` は **push する時刻より前**にする。Jekyll は未来日付の記事を既定で除外し、GitHub Pages は push のときにしかビルドしないので、未来日付のまま push すると記事が出ず、時間が過ぎても自動では現れない（2026-10-31 に発生。日付を直して再 push で解決）。
 
+## アプリ画面のスクリーンショット
+
+- アプリ説明記事には画面を 2〜3 枚入れる。`<div class="shot-row">` に `<figure><img ...><figcaption>` を並べる（CSS は `assets/css/blog.css` の `.shot-row`、横長は `figure.wide`）。
+- 画像は `assets/images/blog/<slug>/NN.jpg`（縦 480px 幅 / 横 900px 幅、JPEG q85）。元画像は App Store Connect の公開スクリーンショットを API で取得するのが手早い（2026-11-01 に iOS 11 本へ適用）。
+- 画面に個人情報・テスト用の広告バナー（Test mode）が写っていないか目視する。
+
 ## 記事スタイル
 
 - **対象読者**: エンジニア（技術手順記事）または一般（アプリ・体験記）
