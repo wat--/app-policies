@@ -8,6 +8,10 @@ description: 鳴き声から野鳥を識別するアプリ「野鳥鳴き声サ�
 
 [野鳥鳴き声サーチ](https://apps.apple.com/jp/app/%E9%87%8E%E9%B3%A5%E9%B3%B4%E3%81%8D%E5%A3%B0%E3%82%B5%E3%83%BC%E3%83%81/id6761675286) は、録音した鳴き声から野鳥の種類を推定するiOS / Androidアプリです。趣味の野鳥撮影から生まれたアプリです。
 
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/wild-bird-voice-search/01.jpg" alt="録音しながらその場で鳥種を推定する識別画面" loading="lazy"><figcaption>録音しながらその場で鳥種を推定する識別画面</figcaption></figure>
+</div>
+
 ## 最初の構想と現実
 
 最初に思い描いていたのは、もっと野心的なアプリでした。カメラやマイクを使って、野鳥の位置をリアルタイムで特定するようなものです。
@@ -18,6 +22,10 @@ description: 鳴き声から野鳥を識別するアプリ「野鳥鳴き声サ�
 
 野鳥観察の現場は山中であることも多く、電波が入らない場所でも使えることが実用上の必須条件でした。AIモデルをアプリに内蔵することでオフライン動作を実現しています。
 
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/wild-bird-voice-search/05.jpg" alt="識別モデルの精度評価もアプリ内で確認できる" loading="lazy"><figcaption>識別モデルの精度評価もアプリ内で確認できる</figcaption></figure>
+</div>
+
 ベースにしたのはコーネル大学が開発した **BirdNET V3.0** で、日本で見られる種に絞り込んだうえでFP16化して軽量化しています。モデルの詳細は[こちらの記事](/blog/2026/06/17/bird-voice-search-tech/)にまとめています。
 
 ## カエルや蝉も識別できる
@@ -27,6 +35,10 @@ description: 鳴き声から野鳥を識別するアプリ「野鳥鳴き声サ�
 ## 図鑑・観察記録として使える
 
 識別するだけでなく、写真・音声・メモを添えて観察記録を残せる機能も付けています。コレクター的な楽しみ方ができる図鑑機能もあります。録音した音声を後から調べ直すこともできるので、山から帰った後の振り返りにも使えます。
+
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/wild-bird-voice-search/02.jpg" alt="鳥図鑑。記録した種が増えるとレベルが上がる" loading="lazy"><figcaption>鳥図鑑。記録した種が増えるとレベルが上がる</figcaption></figure>
+</div>
 
 野鳥が身近に感じられるツールとして、フィールドに持ち出して使ってもらえたら嬉しいです。
 

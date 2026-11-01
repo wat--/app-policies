@@ -322,6 +322,39 @@ main {
   border-radius: 8px;
   margin: 1.5rem 0;
 }
+/* アプリ画面のスクリーンショット（2〜3枚並び） */
+.shot-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 14px;
+  margin: 1.5rem 0 2rem;
+}
+.shot-row figure {
+  flex: 1 1 0;
+  max-width: 220px;
+  margin: 0;
+  text-align: center;
+}
+.shot-row figure.wide { flex-basis: 100%; max-width: 100%; }
+.shot-row img {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.shot-row figcaption {
+  font-size: 0.8rem;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-top: 0.45rem;
+}
+@media (max-width: 600px) {
+  .shot-row { gap: 8px; }
+  .shot-row figure { max-width: 46%; }
+}
 
 /* Like button */
 .like-wrap {

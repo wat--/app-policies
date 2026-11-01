@@ -16,13 +16,25 @@ description: 登山・ハイキング中の熊対策アプリ「熊よけベル�
 
 熊よけとしては鈴が定番ですが、鈴の音だけで確実に熊が警戒するとは限りません。そのため、**ホーンなどの威嚇音**も用意しました。万が一のときに使える音を複数持たせることで、より実用的な安全対策ツールを目指しています。
 
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/kumasuzu/02.jpg" alt="鈴のほかにホーンや銃声などの威嚇音を用意" loading="lazy"><figcaption>鈴のほかにホーンや銃声などの威嚇音を用意</figcaption></figure>
+</div>
+
 ## 歩行の振動を検知して自動で鳴らす
 
 歩きながらいちいちスマホを操作するのは現実的ではないため、歩行の振動を検知して自動で鈴を鳴らす機能を搭載しました。ポケットやザックに入れておくだけで動作します。定期的に時報を鳴らす機能もあるため、定期的な音を出したい場面でも使えます。
 
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/kumasuzu/01.jpg" alt="歩行の振動や時報に合わせて自動で鳴らす" loading="lazy"><figcaption>歩行の振動や時報に合わせて自動で鳴らす</figcaption></figure>
+</div>
+
 ## 万歩計機能も搭載
 
 登山中のお供として使えるよう、万歩計（歩数計）の情報を確認できる機能もついでに付けました。山登りの距離感を把握したり、ちょっとした記録をつけたりするのに使えます。
+
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/kumasuzu/04.jpg" alt="HealthKit連携の歩数と距離" loading="lazy"><figcaption>HealthKit連携の歩数と距離</figcaption></figure>
+</div>
 
 熊よけ対策＋歩数計として、山歩きの相棒になれるアプリを目指しました。
 

@@ -8,6 +8,10 @@ description: 2027年3月30日で終了するソニーの「Video & TV SideView�
 
 [リモ録](https://apps.apple.com/jp/app/%E3%83%AA%E3%83%A2%E9%8C%B2/id6816450640) は、ソニー製テレビ BRAVIA と nasne の録画予約・録画済み番組の管理・リモコン操作を iPhone から行う iOS アプリです。
 
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/rimoroku/01.jpg" alt="ホーム画面。番組表・録画一覧・リモコンがひとつに" loading="lazy"><figcaption>ホーム画面。番組表・録画一覧・リモコンがひとつに</figcaption></figure>
+</div>
+
 ## 目次
 
 - [SideView が 2027年3月30日で終わる](#sideview-が-2027年3月30日で終わる)
@@ -79,6 +83,10 @@ Mac 上に記録用のプロキシを立てて通信を覗いたところ、原�
 
 番組表をどう用意するかは悩みました。テレビから取得する方法もありますが、取れる範囲が限られます。
 
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/rimoroku/02.jpg" alt="番組表はテレビから取得して表示する" loading="lazy"><figcaption>番組表はテレビから取得して表示する</figcaption></figure>
+</div>
+
 結局、公開されている番組表サイトの HTML を読み取る方式にしました。番組表のデータを自分で持たずに済み、地上波・BS・CS を7日先まで表示できます。地上波の地域は設定で選べて、位置情報から自動で選ぶこともできます。
 
 表示は、横に放送局・縦に時間を並べたグリッドにしました。局名の行は上に、時刻の列は左に固定されるので、スクロールしても何の番組か見失いません。当日は現在時刻の1時間前から描画して、終わった番組で画面が埋まらないようにしています。赤い線が現在時刻です。
@@ -88,6 +96,10 @@ Mac 上に記録用のプロキシを立てて通信を覗いたところ、原�
 ## nasne にも予約できるようにした
 
 途中で nasne にも対応させました。テレビと nasne の両方を持っていると、どちらに録画するかを選べたほうが便利だからです。
+
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/rimoroku/04.jpg" alt="録画予約一覧。テレビとnasneの予約をまとめて確認できる" loading="lazy"><figcaption>録画予約一覧。テレビとnasneの予約をまとめて確認できる</figcaption></figure>
+</div>
 
 nasne は同じネットワークを探して自動で見つけます。番組表から予約するとき、録画先をテレビか nasne かで選べて、予約一覧と録画済み一覧は両方をまとめて表示するか機器ごとに分けるかを切り替えられます。
 

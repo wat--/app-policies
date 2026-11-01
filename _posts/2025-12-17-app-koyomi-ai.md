@@ -8,6 +8,10 @@ description: 西暦・和暦変換アプリ「暦変換AI」の開発経緯と�
 
 [暦変換AI](https://apps.apple.com/jp/app/%E6%9A%A6%E5%A4%89%E6%8F%9Bai/id6756545072) は、西暦と和暦を相互変換するiOSアプリです。個人開発の最初の1本で、このアプリをきっかけにアプリ開発の世界に入りました。
 
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/koyomi-ai/01.jpg" alt="西暦と和暦を入れ替えて変換する基本画面" loading="lazy"><figcaption>西暦と和暦を入れ替えて変換する基本画面</figcaption></figure>
+</div>
+
 ## きっかけ
 
 愛用していた暦変換アプリが突然配信終了してしまいました。代替アプリを探してみたものの、デザインや使い勝手がしっくりこなかったため、「それなら自分で作ってしまおう」と思い立ちました。
@@ -17,6 +21,11 @@ description: 西暦・和暦変換アプリ「暦変換AI」の開発経緯と�
 ## 差別化のためのAI機能
 
 暦変換だけなら既存アプリとの差別化が難しいため、AI機能を追加することにしました。
+
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/koyomi-ai/04.jpg" alt="入力した年の流行や出来事をAIが教えてくれる" loading="lazy"><figcaption>入力した年の流行や出来事をAIが教えてくれる</figcaption></figure>
+  <figure><img src="/assets/images/blog/koyomi-ai/06.jpg" alt="年代ネタのクイズ機能" loading="lazy"><figcaption>年代ネタのクイズ機能</figcaption></figure>
+</div>
 
 その年の流行や出来事、世代あるあるをAIがコメントしてくれる機能です。たとえば「1985年」と入力すると、その年に関する話題をAIが語ってくれます。単なる変換ツールではなく、懐かしさや会話のきっかけになるような体験を目指しました。
 

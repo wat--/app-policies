@@ -8,6 +8,10 @@ description: ローカル対戦麻雀アプリ「スマホで麻雀」の開発�
 
 [スマホで麻雀](https://apps.apple.com/jp/app/%E3%82%B9%E3%83%9E%E3%83%9B%E3%81%A7%E9%BA%BB%E9%9B%80-%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E5%AF%BE%E6%88%A6/id6761806803) は、同じWi-Fiネットワーク内で2〜4台を使ってローカル対戦できる麻雀アプリです。
 
+<div class="shot-row">
+  <figure class="wide"><img src="/assets/images/blog/localmahjong/01.jpg" alt="ホスト側のトップ画面" loading="lazy"><figcaption>ホスト側のトップ画面</figcaption></figure>
+</div>
+
 ## きっかけ
 
 家族や親戚で集まったときに麻雀をするイメージから生まれたアプリです。もちろん、牌や卓があれば物理的な麻雀が一番楽しいとは思っています。ただ、機材がない場面での暇つぶしや、気軽に卓を囲みたいときに使えるものがあれば、という発想です。
@@ -16,6 +20,10 @@ description: ローカル対戦麻雀アプリ「スマホで麻雀」の開発�
 
 このアプリのこだわりは、**iOSアプリをダウンロードするのは1人だけでよい**という設計です。
 
+<div class="shot-row">
+  <figure class="wide"><img src="/assets/images/blog/localmahjong/02.jpg" alt="同じWi-Fiにいる人はQRコードを読むだけで参加できる" loading="lazy"><figcaption>同じWi-Fiにいる人はQRコードを読むだけで参加できる</figcaption></figure>
+</div>
+
 iOSに限定すると、Androidユーザーが参加できません。かといって全員がアプリをインストールするのは手間です。そこでホスト・クライアント構成を採用し、ホスト役の1人だけがiOSアプリを使い、残りのメンバーはAndroidやPCのブラウザから参加できるようにしました。
 
 エンジニアとして普段の仕事でサーバー・クライアント構成を扱ってきた経験が、ここで活きました。
@@ -23,6 +31,10 @@ iOSに限定すると、Androidユーザーが参加できません。かとい�
 ## 手軽さを優先した
 
 麻雀アプリはネット対戦ができるものが多くありますが、このアプリはあえてローカル対戦に特化しています。インターネット接続が不安定な場所でも使えますし、顔を合わせた場での対戦を想定しているので、ネット越しの対戦機能は必要ないと判断しました。
+
+<div class="shot-row">
+  <figure class="wide"><img src="/assets/images/blog/localmahjong/03.jpg" alt="対局画面。横向きでシンプルに" loading="lazy"><figcaption>対局画面。横向きでシンプルに</figcaption></figure>
+</div>
 
 麻雀牌を持ち歩かなくても、スマホがあれば場所を選ばず遊べます。ぜひ仲間と試してみてください。
 

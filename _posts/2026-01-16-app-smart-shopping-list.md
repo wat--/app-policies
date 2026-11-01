@@ -17,6 +17,12 @@ description: レシピから食材リストを自動作成するアプリ「ス�
 **AIによる食材の自動リストアップ**
 レシピサイトのURLや料理名を入力すると、AIが必要な食材を自動で抽出してリスト化します。材料を手で書き写す手間が省けます。
 
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/smart-shopping-list/01.jpg" alt="レシピのURLと分量の倍率を入れるだけ" loading="lazy"><figcaption>レシピのURLと分量の倍率を入れるだけ</figcaption></figure>
+  <figure><img src="/assets/images/blog/smart-shopping-list/02.jpg" alt="AIが抽出した食材が買い物チェックリストになる" loading="lazy"><figcaption>AIが抽出した食材が買い物チェックリストになる</figcaption></figure>
+  <figure><img src="/assets/images/blog/smart-shopping-list/06.jpg" alt="食材名に絵文字が付いてひと目で分かる" loading="lazy"><figcaption>食材名に絵文字が付いてひと目で分かる</figcaption></figure>
+</div>
+
 **分量のカスタマイズ**
 「塩分控えめ」「2人分を4人分に変更」といった要望に合わせて分量を調整できます。家族の人数や好みに合わせて柔軟に使えるようにしました。
 
