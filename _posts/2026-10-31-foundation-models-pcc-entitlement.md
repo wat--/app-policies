@@ -161,3 +161,5 @@ enum AIFeatureSettings {
 この記事を書いている時点で、Program License Agreement の承諾と法人情報の修正は済み、コンプライアンス審査の書類提出と有料アプリ契約の承諾、Small Business Program の加入申請が残っています。PCC の申請フォームはその先です。
 
 一連の流れは、API のドキュメントを読んでいるだけでは見えません。「PCC を試す」と決めたら、コードより先にアカウントの状態を App Store Connect の「ビジネス」画面で確認しておくことをおすすめします。進展があればこの記事に追記します。
+
+**追記（2026 年 11 月 2 日）**: コンプライアンス審査は D-U-N-S 番号の確認メールで通りました。有料アプリ契約・銀行口座・納税フォーム・Small Business Program 申請までの記録は [続編の記事](/blog/2026/11/02/sole-proprietor-paid-apps-tax-forms/) にまとめています。
