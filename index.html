@@ -127,6 +127,12 @@
             color: #fff;
         }
 
+        .app-cta.mac {
+            background: #1d1d1f;
+            color: #fff;
+            border: 1px solid #555;
+        }
+
         .app-cta.coming-soon {
             background: #f0f0f5;
             color: #999;
@@ -677,8 +683,9 @@
                 apps.forEach(app => {
                     const isIos = app.type === 'ios';
                     const hasAndroid = !!app.androidDownloadUrl;
+                    const hasMac = !!app.macAppStoreUrl;
                     const badgeLabel = isIos
-                        ? (hasAndroid ? 'iOS / Android' : 'iOS')
+                        ? ['iOS', hasAndroid ? 'Android' : null, hasMac ? 'Mac' : null].filter(Boolean).join(' / ')
                         : 'Web';
 
                     const iosBtn = app.appStoreUrl
@@ -704,8 +711,16 @@
                                </a>`)
                         : '';
 
+                    // Mac 版（ネイティブ macOS アプリが別にある場合）
+                    const macBtn = app.macAppStoreUrl
+                        ? `<a href="${app.macAppStoreUrl}" target="_blank" rel="noopener noreferrer" class="app-cta mac">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                               Mac App Storeで見る
+                           </a>`
+                        : '';
+
                     const ctaBtn = isIos
-                        ? `${iosBtn}${androidBtn}`
+                        ? `${iosBtn}${androidBtn}${macBtn}`
                         : `<a href="${app.webUrl}" class="app-cta web">
                                <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
                                Webアプリを起動
