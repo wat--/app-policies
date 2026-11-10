@@ -43,7 +43,7 @@ Microsoft Store には出さず、[Tail-Studio のダウンロードページ](/
 Mac 版のメニューバー表示がちょうどよかったので、同じ発想で「タスクバーの高さに収まるメーター」を作りました。30px のリングの中央に使用率を出し、下に「C 5h」「C 週」「C Fable」「G 5h」のような短いラベルを付けています（C は Claude、G は ChatGPT）。全体の高さは約 46px で、48px のタスクバーにちょうど入ります。
 
 <div class="shot-row">
-  <figure class="wide"><img src="/assets/images/blog/ai-usage-meter-windows/01.jpg" alt="タスクバーの通知領域の左隣に、5 つのリングメーターが並んでいる" loading="lazy"><figcaption>タスクバーの通知領域の左隣に置いたところ（画像はサンプルデータ）</figcaption></figure>
+  <figure><img src="/assets/images/blog/ai-usage-meter-windows/01.jpg" alt="5 つのリングメーターが横に並んだコンパクトウィジェット" loading="lazy"><figcaption>コンパクトウィジェット。この高さでタスクバーに収まる（画像はサンプルデータ）</figcaption></figure>
 </div>
 
 右クリックメニューの「タスクバーの上に置く」を選ぶと、下辺に固定されたタスクバーの通知領域の左隣へ自動で配置されます。ウィンドウは枠なし・背景透過・`Topmost` で、タスクバーの上に重ねているだけです。
