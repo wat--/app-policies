@@ -6,3 +6,5 @@ vendor/
 Gemfile.lock
 .DS_Store
 .claude/
+_comments-worker/node_modules/
+_comments-worker/.wrangler/

@@ -21,10 +21,10 @@ timezone: Asia/Tokyo
 likes:
   workspace: "ws-team-1-5136"
 
-# 記事コメント欄(Disqus)。disqus.com でサイト登録して発行される shortname を設定すると
-# 記事ページにコメント欄が表示される。空のままなら非表示。
-disqus:
-  shortname: ""
+# 記事コメント欄(自前: Cloudflare Workers + D1。_comments-worker/ 参照)。
+# endpoint が空なら非表示。IP・Cookie は保存せず、投稿は承認制。
+comments:
+  endpoint: "https://tail-studio-comments.waw71068.workers.dev"
 
 # Build
 markdown: kramdown

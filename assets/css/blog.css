@@ -471,6 +471,27 @@ main {
   border-bottom: 1px solid var(--border);
 }
 
+.comment-item { padding: 0.9rem 0; border-bottom: 1px solid var(--border); }
+.comment-meta { font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.3rem; }
+.comment-body { white-space: pre-wrap; word-break: break-word; line-height: 1.7; }
+.comment-empty { color: var(--text-muted); font-size: 0.9rem; }
+.comment-form { margin-top: 1.5rem; }
+.comment-label { display: block; font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.9rem; }
+.comment-label input, .comment-label textarea {
+  display: block; width: 100%; box-sizing: border-box; margin-top: 0.3rem; padding: 0.55rem 0.7rem;
+  font: inherit; color: var(--text); background: var(--bg-card);
+  border: 1px solid var(--border); border-radius: 8px;
+}
+.comment-label textarea { resize: vertical; }
+.comment-hp { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }
+.comment-submit {
+  padding: 0.55rem 1.4rem; font: inherit; font-weight: 600; color: #fff; background: var(--accent);
+  border: 0; border-radius: 8px; cursor: pointer;
+}
+.comment-submit:disabled { opacity: 0.6; cursor: default; }
+.comment-note { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.8rem; }
+.comment-status { font-size: 0.85rem; min-height: 1.2em; }
+
 /* Pages */
 .page-header { margin-bottom: 2rem; }
 .page-header h1 {

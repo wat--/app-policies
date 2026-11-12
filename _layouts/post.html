@@ -66,10 +66,22 @@ layout: default
     </div>
   </div>
 
-  {% if site.disqus.shortname != "" %}
-  <section class="comments-wrap">
+  {% if site.comments.endpoint != "" %}
+  <section class="comments-wrap" id="comments" data-endpoint="{{ site.comments.endpoint }}" data-slug="{{ page.url }}">
     <h2 class="comments-title">コメント</h2>
-    <div id="disqus_thread"></div>
+    <div id="comment-list" class="comment-list"><p class="comment-empty">読み込み中…</p></div>
+    <form id="comment-form" class="comment-form" autocomplete="off">
+      <label class="comment-label">お名前（任意）
+        <input type="text" name="name" maxlength="40" placeholder="名無しさん">
+      </label>
+      <label class="comment-label">コメント
+        <textarea name="body" rows="4" maxlength="2000" required></textarea>
+      </label>
+      <div class="comment-hp" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <button type="submit" class="comment-submit">送信する</button>
+      <p class="comment-note">投稿されたコメントは、確認後に表示されます。コメント用のデータベースには、記事・お名前・コメント・投稿時刻だけを保存し、IP アドレスは保存しません。Cookie も使いません。</p>
+      <p class="comment-status" id="comment-status" role="status"></p>
+    </form>
   </section>
   {% endif %}
 
@@ -202,17 +214,90 @@ layout: default
   })();
 </script>
 
-{% if site.disqus.shortname != "" %}
+{% if site.comments.endpoint != "" %}
 <script>
-  var disqus_config = function () {
-    this.page.url = "{{ page.url | absolute_url }}";
-    this.page.identifier = "{{ page.url }}";
-  };
   (function () {
-    var d = document, s = d.createElement('script');
-    s.src = 'https://{{ site.disqus.shortname }}.disqus.com/embed.js';
-    s.setAttribute('data-timestamp', +new Date());
-    (d.head || d.body).appendChild(s);
+    var wrap = document.getElementById('comments');
+    if (!wrap) return;
+    var endpoint = wrap.getAttribute('data-endpoint');
+    var slug = wrap.getAttribute('data-slug');
+    var list = document.getElementById('comment-list');
+    var form = document.getElementById('comment-form');
+    var status = document.getElementById('comment-status');
+    var shownAt = Date.now();
+
+    function fmt(ms) {
+      var d = new Date(ms);
+      return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
+    }
+
+    function load() {
+      fetch(endpoint + '/comments?slug=' + encodeURIComponent(slug))
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (data) {
+          list.textContent = '';
+          if (!data.comments.length) {
+            var p = document.createElement('p');
+            p.className = 'comment-empty';
+            p.textContent = 'まだコメントはありません。';
+            list.appendChild(p);
+            return;
+          }
+          data.comments.forEach(function (c) {
+            var item = document.createElement('div');
+            item.className = 'comment-item';
+            var meta = document.createElement('div');
+            meta.className = 'comment-meta';
+            meta.textContent = c.name + ' ・ ' + fmt(c.created_at);
+            var body = document.createElement('div');
+            body.className = 'comment-body';
+            body.textContent = c.body;
+            item.appendChild(meta);
+            item.appendChild(body);
+            list.appendChild(item);
+          });
+        })
+        .catch(function () {
+          list.textContent = '';
+          var p = document.createElement('p');
+          p.className = 'comment-empty';
+          p.textContent = 'コメントを読み込めませんでした。';
+          list.appendChild(p);
+        });
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var btn = form.querySelector('.comment-submit');
+      btn.disabled = true;
+      status.textContent = '送信中…';
+      fetch(endpoint + '/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: slug,
+          name: form.name.value,
+          body: form.body.value,
+          website: form.website.value,
+          t: shownAt
+        })
+      })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          if (res.ok) {
+            status.textContent = '送信しました。確認後に表示されます。';
+            form.body.value = '';
+            shownAt = Date.now();
+          } else {
+            var msg = { 'too fast': '少し時間をおいてから送信してください。', 'busy': '現在コメントを受け付けられません。時間をおいてお試しください。', 'too many links': 'リンクは2つまでにしてください。', 'bad body': 'コメントは2〜2000文字で入力してください。' };
+            status.textContent = msg[res.j.error] || '送信できませんでした。';
+          }
+          btn.disabled = false;
+        })
+        .catch(function () { status.textContent = '送信できませんでした。'; btn.disabled = false; });
+    });
+
+    load();
   })();
 </script>
 {% endif %}
