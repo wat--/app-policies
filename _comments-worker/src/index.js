@@ -13,6 +13,7 @@ const MAX_PENDING_TOTAL = 300;
 const MAX_REQUEST_BYTES = 16 * 1024;   // 投稿リクエスト全体の上限
 const NOTIFY_INTERVAL_MS = 10 * 60 * 1000; // 通知メールは 10 分に 1 通まで
 const NOTIFY_FROM = 'comments@tail-studio.com';
+const ADMIN_URL = 'https://tail-studio-comments.waw71068.workers.dev/admin';
 
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
@@ -53,7 +54,8 @@ async function notify(env, slug, name, body) {
     body,
     '',
     '----',
-    '承認・削除は管理画面から行ってください（URL の # 以降に合言葉が必要です）。',
+    '承認・削除は管理画面から行ってください（合言葉の入力が必要です）。',
+    ADMIN_URL,
     'このメールは 10 分に 1 通までしか送られません。ほかにも承認待ちがある場合があります。',
   ].join('\n');
   const b64 = b64utf8(text).replace(/(.{76})/g, '$1\r\n');
@@ -170,7 +172,7 @@ export default {
       return json({ ok: true }, 200, request, env);
     }
 
-    // 管理: 管理画面（合言葉は URL の # 以降に置く。サーバーには送られない）
+    // 管理: 管理画面（合言葉は入力欄に入れる。ブラウザのタブを閉じるまで sessionStorage に保持）
     if (path === '/admin' && request.method === 'GET') {
       return new Response(ADMIN_HTML, {
         headers: {
@@ -221,11 +223,25 @@ body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:760px;mar
 button{padding:6px 14px;border-radius:6px;border:1px solid #d1d5db;background:#fff;cursor:pointer;margin-right:8px}
 button.ok{background:#2563eb;color:#fff;border-color:#2563eb}
 </style></head><body>
-<h1>コメント管理</h1><p id="s">読み込み中…</p><div id="l"></div>
+<h1>コメント管理</h1>
+<form id="f" hidden>
+<input type="text" name="username" value="admin" autocomplete="username" hidden>
+<p><label>合言葉<br><input type="password" id="k" name="password" autocomplete="current-password" required style="width:100%;box-sizing:border-box;padding:8px;font-size:16px;border:1px solid #d1d5db;border-radius:6px"></label></p>
+<button type="submit" class="ok">開く</button>
+</form>
+<p id="s"></p><div id="l"></div><p><button id="o" hidden>ログアウト</button></p>
 <script>
-var key=decodeURIComponent(location.hash.slice(1));
+var key='';
+try{key=sessionStorage.getItem('k')||'';}catch(e){}
+// 以前の「URL の # 以降に合言葉」形式で開かれたときは、取り込んでから URL から消す
+if(location.hash.length>1){key=decodeURIComponent(location.hash.slice(1));history.replaceState(null,'',location.pathname);}
+var f=document.getElementById('f'),o=document.getElementById('o'),st=document.getElementById('s');
+function show(login,msg){f.hidden=!login;o.hidden=login;if(login){document.getElementById('l').textContent='';}st.textContent=msg||'';}
+f.addEventListener('submit',function(e){e.preventDefault();key=document.getElementById('k').value;load();});
+o.addEventListener('click',function(){key='';try{sessionStorage.removeItem('k');}catch(e){}document.getElementById('k').value='';show(true,'');});
 function api(p,o){o=o||{};o.headers=Object.assign({'Authorization':'Bearer '+key,'Content-Type':'application/json'},o.headers||{});return fetch(p,o).then(function(r){if(!r.ok)throw new Error(r.status);return r.json();});}
-function load(){api('/admin/list').then(function(d){
+function load(){if(!key){show(true,'');return;}st.textContent='読み込み中…';api('/admin/list').then(function(d){
+ try{sessionStorage.setItem('k',key);}catch(e){}show(false,'');
  var l=document.getElementById('l');l.textContent='';
  var pend=d.comments.filter(function(c){return !c.approved}).length;
  document.getElementById('s').textContent='承認待ち '+pend+' 件 / 全 '+d.comments.length+' 件';
@@ -238,7 +254,7 @@ function load(){api('/admin/list').then(function(d){
   if(!c.approved){var a=document.createElement('button');a.className='ok';a.textContent='承認';a.onclick=function(){act('approve',c.id)};div.appendChild(a);}
   var x=document.createElement('button');x.textContent='削除';x.onclick=function(){if(confirm('削除しますか？'))act('delete',c.id)};div.appendChild(x);
   l.appendChild(div);});
-}).catch(function(){document.getElementById('s').textContent='読み込めません。URL の # 以降の合言葉を確認してください。';});}
+}).catch(function(e){key='';try{sessionStorage.removeItem('k');}catch(x){}show(true,e.message==='401'?'合言葉が違います。':'読み込めませんでした。時間をおいてお試しください。');});}
 function act(a,id){api('/admin/'+a,{method:'POST',body:JSON.stringify({id:id})}).then(load);}
 load();
 </script></body></html>`;

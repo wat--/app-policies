@@ -81,7 +81,7 @@ description: 記事の概要（検索結果に表示される）
 - Worker: `https://tail-studio-comments.waw71068.workers.dev`（`_config.yml` の `comments.endpoint`。空にすると非表示）。D1 は `tail-studio-comments`。
 - `_layouts/post.html` がコメント一覧の取得と投稿フォームを持つ。投稿は**承認制**（承認されるまで公開されない）。IP・Cookie は保存しない。
 - スパム対策: ハニーポット、表示から3秒未満の投稿を拒否、本文2〜2000字、リンク3つ以上は拒否、承認待ちの上限（記事ごと20件・全体300件）、Origin を tail-studio.com に限定。
-- 承認・削除: `https://tail-studio-comments.waw71068.workers.dev/admin#<ADMIN_KEY>`（合言葉は `#` 以降に置く。サーバーには送られない）。ADMIN_KEY は Worker のシークレット（`cd _comments-worker && npx wrangler secret put ADMIN_KEY` で変更）。リポジトリには入れない。
+- 承認・削除: `https://tail-studio-comments.waw71068.workers.dev/admin` を開き、合言葉（ADMIN_KEY）を入力する。URL に秘密は含まれないので、通知メールにもこのリンクを載せている。合言葉はパスワードマネージャーに保存する（入力欄は自動入力に対応）。ADMIN_KEY は Worker のシークレット（`cd _comments-worker && npx wrangler secret put ADMIN_KEY` で変更）。リポジトリには入れない。
 - 変更の反映: `cd _comments-worker && npx wrangler deploy`（要 `npx wrangler login`）。DB スキーマは `schema.sql`。
 - 新着通知メール: Worker の `send_email` バインディング（`MAIL`）で、Email Routing の確認済み転送先へ送る。宛先はシークレット `NOTIFY_TO`（公開リポジトリに書かない）、差出人は `comments@tail-studio.com`。10 分に 1 通まで（D1 の `meta.last_notified`）。利用者の入力はメールのヘッダーに入れず、base64 の本文だけに入れる。
 - 入力の扱い: SQL はすべてプレースホルダー、画面表示はすべて `textContent`（HTML として解釈させない）。制御文字・双方向制御文字は保存前に除去。リクエストは JSON のみ・16KB まで。管理 API は CORS を返さない。管理画面は CSP 付き。**表示を `innerHTML` に変えたり、Markdown 対応を足したりするときは XSS 対策を必ず見直す。**
