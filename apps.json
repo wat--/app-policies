@@ -1,5 +1,23 @@
 [
   {
+    "id": "local-ai-translate",
+    "name": "ローカルAI翻訳",
+    "type": "ios",
+    "icon": "🌐",
+    "description": "翻訳モデルを一度ダウンロードすれば、インターネットにつながず iPhone の中だけで翻訳できる AI 翻訳アプリ。テキスト・写真・カメラ・音声・会話の翻訳に対応し、53 言語を扱えます。翻訳モデルは PLaMo 3 Translate（Built with PLaMo）。",
+    "appStoreUrl": "https://apps.apple.com/jp/app/id6833263560",
+    "links": [
+      {
+        "label": "使い方・サポート",
+        "url": "apps/local-ai-translate/guide.html"
+      },
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/local-ai-translate/privacy-policy.html"
+      }
+    ]
+  },
+  {
     "id": "teiji-photo",
     "name": "定時フォト転送",
     "type": "ios",
