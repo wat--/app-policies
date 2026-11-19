@@ -1,0 +1,19 @@
+name = "tail-studio-comments"
+main = "src/index.js"
+compatibility_date = "2026-11-01"
+preview_urls = false
+
+[vars]
+ALLOWED_ORIGINS = "https://tail-studio.com,https://www.tail-studio.com"
+
+# D1 の database_id は `wrangler d1 create` の出力で置き換える
+[[d1_databases]]
+binding = "DB"
+database_name = "tail-studio-comments"
+database_id = "66fe2114-e987-4f0b-89e2-8289d7938aac"
+
+
+# 新着コメントの通知メール（Cloudflare Email Routing の確認済み転送先にだけ送れる）。
+# 宛先は公開リポジトリに書かず、シークレット NOTIFY_TO に入れる。
+[[send_email]]
+name = "MAIL"

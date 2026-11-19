@@ -1,0 +1,300 @@
+[
+  {
+    "id": "local-ai-translate",
+    "name": "ローカルAI翻訳",
+    "type": "ios",
+    "icon": "🌐",
+    "description": "翻訳モデルを一度ダウンロードすれば、インターネットにつながず iPhone の中だけで翻訳できる AI 翻訳アプリ。テキスト・写真・カメラ・音声・会話の翻訳に対応し、53 言語を扱えます。翻訳モデルは PLaMo 3 Translate（Built with PLaMo）。",
+    "appStoreUrl": "https://apps.apple.com/jp/app/id6833263560",
+    "links": [
+      {
+        "label": "使い方・サポート",
+        "url": "apps/local-ai-translate/guide.html"
+      },
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/local-ai-translate/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "teiji-photo",
+    "name": "定時フォト転送",
+    "type": "ios",
+    "icon": "🖼️",
+    "appStoreUrl": "https://apps.apple.com/jp/app/id6826420187",
+    "description": "同じ Wi-Fi の端末どうしで、写真を決まった時刻や自宅の Wi-Fi への接続時に自動で送るアプリ。新しく撮った写真だけを、インターネットを経由せず端末どうしで直接転送します。",
+    "links": [
+      {
+        "label": "iOS以外のスマホ用アプリ",
+        "url": "apps/teiji-photo/download.html"
+      },
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/teiji-photo/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "daily-note",
+    "name": "nikkiji（にっきじ）",
+    "type": "ios",
+    "icon": "📓",
+    "appStoreUrl": "https://apps.apple.com/jp/app/id6822274695",
+    "description": "日記を書くだけで、オンデバイス AI（Apple Intelligence）があなたの過去記事の文体を学習してブログ記事の下書きを提案する iOS アプリ。公開前チェックは誤字脱字など選んだ観点だけ。Apple「ジャーナル」との読み込み・書き出しにも対応。日記も AI 処理もすべて端末内で完結します。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/daily-note/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "koyomi-ai",
+    "name": "暦変換AI",
+    "type": "ios",
+    "icon": "📅",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E6%9A%A6%E5%A4%89%E6%8F%9Bai/id6756545072",
+    "description": "和暦と西暦、そして年齢をまとめて相互変換できる iOS アプリ。誕生日や記念日をメモとして登録しておけば、元号またぎの年齢計算や節目の年の把握もすぐに確認できます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/koyomi-ai/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "smart-shopping-list",
+    "name": "スマート食材リスト",
+    "type": "ios",
+    "icon": "🛒",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E3%82%B9%E3%83%9E%E3%83%BC%E3%83%88%E9%A3%9F%E6%9D%90%E3%83%AA%E3%82%B9%E3%83%88/id6757102546",
+    "description": "買い物リストと冷蔵庫の在庫管理をひとつにまとめた iOS アプリ。よく買う食材をワンタップで追加でき、在庫の残量から次に買うものを思い出せるので、買い忘れと二重買いを減らせます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/smart-shopping-list/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "boardgame-ai",
+    "name": "ボードゲームAI",
+    "type": "ios",
+    "icon": "♟️",
+    "appStoreUrl": "https://apps.apple.com/jp/app/boardgameai/id6759185448",
+    "description": "リバーシ・チェス・将棋の 3 タイトルを 1 本にまとめた対戦アプリ。AI との対局だけでなく、同じ端末での対人戦や、思考ログの表示、駒の初期配置カスタムまで対応し、序盤の研究や詰みの練習に使えます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/boardgame-ai/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "wild-bird-voice-search",
+    "name": "野鳥鳴き声サーチ",
+    "type": "ios",
+    "icon": "🐦",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E9%87%8E%E9%B3%A5%E9%B3%B4%E3%81%8D%E5%A3%B0%E3%82%B5%E3%83%BC%E3%83%81/id6761675286",
+    "androidDownloadUrl": "https://github.com/wat--/releases/releases/tag/v0.1.1-android",
+    "galaxyStoreUrl": "https://galaxystore.samsung.com/detail/com.callisto.birdcompass",
+    "description": "録音した野鳥の鳴き声から候補を推定し、図鑑的に特徴を確認できる iOS / Android アプリ。観察ノートに写真・音声・ビデオ・メモを添えて保存できるので、日本で出会える野鳥の観察記録を一箇所にまとめられます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/wild-bird-voice-search/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "hana-search",
+    "name": "花サーチ",
+    "type": "ios",
+    "icon": "🌸",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E8%8A%B1%E3%82%B5%E3%83%BC%E3%83%81/id6802036544",
+    "description": "撮った花の名前をオンデバイスAIで推定し、観察記録として保存できる iOS アプリ。日本で身近な花・野草・樹木・野菜 626 種をこのアプリのために独自学習し、認識はすべて端末内で完結、写真は外部に送信されません。626 種の図鑑、Apple Intelligence への「AIに質問」、Siri・ショートカット連携を搭載。圏外でも使えます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/hana-search/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "localmahjong",
+    "name": "スマホで麻雀",
+    "type": "ios",
+    "icon": "🀄",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E3%82%B9%E3%83%9E%E3%83%9B%E3%81%A7%E9%BA%BB%E9%9B%80-%E3%83%AD%E3%83%BC%E3%82%AB%E3%83%AB%E5%AF%BE%E6%88%A6/id6761806803",
+    "description": "同じ Wi-Fi ネットワーク内の 2〜4 台で遊べるローカル対戦麻雀アプリ。インターネット接続がなくても仲間内ですぐ卓を囲めるので、旅行先や通信の弱い場所でも対局を楽しめます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/localmahjong/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "fire-simulator",
+    "name": "FIREシミュレーター",
+    "type": "web",
+    "icon": "🔥",
+    "webUrl": "apps/fire-simulator/fire_simulator.html",
+    "description": "現在の資産・毎月の収支・期待利回り・想定物価上昇率などを入力し、何歳で FIRE（経済的自立）が達成できそうかを試算する Web シミュレーター。80 年先までの資産推移をグラフで確認でき、年金の繰上げ・繰下げ条件も調整できます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/fire-simulator/fire_simulator.html#privacy-policy"
+      }
+    ]
+  },
+  {
+    "id": "money-quiz",
+    "name": "複利感覚トレーナー",
+    "type": "web",
+    "icon": "💰",
+    "webUrl": "apps/money-quiz/money_quiz.html",
+    "description": "複利・ローン・賃貸 vs 購入・税金など、お金にまつわる「意外な真実」を 2 択クイズ形式で体感できる Web アプリ。各問に計算根拠と前提条件、信頼度インジケーターが添えられるので、学習教材としても使えます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/money-quiz/money_quiz.html#privacy-policy"
+      }
+    ]
+  },
+  {
+    "id": "image-text-editor",
+    "name": "画像テキストエディター",
+    "type": "web",
+    "icon": "✏️",
+    "webUrl": "apps/image-text-editor/image_text_editor.html",
+    "description": "アップロードした画像にテキストを自由に重ねられる Web ツール。フォント・サイズ・色・不透明度・縁取り・ドロップシャドウ・回転・位置をレイヤーごとに細かく設定でき、PNG / JPG 形式でダウンロードできます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/image-text-editor/image_text_editor.html#privacy-policy"
+      }
+    ]
+  },
+  {
+    "id": "appstore-screenshot-maker",
+    "name": "App Store画像メーカー",
+    "type": "web",
+    "icon": "🖼️",
+    "webUrl": "apps/appstore-screenshot-maker/appstore_screenshot_maker.html",
+    "description": "App Store 申請に必要な 6.5 インチと 13 インチのスクリーンショットを、ブラウザ上で作成できる Web ツール。画像のアップロード、上部テキストの追加、プレビュー確認、PNG 書き出しにワンストップで対応します。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/appstore-screenshot-maker/appstore_screenshot_maker.html#privacy-policy"
+      }
+    ]
+  },
+  {
+    "id": "bird-audio-extractor",
+    "name": "鳴き声・音声抽出ツール",
+    "type": "web",
+    "icon": "🐦",
+    "webUrl": "apps/bird-audio-extractor/bird_audio_extractor.html",
+    "description": "録音した音声ファイルから特定の周波数帯域だけを抽出・再生・ダウンロードできる Web ツール。小鳥・大型鳥・人の声などのプリセットを選ぶだけで帯域を絞れ、波形上のオンセット（音の立ち上がり）を赤〜黄でハイライト表示します。波形をドラッグして範囲を選んで切り出したり、鳴き声の区間を自動検出して「つなげて 1 本」「区間ごとに ZIP」「CSV」で保存したりできます。100MB を超える大きなファイルも概算波形で表示します。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/bird-audio-extractor/bird_audio_extractor.html#privacy-policy"
+      }
+    ]
+  },
+  {
+    "id": "smart-page-memo",
+    "name": "スマートページメモ",
+    "type": "ios",
+    "icon": "📝",
+    "appStoreUrl": "https://apps.apple.com/app/%E3%82%B9%E3%83%9E%E3%83%BC%E3%83%88%E3%83%9A%E3%83%BC%E3%82%B8%E3%83%A1%E3%83%A2/id6777717545",
+    "description": "URLを入力するだけでAIがタイトル・概要・タグを自動生成してメモとして保存するiOSアプリ。SafariなどのShare Extensionからも直接保存でき、AIはすべてオンデバイス（Foundation Models）で動作するためデータが外部に送信されることはありません。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/smart-page-memo/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "digit-scan",
+    "name": "数字スキャン",
+    "type": "ios",
+    "icon": "🔢",
+    "appStoreUrl": "https://apps.apple.com/app/id6794667514",
+    "description": "写真からシリアルナンバーを OCR で自動抽出する iOS アプリ。傾き補正や範囲選択、桁数・グループ数のパターン設定に対応し、認識結果はワンタップでコピーできます。画像はすべてデバイス内で処理され、外部サーバーには送信されません。",
+    "links": [
+      {
+        "label": "サポート・プライバシーポリシー",
+        "url": "apps/digit-scan/index.html"
+      }
+    ]
+  },
+  {
+    "id": "coin-sort",
+    "name": "コインソート",
+    "type": "ios",
+    "icon": "🪙",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E3%82%B3%E3%82%A4%E3%83%B3%E3%82%BD%E3%83%BC%E3%83%88/id6806603012",
+    "description": "同じ色を筒にそろえる「ノーマル」、六角コインを8枚積んで消す「ヘクサ」、CPUや友だちと対戦できる「4目ならべ」の3種類が1本で遊べるコインパズルアプリ。全100レベル・ヒント機能つきで、通信不要のオフラインでも遊べます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/coin-sort/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "kumasuzu",
+    "name": "熊よけベル",
+    "type": "ios",
+    "icon": "🐻",
+    "appStoreUrl": "https://apps.apple.com/app/%E7%86%8A%E3%82%88%E3%81%91%E3%83%99%E3%83%AB/id6767989638",
+    "description": "登山やハイキング中にクマとの遭遇を防ぐための熊鈴アプリ。歩行の振動を検知して自動で鈴を鳴らす機能や、威嚇音の再生、定期的な時報、省電力モードを備え、安心して山歩きを楽しめます。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/kumasuzu/privacy-policy.html"
+      }
+    ]
+  },
+  {
+    "id": "rimoroku",
+    "name": "リモ録",
+    "type": "ios",
+    "icon": "📺",
+    "appStoreUrl": "https://apps.apple.com/jp/app/%E3%83%AA%E3%83%A2%E9%8C%B2/id6816450640",
+    "description": "ソニー製テレビ BRAVIA の録画予約とリモコン操作を iPhone から行うアプリ。番組表から番組を選ぶだけで予約でき、予約一覧・録画済み番組の管理、テレビにインストールされた動画アプリの起動にも対応します。",
+    "links": [
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/rimoroku/privacy-policy.html"
+      },
+      {
+        "label": "使い方・接続ガイド",
+        "url": "apps/rimoroku/guide/"
+      }
+    ]
+  },
+  {
+    "id": "ai-usage",
+    "name": "AI使用量メーター",
+    "type": "ios",
+    "icon": "📊",
+    "appStoreUrl": "https://apps.apple.com/app/id6824224890",
+    "description": "Claude（5時間枠・週間枠・Fable枠）と ChatGPT（エージェント機能の 5 時間枠・週間枠）の使用量を、iPhone のアプリとホーム画面・ロック画面ウィジェットで確認する非公式アプリ。表示するサービス・枠・スタイル・色を選べるカスタムウィジェットつき。",
+    "links": [
+      {
+        "label": "Windows版ダウンロード",
+        "url": "apps/ai-usage/windows.html"
+      },
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/ai-usage/privacy-policy.html"
+      }
+    ]
+  }
+]

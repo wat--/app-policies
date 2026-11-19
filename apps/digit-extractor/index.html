@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>数字抽出ツール — Digit Extractor</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0f1117;color:#e5e7eb;font-family:-apple-system,'Hiragino Sans',sans-serif;
+  padding:20px;max-width:680px;margin:0 auto;}
+h1{text-align:center;font-size:15px;color:#93c5fd;margin-bottom:4px;letter-spacing:.05em;}
+.subtitle{text-align:center;font-size:11px;color:#4b5563;margin-bottom:18px;}
+
+/* ── 設定パネル ── */
+.config-panel{background:#1a1f2e;border-radius:12px;padding:16px 18px;margin-bottom:14px;}
+.config-panel h2{font-size:12px;color:#60a5fa;margin-bottom:12px;}
+.config-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.config-row:last-child{margin-bottom:0;}
+.config-row label{font-size:12px;color:#9ca3af;min-width:110px;}
+.config-row input[type=number]{
+  width:70px;background:#0f1117;border:1px solid #374151;border-radius:6px;
+  color:#e5e7eb;font-size:13px;padding:5px 8px;text-align:center;-moz-appearance:textfield;}
+.config-row input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+.config-row input[type=number]:focus{outline:none;border-color:#60a5fa;}
+.config-hint{font-size:10px;color:#4b5563;margin-top:8px;line-height:1.6;}
+.pattern-preview{display:inline-block;background:#0f1117;border:1px solid #1f2937;
+  border-radius:6px;padding:4px 10px;font-family:monospace;font-size:13px;
+  color:#34d399;letter-spacing:.1em;margin-top:4px;}
+
+/* ── ドロップゾーン ── */
+.drop-zone{border:2px dashed #374151;border-radius:12px;padding:28px 20px;
+  text-align:center;cursor:pointer;margin-bottom:14px;transition:.2s;position:relative;}
+.drop-zone:hover,.drop-zone.drag-over{border-color:#60a5fa;background:#1a1f2e;}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
+.drop-zone .icon{font-size:32px;margin-bottom:8px;}
+.drop-zone p{color:#6b7280;font-size:12px;line-height:1.9;}
+
+/* ── 準備セクション ── */
+#prepSection{display:none;margin-bottom:14px;}
+.prep-hint{font-size:11px;color:#60a5fa;background:#1a1f2e;border-radius:8px;
+  padding:8px 12px;margin-bottom:10px;line-height:1.7;}
+.canvas-wrap{
+  position:relative;background:#080c14;border-radius:10px;overflow:hidden;
+  border:1px solid #1f2937;margin-bottom:10px;cursor:crosshair;
+  touch-action:none;user-select:none;}
+#previewCanvas{display:block;max-width:100%;}
+.rot-bar{display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap;}
+.rot-btn{background:#1a1f2e;border:1px solid #374151;color:#9ca3af;border-radius:8px;
+  padding:7px 14px;font-size:13px;cursor:pointer;transition:.15s;}
+.rot-btn:hover{background:#374151;color:#e5e7eb;}
+#rotLabel{font-size:12px;color:#6b7280;font-family:monospace;min-width:36px;text-align:center;}
+.reset-sel-btn{background:transparent;border:1px solid #374151;color:#6b7280;
+  border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;margin-left:auto;}
+.reset-sel-btn:hover{border-color:#60a5fa;color:#93c5fd;}
+.clear-btn2{background:transparent;border:1px solid #374151;color:#6b7280;
+  border-radius:8px;padding:7px 12px;font-size:12px;cursor:pointer;}
+.clear-btn2:hover{border-color:#ef4444;color:#f87171;}
+.split-bar{display:flex;align-items:center;gap:6px;margin-bottom:10px;flex-wrap:wrap;}
+.split-label{font-size:12px;color:#6b7280;}
+.split-btn{background:#1a1f2e;border:1px solid #374151;color:#6b7280;border-radius:7px;
+  width:34px;height:32px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s;}
+.split-btn:hover{background:#374151;color:#e5e7eb;}
+.split-btn.active{background:#1e3a5f;border-color:#2563eb;color:#93c5fd;}
+.split-hint{font-size:10px;color:#4b5563;}
+
+/* ── アクションボタン ── */
+.action-row{display:flex;gap:10px;margin-bottom:14px;}
+#extractBtn{flex:1;background:#2563eb;border:none;border-radius:10px;color:#fff;
+  font-size:14px;font-weight:700;padding:13px;cursor:pointer;letter-spacing:.04em;transition:.15s;}
+#extractBtn:hover:not(:disabled){background:#1d4ed8;}
+#extractBtn:disabled{background:#1e2535;color:#374151;cursor:not-allowed;}
+
+/* ── 進捗 ── */
+#statusBox{display:none;background:#1a1f2e;border-radius:10px;padding:12px 16px;margin-bottom:14px;}
+#statusText{font-size:12px;color:#60a5fa;margin-bottom:8px;}
+#progressBar{height:5px;background:#1e2535;border-radius:4px;overflow:hidden;}
+#progressFill{height:100%;background:#3b82f6;width:0%;transition:width .15s;border-radius:4px;}
+
+/* ── 結果 ── */
+#resultSection{display:none;}
+.result-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.result-header h2{font-size:13px;color:#93c5fd;}
+.result-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.result-count{font-size:11px;color:#4b5563;}
+.copy-all-btn{background:#064e3b;border:1px solid #065f46;color:#34d399;
+  border-radius:8px;padding:6px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:.15s;}
+.copy-all-btn:hover{background:#065f46;}
+#resultList{list-style:none;}
+#resultList li{display:flex;align-items:center;gap:10px;background:#1a1f2e;
+  border-radius:8px;padding:9px 12px;margin-bottom:6px;transition:.15s;}
+#resultList li.copied{background:#064e3b;}
+.row-num{font-size:11px;color:#4b5563;font-family:monospace;min-width:22px;text-align:right;flex-shrink:0;}
+.num-text{font-family:monospace;font-size:15px;font-weight:700;color:#e5e7eb;
+  letter-spacing:.08em;flex:1;word-break:break-all;}
+.copy-btn{flex-shrink:0;background:#1e3a5f;border:1px solid #2563eb;color:#93c5fd;
+  border-radius:7px;padding:5px 12px;font-size:12px;font-weight:600;cursor:pointer;
+  transition:.15s;white-space:nowrap;}
+.copy-btn:hover{background:#2563eb;color:#fff;}
+.copy-btn.ok{background:#064e3b;border-color:#065f46;color:#34d399;}
+.edit-btn{flex-shrink:0;background:transparent;border:1px solid #374151;color:#6b7280;
+  border-radius:7px;padding:5px 10px;font-size:12px;cursor:pointer;transition:.15s;white-space:nowrap;}
+.edit-btn:hover{border-color:#60a5fa;color:#93c5fd;}
+.edit-btn.confirm{border-color:#f59e0b;color:#fbbf24;}
+.edit-btn.confirm:hover{background:#78350f;color:#fcd34d;}
+.num-edit-input{font-family:monospace;font-size:15px;font-weight:700;color:#fbbf24;
+  background:#0f1117;border:1px solid #60a5fa;border-radius:6px;padding:2px 6px;
+  flex:1;letter-spacing:.08em;outline:none;min-width:0;}
+.empty-msg{text-align:center;font-size:12px;color:#6b7280;padding:20px;
+  background:#1a1f2e;border-radius:10px;line-height:1.8;}
+#rawToggle{margin-top:14px;font-size:11px;color:#374151;cursor:pointer;text-align:center;user-select:none;}
+#rawToggle:hover{color:#6b7280;}
+#rawBox{display:none;margin-top:8px;background:#080c14;border:1px solid #1f2937;
+  border-radius:8px;padding:12px;font-family:monospace;font-size:10px;
+  color:#4b5563;white-space:pre-wrap;max-height:200px;overflow-y:auto;line-height:1.6;}
+</style>
+</head>
+<body>
+
+<h1>数字抽出ツール</h1>
+<p class="subtitle">写真からシリアルナンバーなどの数字列を一括OCR抽出</p>
+
+<!-- 設定 -->
+<div class="config-panel">
+  <h2>抽出パターン設定</h2>
+  <div class="config-row">
+    <label>グループ数</label>
+    <input type="number" id="groupCount" value="4" min="1" max="8">
+    <span style="font-size:12px;color:#6b7280;">グループ</span>
+  </div>
+  <div class="config-row">
+    <label>1グループの桁数</label>
+    <input type="number" id="groupDigits" value="4" min="1" max="10">
+    <span style="font-size:12px;color:#6b7280;">桁</span>
+  </div>
+  <div style="margin-top:10px;">
+    <span style="font-size:11px;color:#6b7280;">パターン：</span>
+    <span class="pattern-preview" id="patternPreview">XXXX-XXXX-XXXX-XXXX</span>
+    <span style="font-size:11px;color:#4b5563;margin-left:8px;">（計 <span id="totalDigits">16</span> 桁）</span>
+  </div>
+  <p class="config-hint">※ ハイフン・スペース等の区切りに柔軟対応。結果はハイフンなしで表示。</p>
+</div>
+
+<!-- アップロード -->
+<div class="drop-zone" id="dropZone">
+  <input type="file" id="fileInput" accept="image/*">
+  <div class="icon">🖼️</div>
+  <p>写真をドロップ、またはタップして選択</p>
+  <p style="font-size:11px;color:#4b5563;margin-top:4px;">撮影済み写真・カメラ直撮り両対応</p>
+</div>
+
+<!-- 準備セクション（向き指定 + 領域選択） -->
+<div id="prepSection">
+  <div class="prep-hint">
+    ① 向きボタンで数字が正立するよう回転 → ② 数字の範囲をドラッグして選択 → ③ 上部が取れない場合は分割数を増やす → ④ OCR実行
+  </div>
+  <div class="canvas-wrap" id="canvasWrap">
+    <canvas id="previewCanvas"></canvas>
+  </div>
+  <div class="rot-bar">
+    <button class="rot-btn" id="rotLeft">↺ 左90°</button>
+    <span id="rotLabel">0°</span>
+    <button class="rot-btn" id="rotRight">↻ 右90°</button>
+    <button class="reset-sel-btn" id="resetSel">選択リセット</button>
+    <button class="clear-btn2" id="clearBtn">✕ 画像削除</button>
+  </div>
+  <div class="split-bar">
+    <span class="split-label">分割数：</span>
+    <button class="split-btn active" data-n="1">1</button>
+    <button class="split-btn" data-n="2">2</button>
+    <button class="split-btn" data-n="3">3</button>
+    <button class="split-btn" data-n="4">4</button>
+    <span class="split-hint">上部の数字が取れない場合は 2〜4 に増やす</span>
+  </div>
+</div>
+
+<!-- OCR実行 -->
+<div class="action-row">
+  <button id="extractBtn" disabled>🔍 OCR 実行して数字を抽出</button>
+</div>
+
+<!-- 進捗 -->
+<div id="statusBox">
+  <div id="statusText">準備中...</div>
+  <div id="progressBar"><div id="progressFill"></div></div>
+</div>
+
+<!-- 結果 -->
+<div id="resultSection">
+  <div class="result-header">
+    <h2>抽出結果</h2>
+    <div class="result-meta">
+      <span class="result-count" id="resultCount"></span>
+      <button class="copy-all-btn" id="copyAllBtn">全てコピー</button>
+    </div>
+  </div>
+  <ul id="resultList"></ul>
+  <div id="rawToggle">▼ OCR 生テキストを表示</div>
+  <div id="rawBox"></div>
+</div>
+
+<script src="https://unpkg.com/tesseract.js@4/dist/tesseract.min.js"></script>
+<script>
+// ── DOM refs ──
+const groupCountEl  = document.getElementById('groupCount');
+const groupDigitsEl = document.getElementById('groupDigits');
+const patternPreview= document.getElementById('patternPreview');
+const totalDigitsEl = document.getElementById('totalDigits');
+const dropZone      = document.getElementById('dropZone');
+const fileInput     = document.getElementById('fileInput');
+const prepSection   = document.getElementById('prepSection');
+const canvasWrap    = document.getElementById('canvasWrap');
+const canvas        = document.getElementById('previewCanvas');
+const ctx           = canvas.getContext('2d', {willReadFrequently: true});
+const rotLeftBtn    = document.getElementById('rotLeft');
+const rotRightBtn   = document.getElementById('rotRight');
+const rotLabel      = document.getElementById('rotLabel');
+const resetSelBtn   = document.getElementById('resetSel');
+const clearBtn      = document.getElementById('clearBtn');
+const extractBtn    = document.getElementById('extractBtn');
+const statusBox     = document.getElementById('statusBox');
+const statusText    = document.getElementById('statusText');
+const progressFill  = document.getElementById('progressFill');
+const resultSection = document.getElementById('resultSection');
+const resultList    = document.getElementById('resultList');
+const resultCount   = document.getElementById('resultCount');
+const copyAllBtn    = document.getElementById('copyAllBtn');
+const rawToggle     = document.getElementById('rawToggle');
+const rawBox        = document.getElementById('rawBox');
+
+// ── 状態 ──
+let sourceImg = null;
+let currentRot = 0;            // 0 / 90 / 180 / 270
+let sel = null;                // {x,y,w,h} in canvas px
+let dragState = null;          // {mode, startX, startY, origSel}
+let splitCount = 1;
+const HANDLE_R = 10;
+const MAX_DIM  = 2000;
+const SHARP    = 0.5;
+const CONTRAST = 1.5;
+
+// ── 分割ボタン ──
+document.querySelectorAll('.split-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    splitCount = parseInt(btn.dataset.n);
+    document.querySelectorAll('.split-btn').forEach(b => b.classList.toggle('active', b === btn));
+  });
+});
+
+// ── パターンプレビュー ──
+function updatePattern() {
+  const g = Math.max(1, parseInt(groupCountEl.value)||1);
+  const d = Math.max(1, parseInt(groupDigitsEl.value)||1);
+  patternPreview.textContent = Array(g).fill('X'.repeat(d)).join('-');
+  totalDigitsEl.textContent = g*d;
+}
+groupCountEl.addEventListener('input', updatePattern);
+groupDigitsEl.addEventListener('input', updatePattern);
+
+// ── ファイル選択 ──
+dropZone.addEventListener('dragover', e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave', ()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e=>{
+  e.preventDefault(); dropZone.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/')) loadFile(f);
+});
+fileInput.addEventListener('change', ()=>{ if(fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+function loadFile(f) {
+  const img = new Image();
+  img.onload = () => {
+    sourceImg = img;
+    currentRot = 0;
+    dropZone.style.display = 'none';
+    prepSection.style.display = 'block';
+    extractBtn.disabled = false;
+    resultSection.style.display = 'none';
+    statusBox.style.display = 'none';
+    fitCanvasAndDraw();
+    resetSel();
+  };
+  img.src = URL.createObjectURL(f);
+}
+
+clearBtn.addEventListener('click', () => {
+  sourceImg = null; currentRot = 0; sel = null;
+  fileInput.value = '';
+  prepSection.style.display = 'none';
+  dropZone.style.display = 'block';
+  extractBtn.disabled = true;
+  resultSection.style.display = 'none';
+  statusBox.style.display = 'none';
+});
+
+// ── 回転 ──
+rotLeftBtn.addEventListener('click', ()=>{ currentRot=(currentRot+270)%360; rotLabel.textContent=currentRot+'°'; fitCanvasAndDraw(); resetSel(); });
+rotRightBtn.addEventListener('click', ()=>{ currentRot=(currentRot+90)%360; rotLabel.textContent=currentRot+'°'; fitCanvasAndDraw(); resetSel(); });
+
+function getRotatedSize() {
+  const {naturalWidth:ow, naturalHeight:oh} = sourceImg;
+  return (currentRot===0||currentRot===180) ? {w:ow,h:oh} : {w:oh,h:ow};
+}
+
+function fitCanvasAndDraw() {
+  if(!sourceImg) return;
+  const {w,h} = getRotatedSize();
+  const maxW = Math.min(640, canvasWrap.clientWidth||640);
+  const scale = Math.min(maxW/w, 400/h);
+  canvas.width  = Math.round(w*scale);
+  canvas.height = Math.round(h*scale);
+  drawImageToCanvas();
+}
+
+function drawImageToCanvas() {
+  const {width:cw, height:ch} = canvas;
+  const rad = currentRot*Math.PI/180;
+  ctx.clearRect(0,0,cw,ch);
+  ctx.fillStyle='#080c14';
+  ctx.fillRect(0,0,cw,ch);
+  ctx.save();
+  ctx.translate(cw/2,ch/2);
+  ctx.rotate(rad);
+  const {naturalWidth:ow, naturalHeight:oh} = sourceImg;
+  const scale = Math.min(cw/(ow*Math.abs(Math.cos(rad))+oh*Math.abs(Math.sin(rad))),
+                         ch/(ow*Math.abs(Math.sin(rad))+oh*Math.abs(Math.cos(rad))));
+  ctx.drawImage(sourceImg, -ow*scale/2, -oh*scale/2, ow*scale, oh*scale);
+  ctx.restore();
+  drawSel();
+}
+
+// ── 選択範囲 ──
+function resetSel() {
+  sel = {x:4, y:4, w:canvas.width-8, h:canvas.height-8};
+  drawImageToCanvas();
+}
+resetSelBtn.addEventListener('click', resetSel);
+
+function drawSel() {
+  if(!sel) return;
+  const {x,y,w,h} = sel;
+  // 4枚のダーク矩形で外側を暗くする
+  ctx.fillStyle='rgba(0,0,0,0.5)';
+  ctx.fillRect(0,0,canvas.width,y);
+  ctx.fillRect(0,y+h,canvas.width,canvas.height-y-h);
+  ctx.fillRect(0,y,x,h);
+  ctx.fillRect(x+w,y,canvas.width-x-w,h);
+  // 枠線
+  ctx.strokeStyle='#60a5fa';
+  ctx.lineWidth=2;
+  ctx.setLineDash([]);
+  ctx.strokeRect(x,y,w,h);
+  // コーナーハンドル
+  for(const c of getCorners()) {
+    ctx.beginPath();
+    ctx.arc(c.cx,c.cy,HANDLE_R,0,Math.PI*2);
+    ctx.fillStyle='#1d4ed8';
+    ctx.fill();
+    ctx.strokeStyle='#93c5fd';
+    ctx.lineWidth=2;
+    ctx.stroke();
+  }
+}
+
+function getCorners() {
+  if(!sel) return [];
+  const {x,y,w,h}=sel;
+  return [{id:'tl',cx:x,cy:y},{id:'tr',cx:x+w,cy:y},
+          {id:'bl',cx:x,cy:y+h},{id:'br',cx:x+w,cy:y+h}];
+}
+
+function hitCorner(px,py) {
+  for(const c of getCorners()) {
+    const dx=px-c.cx, dy=py-c.cy;
+    if(dx*dx+dy*dy<=HANDLE_R*HANDLE_R*2) return c.id;
+  }
+  return null;
+}
+
+function hitInside(px,py) {
+  if(!sel) return false;
+  const {x,y,w,h}=sel;
+  return px>=x&&px<=x+w&&py>=y&&py<=y+h;
+}
+
+// ── ポインターイベント（マウス＋タッチ共通） ──
+function getPos(e) {
+  const r=canvas.getBoundingClientRect();
+  const t=e.touches?e.touches[0]:e;
+  return {x:t.clientX-r.left, y:t.clientY-r.top};
+}
+
+function onDown(e) {
+  e.preventDefault();
+  const {x,y}=getPos(e);
+  const corner=hitCorner(x,y);
+  if(corner) {
+    dragState={mode:'resize',corner,origSel:{...sel},startX:x,startY:y};
+  } else if(hitInside(x,y)) {
+    dragState={mode:'move',origSel:{...sel},startX:x,startY:y};
+  } else {
+    dragState={mode:'new',startX:x,startY:y};
+    sel=null;
+  }
+}
+
+function onMove(e) {
+  e.preventDefault();
+  if(!dragState) return;
+  const {x,y}=getPos(e);
+  const dx=x-dragState.startX, dy=y-dragState.startY;
+  const cw=canvas.width, ch=canvas.height;
+  if(dragState.mode==='new') {
+    const sx=Math.min(dragState.startX,x), sy=Math.min(dragState.startY,y);
+    sel={x:sx, y:sy, w:Math.abs(dx), h:Math.abs(dy)};
+  } else if(dragState.mode==='move') {
+    const o=dragState.origSel;
+    sel={x:Math.max(0,Math.min(cw-o.w,o.x+dx)),
+         y:Math.max(0,Math.min(ch-o.h,o.y+dy)),
+         w:o.w, h:o.h};
+  } else if(dragState.mode==='resize') {
+    const o=dragState.origSel;
+    let {x:rx,y:ry,w:rw,h:rh}=o;
+    const c=dragState.corner;
+    if(c==='tl'){rx+=dx;ry+=dy;rw-=dx;rh-=dy;}
+    else if(c==='tr'){rw+=dx;ry+=dy;rh-=dy;}
+    else if(c==='bl'){rx+=dx;rw-=dx;rh+=dy;}
+    else if(c==='br'){rw+=dx;rh+=dy;}
+    if(rw>10&&rh>10) sel={x:rx,y:ry,w:rw,h:rh};
+  }
+  drawImageToCanvas();
+}
+
+function onUp(e) { dragState=null; }
+
+canvas.addEventListener('mousedown', onDown);
+canvas.addEventListener('mousemove', onMove);
+canvas.addEventListener('mouseup', onUp);
+canvas.addEventListener('touchstart', onDown, {passive:false});
+canvas.addEventListener('touchmove', onMove, {passive:false});
+canvas.addEventListener('touchend', onUp);
+
+// ── 前処理（アンシャープマスク + コントラスト + Otsu2値化）をキャンバスに適用 ──
+function applyPreprocess(cv) {
+  const pCtx=cv.getContext('2d',{willReadFrequently:true});
+  const pw=cv.width, ph=cv.height;
+  const src=pCtx.getImageData(0,0,pw,ph).data;
+  const out=new Uint8ClampedArray(src.length);
+
+  // パス1: アンシャープマスク + コントラスト
+  for(let y=0;y<ph;y++){
+    const y0=Math.max(0,y-1),y1=Math.min(ph-1,y+1);
+    for(let x=0;x<pw;x++){
+      const x0=Math.max(0,x-1),x1=Math.min(pw-1,x+1);
+      const i=(y*pw+x)*4;
+      for(let c=0;c<3;c++){
+        const center=src[i+c];
+        const blur=(src[(y0*pw+x0)*4+c]+src[(y0*pw+x)*4+c]+src[(y0*pw+x1)*4+c]+
+                    src[(y *pw+x0)*4+c]+center            +src[(y *pw+x1)*4+c]+
+                    src[(y1*pw+x0)*4+c]+src[(y1*pw+x)*4+c]+src[(y1*pw+x1)*4+c])/9;
+        const sharp=center+SHARP*(center-blur);
+        out[i+c]=Math.min(255,Math.max(0,(sharp-128)*CONTRAST+128));
+      }
+      out[i+3]=255;
+    }
+  }
+
+  // パス2: 大津法でOtsu閾値を算出
+  const hist=new Array(256).fill(0);
+  for(let i=0;i<pw*ph;i++){
+    const g=Math.round(0.299*out[i*4]+0.587*out[i*4+1]+0.114*out[i*4+2]);
+    hist[g]++;
+  }
+  const total=pw*ph;
+  let sum=0;
+  for(let i=0;i<256;i++) sum+=i*hist[i];
+  let sumB=0,wB=0,maxVar=0,thresh=128;
+  for(let t=0;t<256;t++){
+    wB+=hist[t];
+    if(!wB) continue;
+    const wF=total-wB;
+    if(!wF) break;
+    sumB+=t*hist[t];
+    const mB=sumB/wB, mF=(sum-sumB)/wF;
+    const between=wB*wF*(mB-mF)*(mB-mF);
+    if(between>maxVar){maxVar=between;thresh=t;}
+  }
+
+  // パス3: 2値化（白地黒文字に統一）
+  for(let i=0;i<pw*ph;i++){
+    const g=Math.round(0.299*out[i*4]+0.587*out[i*4+1]+0.114*out[i*4+2]);
+    const v=g>thresh?255:0;
+    out[i*4]=out[i*4+1]=out[i*4+2]=v;
+    out[i*4+3]=255;
+  }
+
+  pCtx.putImageData(new ImageData(out,pw,ph),0,0);
+}
+
+// ── OCR用キャンバス生成：回転 + 選択クロップ + 分割 + 前処理 ──
+function buildOCRCanvases() {
+  // 1. 回転キャンバス（MAX_DIM制限）
+  const {naturalWidth:ow, naturalHeight:oh} = sourceImg;
+  const rad = currentRot*Math.PI/180;
+  const sin=Math.abs(Math.sin(rad)), cos=Math.abs(Math.cos(rad));
+  const rotW=ow*cos+oh*sin, rotH=ow*sin+oh*cos;
+  const s=Math.min(1, MAX_DIM/Math.max(rotW,rotH));
+  const cw=Math.round(rotW*s), ch=Math.round(rotH*s);
+
+  const rotCv=document.createElement('canvas');
+  rotCv.width=cw; rotCv.height=ch;
+  const rCtx=rotCv.getContext('2d');
+  rCtx.fillStyle='#ffffff';
+  rCtx.fillRect(0,0,cw,ch);
+  rCtx.save();
+  rCtx.translate(cw/2,ch/2);
+  rCtx.rotate(rad);
+  rCtx.drawImage(sourceImg,-ow*s/2,-oh*s/2,ow*s,oh*s);
+  rCtx.restore();
+
+  // 2. 選択領域をクロップ（display→MAX_DIM座標変換）
+  let baseCv;
+  if(sel&&sel.w>10&&sel.h>10) {
+    const dispW=canvas.width, dispH=canvas.height;
+    const sx=Math.round(sel.x/dispW*cw), sy=Math.round(sel.y/dispH*ch);
+    const sw=Math.round(sel.w/dispW*cw), sh=Math.round(sel.h/dispH*ch);
+    const clampX=Math.max(0,sx), clampY=Math.max(0,sy);
+    const clampW=Math.min(sw,cw-clampX), clampH=Math.min(sh,ch-clampY);
+    baseCv=document.createElement('canvas');
+    baseCv.width=clampW; baseCv.height=clampH;
+    baseCv.getContext('2d').drawImage(rotCv,clampX,clampY,clampW,clampH,0,0,clampW,clampH);
+  } else {
+    baseCv=rotCv;
+  }
+
+  // 3. 水平分割 → 各ストリップに前処理適用
+  const bw=baseCv.width, bh=baseCv.height;
+  const strips=[];
+  for(let i=0;i<splitCount;i++){
+    const sy0=Math.round(i*bh/splitCount);
+    const shy=Math.round((i+1)*bh/splitCount)-sy0;
+    const stripCv=document.createElement('canvas');
+    stripCv.width=bw; stripCv.height=shy;
+    stripCv.getContext('2d').drawImage(baseCv,0,sy0,bw,shy,0,0,bw,shy);
+    applyPreprocess(stripCv);
+    strips.push(stripCv);
+  }
+  return strips;
+}
+
+// ── OCR実行 ──
+extractBtn.addEventListener('click', async()=>{
+  if(!sourceImg) return;
+  const groups=Math.max(1,parseInt(groupCountEl.value)||1);
+  const digits=Math.max(1,parseInt(groupDigitsEl.value)||1);
+  const totalLen=groups*digits;
+  const pattern=new RegExp(Array(groups).fill(`\\d{${digits}}`).join('[^\\d]{0,3}'),'g');
+
+  extractBtn.disabled=true;
+  statusBox.style.display='block';
+  statusText.textContent='前処理中...';
+  progressFill.style.width='0%';
+  resultSection.style.display='none';
+
+  try {
+    await new Promise(r=>requestAnimationFrame(r));
+    const strips=buildOCRCanvases();
+    const seen=new Set(),nums=[],rawParts=[];
+
+    for(let i=0;i<strips.length;i++){
+      const result=await Tesseract.recognize(strips[i],'eng',{
+        logger: m=>{
+          if(m.status==='recognizing text'){
+            const overall=(i+m.progress)/strips.length;
+            statusText.textContent=strips.length>1
+              ?`ストリップ ${i+1}/${strips.length} 認識中... ${Math.round(m.progress*100)}%`
+              :`認識中... ${Math.round(m.progress*100)}%`;
+            progressFill.style.width=Math.round(overall*100)+'%';
+          }
+        },
+        tessedit_char_whitelist: '0123456789',
+        tessedit_pageseg_mode: '6',
+      });
+      rawParts.push(result.data.text);
+
+      // bbox Y→X順でソートして上から順に抽出
+      const lines=(result.data.lines||[])
+        .filter(l=>l.text.trim())
+        .sort((a,b)=>Math.abs(a.bbox.y0-b.bbox.y0)<15?a.bbox.x0-b.bbox.x0:a.bbox.y0-b.bbox.y0);
+      for(const line of lines){
+        for(const m of (line.text.match(pattern)||[])){
+          const clean=m.replace(/\D/g,'');
+          if(clean.length===totalLen&&!seen.has(clean)){seen.add(clean);nums.push(clean);}
+        }
+      }
+    }
+
+    rawBox.textContent=strips.length>1
+      ?rawParts.map((t,i)=>`=== ストリップ ${i+1}/${strips.length} ===\n${t}`).join('\n')
+      :rawParts[0];
+    showResults(nums);
+  } catch(err){
+    statusText.textContent='エラー: '+err.message;
+  } finally {
+    extractBtn.disabled=false;
+  }
+});
+
+// ── 結果表示 ──
+function showResults(nums){
+  statusBox.style.display='none';
+  resultSection.style.display='block';
+  resultList.replaceChildren();
+  if(nums.length===0){
+    resultCount.textContent='';
+    resultList.innerHTML='<div class="empty-msg">数字列が見つかりませんでした。<br>選択範囲・パターン設定を確認してください。</div>';
+    copyAllBtn.style.display='none';
+    return;
+  }
+  resultCount.textContent=`${nums.length} 件`;
+  copyAllBtn.style.display='';
+  nums.forEach((num,i)=>{
+    const li=document.createElement('li');
+    const idx=document.createElement('span'); idx.className='row-num'; idx.textContent=i+1;
+    const span=document.createElement('span'); span.className='num-text'; span.textContent=num;
+    const editBtn=document.createElement('button'); editBtn.className='edit-btn'; editBtn.textContent='編集';
+    const copyBtn=document.createElement('button'); copyBtn.className='copy-btn'; copyBtn.textContent='コピー';
+    copyBtn.addEventListener('click',()=>copyText(span.textContent,copyBtn,li));
+    editBtn.addEventListener('click',()=>startEdit(li,span,editBtn,copyBtn));
+    li.appendChild(idx); li.appendChild(span); li.appendChild(editBtn); li.appendChild(copyBtn);
+    resultList.appendChild(li);
+  });
+}
+
+// ── インライン編集 ──
+function startEdit(li, span, editBtn, copyBtn) {
+  const input=document.createElement('input');
+  input.type='text';
+  input.value=span.textContent;
+  input.className='num-edit-input';
+  input.inputMode='numeric';
+  span.replaceWith(input);
+  editBtn.textContent='確定';
+  editBtn.classList.add('confirm');
+  input.focus();
+  input.select();
+
+  const finish=()=>{
+    const val=input.value.replace(/\D/g,'')||span.textContent;
+    span.textContent=val;
+    input.replaceWith(span);
+    editBtn.textContent='編集';
+    editBtn.classList.remove('confirm');
+    editBtn.onclick=null;
+    editBtn.addEventListener('click',()=>startEdit(li,span,editBtn,copyBtn));
+  };
+  editBtn.onclick=finish;
+  input.addEventListener('keydown',e=>{
+    if(e.key!=='Enter') return;
+    e.preventDefault();
+    // 日本語変換の確定 Enter では確定しない（keyCode 229 は Safari 対策）
+    if(e.isComposing||e.keyCode===229) return;
+    finish();
+  });
+}
+
+// ── コピー ──
+async function copyText(text,btn,li){
+  try{await navigator.clipboard.writeText(text);}
+  catch{
+    const ta=Object.assign(document.createElement('textarea'),{value:text,style:'position:fixed;opacity:0'});
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  }
+  btn.textContent='✓ コピー済'; btn.classList.add('ok'); li.classList.add('copied');
+  setTimeout(()=>{btn.textContent='コピー';btn.classList.remove('ok');li.classList.remove('copied');},2000);
+}
+
+copyAllBtn.addEventListener('click',async()=>{
+  const text=[...resultList.querySelectorAll('.num-text')].map(s=>s.textContent).join('\n');
+  try{await navigator.clipboard.writeText(text);}
+  catch{
+    const ta=Object.assign(document.createElement('textarea'),{value:text,style:'position:fixed;opacity:0'});
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+  }
+  copyAllBtn.textContent='✓ コピー済';
+  setTimeout(()=>{copyAllBtn.textContent='全てコピー';},2000);
+});
+
+rawToggle.addEventListener('click',()=>{
+  const open=rawBox.style.display==='block';
+  rawBox.style.display=open?'none':'block';
+  rawToggle.textContent=open?'▼ OCR 生テキストを表示':'▲ OCR 生テキストを隠す';
+});
+
+window.addEventListener('resize', ()=>{ if(sourceImg) fitCanvasAndDraw(); });
+</script>
+</body>
+</html>

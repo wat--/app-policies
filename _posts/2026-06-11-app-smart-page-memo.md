@@ -1,0 +1,43 @@
+---
+layout: post
+title: "スマートページメモ — 開発秘話"
+date: 2026-06-11 09:00:00 +0900
+tags: [アプリ開発, iOSアプリ]
+description: URLをAIが自動要約・保存するアプリ「スマートページメモ」の開発経緯とこだわりを紹介します。
+---
+
+[スマートページメモ](https://apps.apple.com/app/%E3%82%B9%E3%83%9E%E3%83%BC%E3%83%88%E3%83%9A%E3%83%BC%E3%82%B8%E3%83%A1%E3%83%A2/id6777717545) は、URLを入力するだけでAIがタイトル・概要・タグを自動生成してメモに保存するiOSアプリです。
+
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/smart-page-memo/01.jpg" alt="URLを入れるとタイトル・概要・タグ付きで一覧に並ぶ" loading="lazy"><figcaption>URLを入れるとタイトル・概要・タグ付きで一覧に並ぶ</figcaption></figure>
+</div>
+
+## きっかけ
+
+気になる記事やページを後で読もうと思って保存しても、いざ読もうとしたときに何の記事だったか思い出せないことがよくありました。AIに要約してもらえれば、保存した内容を一覧で把握できると思い、作ることにしました。
+
+## 手間を極力なくす
+
+要約アプリとして重視したのは、**操作の手間をとにかく少なくすること**です。
+
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/smart-page-memo/02.jpg" alt="生成されたタイトルやメモはあとから編集できる" loading="lazy"><figcaption>生成されたタイトルやメモはあとから編集できる</figcaption></figure>
+</div>
+
+SafariなどブラウザのShare Extension（共有ボタン）から直接このアプリに送れるようにしたため、わざわざアプリを開いてURLをコピー＆ペーストする必要がありません。気になったページをその場でワンタップで保存できます。
+
+## オフラインで読めることへのこだわり
+
+要約だけでなく、ページの内容をオフラインで読めることも意識しました。地下鉄・飛行機・船など、ネットが使えない状況で記事を読みたい場面は意外と多いです。あらかじめ保存しておけば、オフライン環境でも内容を確認できます。
+
+<div class="shot-row">
+  <figure><img src="/assets/images/blog/smart-page-memo/03.jpg" alt="保存したページの本文はオフラインでも読める" loading="lazy"><figcaption>保存したページの本文はオフラインでも読める</figcaption></figure>
+</div>
+
+## AIはすべてオンデバイスで動作
+
+要約に使うAIはAppleのFoundation Models（デバイス上で動作する生成AIフレームワーク）を採用しています。データが外部サーバーに送信されないため、プライバシーの面でも安心して使えます。
+
+「後で読もう」が確実に手元に残るアプリとして、ぜひ使ってみてください。
+
+[App Storeで見る](https://apps.apple.com/app/%E3%82%B9%E3%83%9E%E3%83%BC%E3%83%88%E3%83%9A%E3%83%BC%E3%82%B8%E3%83%A1%E3%83%A2/id6777717545)

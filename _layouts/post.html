@@ -1,0 +1,303 @@
+---
+layout: default
+---
+<article>
+  <nav class="breadcrumb">
+    <a href="{{ '/' | relative_url }}">トップ</a>
+    <span>›</span>
+    <a href="{{ '/blog/' | relative_url }}">ブログ</a>
+    <span>›</span>
+    <span>{{ page.title }}</span>
+  </nav>
+
+  <header class="article-header">
+    <h1>{{ page.title }}</h1>
+    <div class="article-meta">
+      <span class="post-date">{{ page.date | date: "%Y年%m月%d日" }}</span>
+      {% assign chars = content | strip_html | size %}
+      {% assign reading_time = chars | divided_by: 500 | plus: 1 %}
+      <span class="reading-time">読了 約{{ reading_time }}分</span>
+      {% if page.tags %}
+        {% for tag in page.tags %}
+          <span class="post-tag">{{ tag }}</span>
+        {% endfor %}
+      {% endif %}
+    </div>
+  </header>
+
+  <aside class="toc" id="toc" hidden>
+    <p class="toc-title">目次</p>
+    <ol class="toc-list"></ol>
+  </aside>
+
+  <div class="article-body">
+    {{ content }}
+  </div>
+
+  <div class="like-wrap">
+    {% assign counter_name = site.data['like-counters'][page.url] %}
+    <button type="button" class="like-button" id="like-button" data-post-key="{{ page.url }}" data-counter-name="{{ counter_name }}" aria-pressed="false">
+      <span class="like-icon">🤍</span>
+      <span class="like-label">いいね</span>
+      <span class="like-count" id="like-count">-</span>
+    </button>
+  </div>
+
+  <nav class="post-nav">
+    <div class="post-nav-prev">
+      {% if page.previous %}
+        <span class="post-nav-label">← 前の記事</span>
+        <a href="{{ page.previous.url | relative_url }}">{{ page.previous.title }}</a>
+      {% endif %}
+    </div>
+    <a href="{{ '/blog/' | relative_url }}" class="post-nav-top">記事一覧</a>
+    <div class="post-nav-next">
+      {% if page.next %}
+        <span class="post-nav-label">次の記事 →</span>
+        <a href="{{ page.next.url | relative_url }}">{{ page.next.title }}</a>
+      {% endif %}
+    </div>
+  </nav>
+
+  <div class="author-card">
+    <div class="author-card-info">
+      <h3>Tail Studio</h3>
+      <p>開発・生成AIにまつわるノート。アプリ一覧は <a href="{{ '/' | relative_url }}">トップページ</a> をどうぞ。</p>
+    </div>
+  </div>
+
+  {% if site.comments.endpoint != "" %}
+  <section class="comments-wrap" id="comments" data-endpoint="{{ site.comments.endpoint }}" data-slug="{{ page.url }}">
+    <h2 class="comments-title">コメント</h2>
+    <div id="comment-list" class="comment-list"><p class="comment-empty">読み込み中…</p></div>
+    <form id="comment-form" class="comment-form" autocomplete="off">
+      <label class="comment-label">お名前（任意）
+        <input type="text" name="name" maxlength="40" placeholder="名無しさん">
+      </label>
+      <label class="comment-label">コメント
+        <textarea name="body" rows="4" maxlength="2000" required></textarea>
+      </label>
+      <div class="comment-hp" aria-hidden="true"><label>Website<input type="text" name="website" tabindex="-1" autocomplete="off"></label></div>
+      <button type="submit" class="comment-submit">送信する</button>
+      <p class="comment-note">投稿されたコメントは、確認後に表示されます。コメント用のデータベースには、記事・お名前・コメント・投稿時刻だけを保存し、IP アドレスは保存しません。Cookie も使いません。</p>
+      <p class="comment-status" id="comment-status" role="status"></p>
+    </form>
+  </section>
+  {% endif %}
+
+  <section class="ad-wrap ad-rakuten" aria-label="広告枠">
+    <p class="ad-label">Advertisement</p>
+    <center>
+    <script type="text/javascript">
+    rakuten_design="slide";
+    rakuten_affiliateId="139bac3e.b9acab06.139bac3f.67054985";
+    rakuten_items="ctsmatch";
+    rakuten_genreId="0";
+    rakuten_size="336x280";
+    rakuten_target="_blank";
+    rakuten_theme="gray";
+    rakuten_border="off";
+    rakuten_auto_mode="on";
+    rakuten_genre_title="off";
+    rakuten_recommend="on";
+    </script>
+    <script type="text/javascript" src="https://xml.affiliate.rakuten.co.jp/widget/js/rakuten_widget.js?20230106"></script>
+    </center>
+  </section>
+</article>
+
+<script>
+  (function () {
+    var article = document.querySelector('.article-body');
+    if (!article) return;
+    var headings = article.querySelectorAll('h2, h3');
+    if (headings.length < 3) return;
+    var toc = document.getElementById('toc');
+    if (!toc) return;
+    var list = toc.querySelector('.toc-list');
+    headings.forEach(function (h) {
+      if (!h.id) return;
+      var li = document.createElement('li');
+      li.className = 'toc-item-' + h.tagName.toLowerCase();
+      var a = document.createElement('a');
+      a.href = '#' + h.id;
+      a.textContent = h.textContent.replace(/^[◆・\s]+/, '');
+      li.appendChild(a);
+      list.appendChild(li);
+    });
+    toc.hidden = false;
+  })();
+</script>
+
+<script>
+  (function () {
+    var button = document.getElementById('like-button');
+    var countEl = document.getElementById('like-count');
+    if (!button || !countEl) return;
+
+    var workspace = {{ site.likes.workspace | jsonify }};
+    var postKey = button.dataset.postKey;
+    var counterName = button.dataset.counterName;
+    var storageKey = 'liked:' + postKey;
+    var liked = localStorage.getItem(storageKey) === '1';
+    var useApi = Boolean(workspace && counterName);
+
+    function render(count, animate) {
+      countEl.textContent = count === null ? '-' : count;
+      button.classList.toggle('is-liked', liked);
+      button.setAttribute('aria-pressed', String(liked));
+      button.querySelector('.like-icon').textContent = liked ? '❤️' : '🤍';
+      if (animate) {
+        button.classList.remove('is-animating');
+        void button.offsetWidth;
+        button.classList.add('is-animating');
+      }
+    }
+
+    function apiUrl(action) {
+      var base = 'https://api.counterapi.dev/v2/' + encodeURIComponent(workspace) + '/' + encodeURIComponent(counterName) + (action ? '/' + action : '');
+      return base + '?cb=' + Date.now();
+    }
+
+    function upCount(payload) {
+      return payload && payload.data && typeof payload.data.up_count === 'number' ? payload.data.up_count : null;
+    }
+
+    function localFallback() {
+      useApi = false;
+      var local = localStorage.getItem('likeCount:' + postKey);
+      render(local ? Number(local) : 0, false);
+    }
+
+    function fetchCount() {
+      if (!useApi) {
+        localFallback();
+        return;
+      }
+      fetch(apiUrl(''))
+        .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
+        .then(function (payload) {
+          var count = upCount(payload);
+          if (count === null) { localFallback(); return; }
+          render(count, false);
+        })
+        .catch(localFallback);
+    }
+
+    button.addEventListener('click', function () {
+      if (liked) return;
+      liked = true;
+      localStorage.setItem(storageKey, '1');
+
+      if (!useApi) {
+        var current = Number(localStorage.getItem('likeCount:' + postKey) || '0') + 1;
+        localStorage.setItem('likeCount:' + postKey, String(current));
+        render(current, true);
+        return;
+      }
+
+      var prevText = countEl.textContent;
+      var optimistic = prevText === '-' ? 1 : Number(prevText) + 1;
+      render(optimistic, true);
+
+      fetch(apiUrl('up'))
+        .then(function (res) { return res.ok ? res.json() : Promise.reject(); })
+        .then(function (payload) {
+          var count = upCount(payload);
+          if (count !== null) render(count, false);
+        })
+        .catch(function () {});
+    });
+
+    render(null, false);
+    fetchCount();
+  })();
+</script>
+
+{% if site.comments.endpoint != "" %}
+<script>
+  (function () {
+    var wrap = document.getElementById('comments');
+    if (!wrap) return;
+    var endpoint = wrap.getAttribute('data-endpoint');
+    var slug = wrap.getAttribute('data-slug');
+    var list = document.getElementById('comment-list');
+    var form = document.getElementById('comment-form');
+    var status = document.getElementById('comment-status');
+    var shownAt = Date.now();
+
+    function fmt(ms) {
+      var d = new Date(ms);
+      return d.getFullYear() + '/' + (d.getMonth() + 1) + '/' + d.getDate();
+    }
+
+    function load() {
+      fetch(endpoint + '/comments?slug=' + encodeURIComponent(slug))
+        .then(function (r) { return r.ok ? r.json() : Promise.reject(); })
+        .then(function (data) {
+          list.textContent = '';
+          if (!data.comments.length) {
+            var p = document.createElement('p');
+            p.className = 'comment-empty';
+            p.textContent = 'まだコメントはありません。';
+            list.appendChild(p);
+            return;
+          }
+          data.comments.forEach(function (c) {
+            var item = document.createElement('div');
+            item.className = 'comment-item';
+            var meta = document.createElement('div');
+            meta.className = 'comment-meta';
+            meta.textContent = c.name + ' ・ ' + fmt(c.created_at);
+            var body = document.createElement('div');
+            body.className = 'comment-body';
+            body.textContent = c.body;
+            item.appendChild(meta);
+            item.appendChild(body);
+            list.appendChild(item);
+          });
+        })
+        .catch(function () {
+          list.textContent = '';
+          var p = document.createElement('p');
+          p.className = 'comment-empty';
+          p.textContent = 'コメントを読み込めませんでした。';
+          list.appendChild(p);
+        });
+    }
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      var btn = form.querySelector('.comment-submit');
+      btn.disabled = true;
+      status.textContent = '送信中…';
+      fetch(endpoint + '/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slug: slug,
+          name: form.name.value,
+          body: form.body.value,
+          website: form.website.value,
+          t: shownAt
+        })
+      })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          if (res.ok) {
+            status.textContent = '送信しました。確認後に表示されます。';
+            form.body.value = '';
+            shownAt = Date.now();
+          } else {
+            var msg = { 'too fast': '少し時間をおいてから送信してください。', 'busy': '現在コメントを受け付けられません。時間をおいてお試しください。', 'too many links': 'リンクは2つまでにしてください。', 'bad body': 'コメントは2〜2000文字で入力してください。' };
+            status.textContent = msg[res.j.error] || '送信できませんでした。';
+          }
+          btn.disabled = false;
+        })
+        .catch(function () { status.textContent = '送信できませんでした。'; btn.disabled = false; });
+    });
+
+    load();
+  })();
+</script>
+{% endif %}

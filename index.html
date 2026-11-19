@@ -1,0 +1,756 @@
+---
+---
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tail Studio - アプリ一覧</title>
+    <link rel="canonical" href="https://tail-studio.com/" />
+    <link rel="icon" type="image/png" href="/favicon/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon/favicon.ico" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/favicon/apple-touch-icon.png" />
+    <link rel="manifest" href="/favicon/site.webmanifest" />
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.8;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+            background-color: #f5f5f7;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: #1a1a1a;
+            font-size: 2em;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .app-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .app-card {
+            background: #fff;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .app-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+        }
+
+        .app-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 18px;
+            background: linear-gradient(135deg, #007AFF, #5856D6);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+        }
+
+        .app-name {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 8px;
+        }
+
+        .app-description {
+            color: #666;
+            font-size: 0.95em;
+            margin-bottom: 16px;
+        }
+
+        .app-links {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .app-cta {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            text-decoration: none;
+            font-size: 0.9em;
+            font-weight: 600;
+            padding: 9px 16px;
+            border-radius: 10px;
+            transition: opacity 0.2s;
+            text-align: center;
+        }
+
+        .app-cta:hover {
+            opacity: 0.82;
+        }
+
+        .app-cta.ios {
+            background: #000;
+            color: #fff;
+        }
+
+        .app-cta.web {
+            background: #007AFF;
+            color: #fff;
+        }
+
+        .app-cta.android {
+            background: #3DDC84;
+            color: #fff;
+        }
+
+        .app-cta.mac {
+            background: #1d1d1f;
+            color: #fff;
+            border: 1px solid #555;
+        }
+
+        .app-cta.coming-soon {
+            background: #f0f0f5;
+            color: #999;
+            cursor: default;
+            font-weight: 500;
+        }
+
+        /* Android download modal */
+        .android-modal-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .android-modal-overlay.open {
+            display: flex;
+        }
+
+        .android-modal {
+            background: #fff;
+            border-radius: 20px;
+            padding: 28px 24px 20px;
+            max-width: 340px;
+            width: calc(100% - 40px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+        }
+
+        .android-modal h3 {
+            margin: 0 0 6px;
+            font-size: 1.05em;
+            color: #1a1a1a;
+        }
+
+        .android-modal p {
+            margin: 0 0 20px;
+            font-size: 0.88em;
+            color: #666;
+            line-height: 1.6;
+        }
+
+        .android-modal-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .android-modal-btn {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 16px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-size: 0.9em;
+            font-weight: 600;
+            transition: opacity 0.2s;
+        }
+
+        .android-modal-btn:hover { opacity: 0.82; }
+
+        .android-modal-btn.galaxy {
+            background: #1428A0;
+            color: #fff;
+        }
+
+        .android-modal-btn.apk {
+            background: #3DDC84;
+            color: #fff;
+        }
+
+        .android-modal-btn .btn-sub {
+            font-size: 0.78em;
+            font-weight: 400;
+            opacity: 0.85;
+            display: block;
+        }
+
+        .android-modal-cancel {
+            margin-top: 14px;
+            text-align: center;
+            font-size: 0.85em;
+            color: #888;
+            cursor: pointer;
+            background: none;
+            border: none;
+            width: 100%;
+            padding: 4px;
+        }
+
+        .android-modal-cancel:hover { color: #555; }
+
+        .app-secondary-links {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .app-secondary-links a {
+            color: #007AFF;
+            text-decoration: none;
+            font-size: 0.85em;
+            padding: 5px 10px;
+            background: #f0f0f5;
+            border-radius: 8px;
+            transition: background 0.2s;
+        }
+
+        .app-secondary-links a:hover {
+            background: #e5e5ea;
+        }
+
+        footer {
+            margin-top: 60px;
+            text-align: center;
+            color: #666;
+            font-size: 0.9em;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        footer a {
+            color: #007AFF;
+            text-decoration: none;
+        }
+
+        .appstore-banner {
+            text-align: center;
+            margin-bottom: 32px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .appstore-banner a {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #000;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .appstore-banner a:hover {
+            opacity: 0.8;
+        }
+
+        .appstore-banner svg {
+            flex-shrink: 0;
+        }
+
+        .webapp-banner-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #007AFF;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .webapp-banner-btn:hover {
+            opacity: 0.8;
+        }
+
+        .blog-banner-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: #34c759;
+            color: #fff;
+            text-decoration: none;
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 0.95em;
+            font-weight: 500;
+            transition: opacity 0.2s;
+        }
+
+        .blog-banner-btn:hover {
+            opacity: 0.8;
+        }
+
+        .section-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+            margin-top: 8px;
+        }
+
+        .section-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #1a1a1a;
+        }
+
+        .section-divider {
+            margin-top: 36px;
+            margin-bottom: 0;
+        }
+
+        .type-badge {
+            display: inline-block;
+            font-size: 0.72em;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            letter-spacing: 0.04em;
+        }
+
+        .type-badge.ios {
+            background: #e8f0fe;
+            color: #007AFF;
+        }
+
+        .type-badge.web {
+            background: #e6f4ea;
+            color: #1a8a40;
+        }
+
+        .ad-wrap {
+            margin-top: 28px;
+            background: #fff;
+            border: 1px solid #e5e5ea;
+            border-radius: 14px;
+            padding: 12px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+        }
+
+        .ad-label {
+            margin: 0 0 8px;
+            color: #8b8b95;
+            font-size: 0.72em;
+            letter-spacing: 0.04em;
+        }
+
+        .intro {
+            background: #fff;
+            border-radius: 16px;
+            padding: 28px 28px 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            margin-bottom: 36px;
+        }
+
+        .intro h2 {
+            margin: 0 0 14px;
+            font-size: 1.25em;
+            color: #1a1a1a;
+        }
+
+        .intro p {
+            margin: 0 0 12px;
+            color: #444;
+            font-size: 0.98em;
+        }
+
+        .intro p:last-child {
+            margin-bottom: 0;
+        }
+
+        .footer-links {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 6px 14px;
+            margin-bottom: 10px;
+        }
+
+        .blog-feature {
+            margin-top: 36px;
+        }
+
+        .blog-feature-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .blog-feature-more {
+            font-size: 0.9em;
+            color: #007AFF;
+            text-decoration: none;
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        .blog-feature-more:hover {
+            text-decoration: underline;
+        }
+
+        .blog-feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 16px;
+        }
+
+        .blog-feature-item {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            background: #fff;
+            border-radius: 14px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+            text-decoration: none;
+            color: inherit;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .blog-feature-item:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.1);
+        }
+
+        .blog-feature-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .blog-feature-date {
+            font-size: 0.78em;
+            color: #8b8b95;
+        }
+
+        .blog-feature-tag {
+            font-size: 0.72em;
+            background: #f0f0f5;
+            color: #555;
+            padding: 2px 8px;
+            border-radius: 100px;
+        }
+
+        .blog-feature-title {
+            font-size: 1em;
+            font-weight: 600;
+            color: #1a1a1a;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .blog-feature-excerpt {
+            font-size: 0.85em;
+            color: #666;
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .post-count {
+            font-size: 0.78em;
+            font-weight: 600;
+            background: #e6f4ea;
+            color: #1a8a40;
+            padding: 2px 9px;
+            border-radius: 100px;
+        }
+
+        .footer-links a {
+            color: #007AFF;
+            text-decoration: none;
+        }
+
+        .footer-links a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>Tail Studio</h1>
+        <p class="subtitle">アプリケーション一覧</p>
+    </header>
+
+    <main>
+        <section class="intro">
+            <p>Tail Studio が公開しているモバイルアプリ (iOS / Android) と Web アプリの一覧です。Web アプリは下部からそのままブラウザで起動できます。詳細は <a href="/about.html">運営者情報</a> をご覧ください。</p>
+            <p>開発や生成AIまわりの取り組みは <a href="/blog/">ブログ</a> にまとめています。</p>
+        </section>
+
+        <div class="appstore-banner">
+            <a href="https://apps.apple.com/jp/developer/t-studio/id1861302137" target="_blank" rel="noopener noreferrer">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 814 1000" fill="white">
+                    <path
+                        d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-37.3-148.9-90.1C14.7 762.8 0 681 0 607.9 0 397.1 137.4 279.5 272.7 279.5c69.5 0 127.6 45.4 171.6 45.4 42.3 0 109-48 190.7-48 30.8 0 108.2 2.6 168 57.7zm-234.2-122.4c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z" />
+                </svg>
+                App Storeで全iOSアプリを見る
+            </a>
+            <a href="#web-apps" class="webapp-banner-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <circle cx="12" cy="12" r="10" />
+                    <line x1="2" y1="12" x2="22" y2="12" />
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+                </svg>
+                Webアプリを見る
+            </a>
+            <a href="#blog-feature" class="blog-banner-btn">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 4h16v16H4z" />
+                    <path d="M8 8h8M8 12h8M8 16h5" />
+                </svg>
+                ブログを読む
+            </a>
+        </div>
+
+        <div class="section-header">
+            <span class="section-title">モバイルアプリ</span>
+        </div>
+        <div id="ios-grid" class="app-grid"></div>
+
+        <div class="section-header section-divider" id="web-apps">
+            <span class="section-title">Webアプリ</span>
+        </div>
+        <div id="web-grid" class="app-grid"></div>
+
+        <section class="blog-feature section-divider" id="blog-feature">
+            <div class="blog-feature-header">
+                <span class="section-title">ブログ - 開発・生成AIノート</span>
+                <span class="post-count">{{ site.posts.size }}本</span>
+                <a href="/blog/" class="blog-feature-more">すべて見る →</a>
+            </div>
+            <div class="blog-feature-list">
+                {% for post in site.posts limit:3 %}
+                <a href="{{ post.url | relative_url }}" class="blog-feature-item">
+                    <div class="blog-feature-meta">
+                        <span class="blog-feature-date">{{ post.date | date: "%Y.%m.%d" }}</span>
+                        {% for tag in post.tags %}
+                        <span class="blog-feature-tag">{{ tag }}</span>
+                        {% endfor %}
+                    </div>
+                    <h3 class="blog-feature-title">{{ post.title }}</h3>
+                    {% assign excerpt_text = post.excerpt | strip_html | strip %}
+                    <p class="blog-feature-excerpt">{% if excerpt_text == "" %}{{ post.description | truncate: 80 }}{% else %}{{ excerpt_text | truncate: 80 }}{% endif %}</p>
+                </a>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+
+    <!-- Android download modal -->
+    <div id="android-modal-overlay" class="android-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="android-modal-title">
+        <div class="android-modal">
+            <h3 id="android-modal-title">Android アプリをダウンロード</h3>
+            <p id="android-modal-desc">Samsung Galaxy をお使いの方は Galaxy Store からインストールできます。それ以外の Android 端末は APK ファイルをダウンロードしてインストールしてください。</p>
+            <div class="android-modal-btns">
+                <a id="android-modal-galaxy" href="#" target="_blank" rel="noopener noreferrer" class="android-modal-btn galaxy">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14H9V8h2v8zm4 0h-2V8h2v8z"/></svg>
+                    <span>
+                        Galaxy Store でインストール
+                        <span class="btn-sub">Samsung Galaxy 端末向け</span>
+                    </span>
+                </a>
+                <a id="android-modal-apk" href="#" target="_blank" rel="noopener noreferrer" class="android-modal-btn apk">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                    <span>
+                        APK をダウンロード
+                        <span class="btn-sub">その他の Android 端末向け</span>
+                    </span>
+                </a>
+            </div>
+            <button class="android-modal-cancel" onclick="closeAndroidModal()">キャンセル</button>
+        </div>
+    </div>
+
+    <section class="ad-wrap ad-rakuten" aria-label="広告枠">
+        <p class="ad-label">Advertisement</p>
+        <center>
+        <script type="text/javascript">
+        rakuten_design="slide";
+        rakuten_affiliateId="139bac3e.b9acab06.139bac3f.67054985";
+        rakuten_items="ctsmatch";
+        rakuten_genreId="0";
+        rakuten_size="336x280";
+        rakuten_target="_blank";
+        rakuten_theme="gray";
+        rakuten_border="off";
+        rakuten_auto_mode="on";
+        rakuten_genre_title="off";
+        rakuten_recommend="on";
+        </script>
+        <script type="text/javascript" src="https://xml.affiliate.rakuten.co.jp/widget/js/rakuten_widget.js?20230106"></script>
+        </center>
+    </section>
+
+    <footer>
+        <div class="footer-links">
+            <a href="/about.html">運営者情報</a>
+            <span>・</span>
+            <a href="/blog/">ブログ</a>
+            <span>・</span>
+            <a href="/privacy-policy.html">プライバシーポリシー</a>
+            <span>・</span>
+            <a href="/terms.html">利用規約</a>
+        </div>
+        <p>お問い合わせ: <a href="mailto:contact@tail-studio.com">contact@tail-studio.com</a></p>
+        <p>&copy; <span id="year"></span> Tail Studio</p>
+    </footer>
+
+    <script>
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        function openAndroidModal(galaxyUrl, apkUrl) {
+            const isSamsung = /samsung/i.test(navigator.userAgent);
+            if (isSamsung) {
+                window.open(galaxyUrl, '_blank', 'noopener,noreferrer');
+                return;
+            }
+            document.getElementById('android-modal-galaxy').href = galaxyUrl;
+            document.getElementById('android-modal-apk').href = apkUrl;
+            const overlay = document.getElementById('android-modal-overlay');
+            overlay.classList.add('open');
+            overlay.addEventListener('click', function onOverlayClick(e) {
+                if (e.target === overlay) {
+                    closeAndroidModal();
+                    overlay.removeEventListener('click', onOverlayClick);
+                }
+            });
+        }
+
+        function closeAndroidModal() {
+            document.getElementById('android-modal-overlay').classList.remove('open');
+        }
+
+        fetch('apps.json')
+            .then(res => res.json())
+            .then(apps => {
+                const iosGrid = document.getElementById('ios-grid');
+                const webGrid = document.getElementById('web-grid');
+
+                apps.forEach(app => {
+                    const isIos = app.type === 'ios';
+                    const hasAndroid = !!app.androidDownloadUrl;
+                    const hasMac = !!app.macAppStoreUrl;
+                    const badgeLabel = isIos
+                        ? ['iOS', hasAndroid ? 'Android' : null, hasMac ? 'Mac' : null].filter(Boolean).join(' / ')
+                        : 'Web';
+
+                    const iosBtn = app.appStoreUrl
+                        ? `<a href="${app.appStoreUrl}" target="_blank" rel="noopener noreferrer" class="app-cta ios">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 814 1000" fill="white"><path d="M788.1 340.9c-5.8 4.5-108.2 62.2-108.2 190.5 0 148.4 130.3 200.9 134.2 202.2-.6 3.2-20.7 71.9-68.7 141.9-42.8 61.6-87.5 123.1-155.5 123.1s-85.5-39.5-164-39.5c-76 0-103.7 40.8-165.9 40.8s-105-37.3-148.9-90.1C14.7 762.8 0 681 0 607.9 0 397.1 137.4 279.5 272.7 279.5c69.5 0 127.6 45.4 171.6 45.4 42.3 0 109-48 190.7-48 30.8 0 108.2 2.6 168 57.7zm-234.2-122.4c31.1-36.9 53.1-88.1 53.1-139.3 0-7.1-.6-14.3-1.9-20.1-50.6 1.9-110.8 33.7-147.1 75.8-28.5 32.4-55.1 83.6-55.1 135.5 0 7.8 1.3 15.6 1.9 18.1 3.2.6 8.4 1.3 13.6 1.3 45.4 0 102.5-30.4 135.5-71.3z"/></svg>
+                               App Storeで見る
+                           </a>`
+                        : `<span class="app-cta coming-soon">リリース予定</span>`;
+
+                    // Android ボタン: Galaxy Store あればモーダル、なければ直接リンク
+                    const androidBtn = app.androidDownloadUrl
+                        ? (app.galaxyStoreUrl
+                            ? `<button type="button"
+                                   class="app-cta android"
+                                   onclick="openAndroidModal('${app.galaxyStoreUrl}','${app.androidDownloadUrl}')"
+                                   style="cursor:pointer;border:none;">
+                                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17l-2 4M19 17l2 4M5 9V7a7 7 0 0 1 14 0v2M5 9h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM8 5v0M16 5v0"/></svg>
+                                   Android アプリ
+                               </button>`
+                            : `<a href="${app.androidDownloadUrl}" target="_blank" rel="noopener noreferrer" class="app-cta android">
+                                   <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 17l-2 4M19 17l2 4M5 9V7a7 7 0 0 1 14 0v2M5 9h14a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2zM8 5v0M16 5v0"/></svg>
+                                   Android アプリ
+                               </a>`)
+                        : '';
+
+                    // Mac 版（ネイティブ macOS アプリが別にある場合）
+                    const macBtn = app.macAppStoreUrl
+                        ? `<a href="${app.macAppStoreUrl}" target="_blank" rel="noopener noreferrer" class="app-cta mac">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="13" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+                               Mac App Storeで見る
+                           </a>`
+                        : '';
+
+                    const ctaBtn = isIos
+                        ? `${iosBtn}${androidBtn}${macBtn}`
+                        : `<a href="${app.webUrl}" class="app-cta web">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                               Webアプリを起動
+                           </a>`;
+
+                    const secondaryLinks = app.links.map(link =>
+                        `<a href="${link.url}">${link.label}</a>`
+                    ).join('');
+
+                    const card = `
+                        <div class="app-card">
+                            <div class="type-badge ${app.type}">${badgeLabel}</div>
+                            <div class="app-icon">${app.icon}</div>
+                            <div class="app-name">${app.name}</div>
+                            <p class="app-description">${app.description}</p>
+                            <div class="app-links">
+                                ${ctaBtn}
+                                <div class="app-secondary-links">${secondaryLinks}</div>
+                            </div>
+                        </div>
+                    `;
+
+                    if (isIos) {
+                        iosGrid.innerHTML += card;
+                    } else {
+                        webGrid.innerHTML += card;
+                    }
+                });
+            });
+    </script>
+</body>
+
+</html>

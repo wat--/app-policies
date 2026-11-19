@@ -1,0 +1,2562 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>鳴き声・音声抽出ツール</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:#0f1117;color:#e5e7eb;font-family:-apple-system,'Hiragino Sans',sans-serif;
+  padding:20px;max-width:700px;margin:0 auto;}
+h1{text-align:center;font-size:16px;color:#93c5fd;margin-bottom:16px;letter-spacing:.05em;}
+.version{text-align:center;font-size:10px;color:#374151;font-family:monospace;margin-top:-12px;margin-bottom:14px;}
+
+.drop-zone{border:2px dashed #374151;border-radius:12px;padding:22px;text-align:center;
+  cursor:pointer;margin-bottom:14px;transition:.2s;}
+.drop-zone:hover,.drop-zone.drag-over{border-color:#60a5fa;background:#1e293b;}
+.drop-zone .icon{font-size:28px;margin-bottom:6px;}
+.drop-zone p{color:#6b7280;font-size:12px;}
+.drop-zone .loaded{color:#34d399;font-size:13px;font-weight:600;margin-top:6px;}
+
+.waveform-wrap{position:relative;background:#080c14;border-radius:10px;
+  margin-bottom:4px;overflow:hidden;border:1px solid #1e2535;cursor:col-resize;}
+#waveformCanvas{display:block;width:100%;}
+#waveTip{position:absolute;right:8px;bottom:5px;font-size:10px;color:#fbbf24;
+  font-family:monospace;pointer-events:none;background:rgba(8,12,20,.78);
+  padding:2px 4px;border-radius:4px;}
+#zoomCtrl{position:absolute;left:6px;top:5px;display:flex;align-items:center;gap:4px;}
+#zoomCtrl button{background:#1f2937;border:1px solid #374151;color:#9ca3af;
+  border-radius:5px;width:20px;height:20px;cursor:pointer;font-size:13px;line-height:1;
+  display:flex;align-items:center;justify-content:center;padding:0;}
+#zoomCtrl button:hover{background:#374151;color:#e5e7eb;}
+#zoomLabel{font-size:10px;color:#6b7280;font-family:monospace;min-width:24px;text-align:center;}
+#waveProgress{position:absolute;bottom:0;left:0;height:3px;background:#3b82f6;
+  width:0%;transition:width .2s;pointer-events:none;display:none;border-radius:0 2px 0 0;}
+/* スクロールバー */
+#waveScrollWrap{height:16px;background:#080c14;border:1px solid #1e2535;
+  border-top:none;border-radius:0 0 10px 10px;margin-bottom:10px;
+  position:relative;cursor:pointer;display:block;}
+#waveScrollTrack{position:absolute;top:3px;left:0;right:0;bottom:3px;margin:0 4px;}
+#waveScrollThumb{position:absolute;top:0;height:100%;background:#374151;
+  border-radius:4px;cursor:grab;min-width:16px;display:none;}
+#waveScrollThumb:hover{background:#4b5563;}
+#waveScrollThumb.dragging{background:#6b7280;cursor:grabbing;}
+/* スキャン進捗バー */
+#bgScanBar{position:absolute;top:0;left:0;height:100%;background:rgba(59,130,246,0.25);
+  width:0%;pointer-events:none;border-radius:0 0 0 10px;transition:width .5s;}
+#bgScanLabel{position:absolute;right:6px;top:50%;transform:translateY(-50%);
+  font-size:9px;color:#6b7280;font-family:monospace;pointer-events:none;white-space:nowrap;}
+
+.sgram-wrap{position:relative;background:#080c14;border-radius:10px;
+  margin-bottom:4px;overflow:hidden;border:1px solid #1e2535;cursor:col-resize;}
+#sgramCanvas{display:block;width:100%;}
+#sgramTip{position:absolute;right:8px;bottom:5px;font-size:10px;color:#fbbf24;
+  font-family:monospace;pointer-events:none;background:rgba(8,12,20,.78);
+  padding:2px 4px;border-radius:4px;}
+
+.spectrum-wrap{position:relative;background:#080c14;border-radius:10px;
+  margin-bottom:14px;overflow:hidden;border:1px solid #1e2535;}
+#spectrumCanvas{display:block;width:100%;}
+
+.band-panel{background:#1a1f2e;border-radius:12px;padding:18px 20px;margin-bottom:14px;}
+
+/* 範囲選択・区間抽出 */
+.range-panel{background:#1a1f2e;border-radius:12px;padding:14px 18px;margin-bottom:14px;border:1px solid #2d3748;}
+.range-panel h2{font-size:13px;color:#34d399;margin-bottom:10px;}
+.range-row,.seg-ctrl,.seg-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px;}
+.range-hint{font-size:10px;color:#6b7280;}
+.range-info{font-size:11px;color:#93c5fd;font-family:monospace;min-width:150px;}
+.btn-sm{background:#1f2937;border:1px solid #374151;color:#d1d5db;border-radius:7px;padding:5px 10px;
+  cursor:pointer;font-size:11px;white-space:nowrap;}
+.btn-sm:hover{border-color:#60a5fa;color:#fff;}
+.btn-sm:disabled{opacity:.4;cursor:not-allowed;}
+.btn-sm.dl{background:#065f46;border-color:#047857;color:#6ee7b7;}
+.btn-sm.dl:hover{background:#047857;color:#fff;}
+.seg-ctrl label{font-size:10px;color:#9ca3af;display:flex;align-items:center;gap:3px;}
+.seg-ctrl input[type=number]{width:52px;background:#0f172a;border:1px solid #374151;color:#e5e7eb;
+  border-radius:5px;padding:2px 4px;font-size:11px;font-family:monospace;}
+.seg-status{font-size:10px;color:#6b7280;}
+.seg-list{max-height:200px;overflow-y:auto;display:none;margin-bottom:8px;border:1px solid #1e2535;border-radius:8px;}
+.seg-row{display:flex;gap:8px;align-items:center;padding:4px 8px;border-bottom:1px solid #111827;font-size:11px;}
+.seg-row:last-child{border-bottom:none;}
+.seg-row:hover{background:#1f2937;}
+.seg-row.current{background:#1e3a5f;}
+.seg-row .seg-idx{color:#6b7280;font-family:monospace;min-width:24px;}
+.seg-row .seg-time{color:#34d399;font-family:monospace;min-width:150px;cursor:pointer;}
+.seg-row .seg-dur{color:#9ca3af;font-family:monospace;min-width:48px;}
+.seg-row .seg-lv{color:#fbbf24;font-family:monospace;min-width:48px;}
+.seg-row button{background:#111827;border:1px solid #374151;color:#9ca3af;border-radius:5px;padding:1px 6px;cursor:pointer;font-size:10px;}
+.seg-row button:hover{color:#fff;border-color:#60a5fa;}
+.seg-row input[type=checkbox]{accent-color:#34d399;}
+.band-panel h2{font-size:13px;color:#93c5fd;margin-bottom:14px;}
+.band-range-display{display:flex;align-items:center;justify-content:center;gap:8px;
+  background:#0f1117;border-radius:8px;padding:10px;margin-bottom:14px;
+  font-size:14px;font-weight:700;color:#60a5fa;letter-spacing:.03em;}
+.band-range-display .arrow{color:#374151;font-size:18px;}
+.slider-row{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.slider-row label{font-size:12px;color:#9ca3af;min-width:28px;}
+.slider-row input[type=range]{flex:1;accent-color:#60a5fa;cursor:pointer;height:5px;}
+.slider-row .freq-val{font-size:12px;color:#e5e7eb;min-width:60px;text-align:right;
+  font-family:monospace;font-weight:600;}
+.sensitivity-row{display:flex;align-items:center;gap:10px;margin-top:10px;
+  border-top:1px solid #1f2937;padding-top:10px;}
+.sensitivity-row label{font-size:12px;color:#9ca3af;min-width:52px;}
+.sensitivity-row input[type=range]{flex:1;accent-color:#f59e0b;cursor:pointer;height:5px;}
+.sensitivity-row .sens-val{font-size:12px;color:#fbbf24;min-width:36px;text-align:right;
+  font-family:monospace;font-weight:600;}
+.sensitivity-hint{font-size:10px;color:#6b7280;text-align:right;margin-top:4px;}
+.actions{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:8px;margin-top:14px;}
+.btn{border:none;border-radius:8px;padding:11px 8px;cursor:pointer;
+  font-size:13px;font-weight:600;transition:.15s;letter-spacing:.02em;}
+.btn-play{background:#1d4ed8;color:#fff;}
+.btn-play:hover{background:#2563eb;}
+.btn-ctrl{background:#1f2937;color:#9ca3af;border:1px solid #374151;}
+.btn-ctrl:hover{color:#e5e7eb;border-color:#6b7280;}
+.btn-dl{background:#065f46;color:#6ee7b7;border:1px solid #047857;}
+.btn-dl:hover{background:#047857;}
+
+.presets{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:14px;}
+.preset-btn{background:#111827;border:1px solid #374151;color:#d1d5db;border-radius:8px;
+  padding:8px 4px;cursor:pointer;text-align:center;font-size:12px;font-weight:600;
+  transition:.15s;line-height:1.4;}
+.preset-btn span{font-size:18px;display:block;margin-bottom:2px;}
+.preset-btn small{display:block;font-size:9px;color:#6b7280;font-weight:400;}
+.preset-btn small.band{color:#4ade80;margin-top:2px;font-size:9px;}
+.preset-btn:hover{border-color:#60a5fa;color:#93c5fd;background:#1e293b;}
+.preset-btn.active{border-color:#3b82f6;background:#1e3a5f;color:#93c5fd;}
+
+#status{text-align:center;font-size:12px;color:#6b7280;min-height:18px;padding:4px;}
+
+/* Whisper 音声検出パネル */
+.whisper-panel{background:#1a1f2e;border-radius:12px;padding:16px 18px;margin-bottom:14px;border:1px solid #2d3748;}
+.whisper-panel h2{font-size:13px;color:#a78bfa;margin-bottom:12px;}
+.whisper-btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px;}
+.btn-whisper-load{background:#2d1f5e;color:#c4b5fd;border:1px solid #5b21b6;border-radius:8px;
+  padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600;transition:.15s;}
+.btn-whisper-load:hover{background:#3b1fa8;color:#ede9fe;}
+.btn-whisper-load:disabled{opacity:.45;cursor:not-allowed;}
+.btn-whisper-run{background:#1e3a5f;color:#93c5fd;border:1px solid #2563eb;border-radius:8px;
+  padding:8px 14px;cursor:pointer;font-size:12px;font-weight:600;transition:.15s;}
+.btn-whisper-run:hover{background:#1d4ed8;color:#fff;}
+.btn-whisper-run:disabled{opacity:.45;cursor:not-allowed;}
+#whisperStatus{font-size:11px;color:#6b7280;font-family:monospace;}
+#whisperProgress{height:4px;background:#1f2937;border-radius:2px;margin-bottom:8px;display:none;}
+#whisperProgressBar{height:100%;background:#7c3aed;border-radius:2px;width:0%;transition:width .3s;}
+.whisper-segments{max-height:180px;overflow-y:auto;display:none;}
+.whisper-seg{display:flex;gap:8px;align-items:baseline;padding:4px 6px;border-radius:6px;
+  cursor:pointer;transition:.1s;}
+.whisper-seg:hover{background:#1f2937;}
+.whisper-seg .seg-time{font-size:10px;color:#60a5fa;font-family:monospace;white-space:nowrap;min-width:90px;}
+.whisper-seg .seg-text{font-size:12px;color:#d1d5db;}
+.whisper-seg.voice .seg-time{color:#a78bfa;}
+/* 波形上の人声マーカーオーバーレイ */
+.voice-marker-wrap{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;overflow:hidden;}
+</style>
+</head>
+<body>
+<h1>🐦 鳴き声・音声抽出ツール</h1>
+<div class="version">v0.6.0</div>
+
+<div class="drop-zone" id="dropZone">
+  <div class="icon">🎵</div>
+  <p>音声ファイルをここにドロップ、またはクリックして選択（m4a / mp3 / wav）</p>
+  <p style="font-size:10px;color:#6b7280;margin-top:4px;">波形をドラッグして範囲を選ぶ / 鳴き声の区間を自動検出して区間ごとに保存できます</p>
+  <p style="font-size:10px;color:#4b5563;margin-top:6px;">🔒 すべての処理はブラウザ内で完結します。ファイルはサーバに送信されません。</p>
+  <div class="loaded" id="fileName"></div>
+  <input type="file" id="fileInput" accept="audio/*" style="display:none">
+</div>
+
+<div class="waveform-wrap">
+  <canvas id="waveformCanvas" height="90"></canvas>
+  <div class="voice-marker-wrap" id="waveVoiceMarkers"></div>
+  <div id="waveTip"></div>
+  <div id="waveProgress"></div>
+  <div id="zoomCtrl">
+    <button onclick="zoomIn()"  title="拡大">＋</button>
+    <span id="zoomLabel">1×</span>
+    <button onclick="zoomOut()" title="縮小">－</button>
+  </div>
+</div>
+<div id="waveScrollWrap">
+  <div id="bgScanBar"></div>
+  <div id="bgScanLabel"></div>
+  <div id="waveScrollTrack">
+    <div id="waveScrollThumb"></div>
+  </div>
+</div>
+
+<div class="range-panel" id="rangePanel">
+  <h2>✂️ 範囲選択・鳴き声区間の抽出</h2>
+  <div class="range-row">
+    <span class="range-hint">波形をドラッグすると範囲選択（クリックはシーク）</span>
+    <span class="range-info" id="rangeInfo">範囲: 未選択</span>
+    <button class="btn-sm" onclick="playSelection()">▶ 範囲を再生</button>
+    <button class="btn-sm" onclick="clearSelection()">解除</button>
+    <button class="btn-sm dl" onclick="extractSelection()">⬇ 範囲を抽出・DL</button>
+  </div>
+  <div class="seg-ctrl">
+    <button class="btn-sm" onclick="detectSegments()">🔎 鳴き声の区間を自動検出</button>
+    <label>最小長 <input type="number" id="segMinLen" value="0.3" step="0.1" min="0.05"> 秒</label>
+    <label>結合間隔 <input type="number" id="segGap" value="0.5" step="0.1" min="0"> 秒</label>
+    <label>前後の余白 <input type="number" id="segPad" value="0.2" step="0.05" min="0"> 秒</label>
+    <span class="seg-status" id="segStatus">帯域とスパイク感度の設定に連動して検出します</span>
+  </div>
+  <div class="seg-list" id="segList"></div>
+  <div class="seg-actions" id="segActions" style="display:none">
+    <button class="btn-sm dl" onclick="downloadSegmentsJoined()">⬇ 選んだ区間をつなげて1本でDL</button>
+    <button class="btn-sm dl" onclick="downloadSegmentsZip()">⬇ 区間ごとにZIPでDL</button>
+    <button class="btn-sm" onclick="downloadSegmentsCsv()">CSV</button>
+    <button class="btn-sm" onclick="clearSegments()">クリア</button>
+  </div>
+</div>
+
+<div class="sgram-wrap" id="sgramWrap" style="display:none">
+  <canvas id="sgramCanvas" height="120"></canvas>
+  <div class="voice-marker-wrap" id="sgramVoiceMarkers"></div>
+  <div id="sgramTip"></div>
+  <div id="sgramPlaybar" style="position:absolute;top:0;bottom:0;width:2px;background:rgba(251,191,36,.8);pointer-events:none;display:none;"></div>
+</div>
+
+<div class="spectrum-wrap">
+  <canvas id="spectrumCanvas" height="160"></canvas>
+</div>
+
+<div class="whisper-panel">
+  <h2>🤖 AI音声検出（Whisper）</h2>
+  <div class="whisper-btns">
+    <button class="btn-whisper-load" id="whisperLoadBtn" onclick="loadWhisper()">モデル読み込み</button>
+    <button class="btn-whisper-run"  id="whisperRunBtn"  onclick="runWhisper()" disabled>人声を検出</button>
+    <span id="whisperStatus">モデル未読み込み</span>
+  </div>
+  <div id="whisperProgress"><div id="whisperProgressBar"></div></div>
+  <div class="whisper-segments" id="whisperSegments"></div>
+</div>
+
+<div class="band-panel">
+  <h2>🎯 抽出する帯域を指定</h2>
+
+  <div class="presets">
+    <button class="preset-btn" onclick="applyPreset(300,1000,this)">
+      <span>🗣</span>人の声<small>会話・インタビュー</small><small class="band">300Hz〜1kHz</small>
+    </button>
+    <button class="preset-btn" onclick="applyPreset(500,2000,this)">
+      <span>🦉</span>大型鳥<small>カラス・フクロウ</small><small class="band">500Hz〜2kHz</small>
+    </button>
+    <button class="preset-btn" onclick="applyPreset(2000,8000,this)">
+      <span>🐦</span>小鳥<small>スズメ・ウグイス</small><small class="band">2k〜8kHz</small>
+    </button>
+    <button class="preset-btn" onclick="applyPreset(3000,10000,this)">
+      <span>🎵</span>高音系<small>ヒバリ・セキレイ</small><small class="band">3k〜10kHz</small>
+    </button>
+    <button class="preset-btn" id="presetFull" onclick="applyPresetFull(this)">
+      <span>🔊</span>全帯域<small>オリジナル</small><small class="band">20Hz〜20kHz</small>
+    </button>
+  </div>
+
+  <div class="band-range-display">
+    <span id="bandLowDisp">300 Hz</span>
+    <span class="arrow">→</span>
+    <span id="bandHighDisp">1 kHz</span>
+  </div>
+
+  <div class="slider-row">
+    <label>下限</label>
+    <input type="range" id="bandLow"  min="1" max="7" step="0.01" oninput="onBandChange()">
+    <span class="freq-val" id="bandLowV">300 Hz</span>
+  </div>
+  <div class="slider-row">
+    <label>上限</label>
+    <input type="range" id="bandHigh" min="1" max="7" step="0.01" oninput="onBandChange()">
+    <span class="freq-val" id="bandHighV">1 kHz</span>
+  </div>
+  <div class="slider-row">
+    <label>音量</label>
+    <input type="range" id="gainSlider" min="-24" max="24" step="0.5" value="0" oninput="onGainChange()">
+    <span class="freq-val" id="gainVal">0 dB</span>
+    <button id="agcBtn" onclick="toggleAgc()" style="margin-left:6px;background:#1f2937;border:1px solid #374151;color:#9ca3af;border-radius:6px;padding:3px 8px;cursor:pointer;font-size:11px;white-space:nowrap;">自動</button>
+  </div>
+
+  <div class="sensitivity-row">
+    <label>スパイク感度</label>
+    <input type="range" id="spikesens" min="0" max="100" step="1" value="50" oninput="onSensChange()">
+    <span class="sens-val" id="spikesensV">50</span>
+  </div>
+  <div class="sensitivity-hint" id="sensitivityHint">黄: &gt;3.0dB上昇  赤: &gt;8.0dB上昇</div>
+
+  <div class="actions">
+    <button class="btn btn-play"  onclick="play()">▶ 再生</button>
+    <button class="btn btn-ctrl"  onclick="pause()">⏸ 一時停止</button>
+    <button class="btn btn-ctrl"  onclick="stop()">⏹ 停止</button>
+    <button class="btn btn-dl"    onclick="extractAndDownload()">⬇ 抽出・DL</button>
+  </div>
+</div>
+
+<div id="status"></div>
+
+<script>
+// ════════════════════════════════════════════
+//  State
+// ════════════════════════════════════════════
+const STREAM_THRESHOLD = 100 * 1024 * 1024; // 100MB以上はストリーミング
+
+let actx, audioBuf;
+let srcNode    = null;   // バッファモード用
+let mediaAudio = null;   // ストリーミングモード用 <audio>
+let streamMode = false;  // true = ストリーミングモード
+let audioDuration = 0;   // 両モード共通の長さ
+let recordingStart = null; // ファイル名 YYMMDD-HHMM / YYMMDD_HH'MM'SS などから推定した録音開始時刻
+
+// ズーム状態
+let zoomLevel  = 1;      // 1=全体表示、2=2倍、4=4倍…
+let zoomStart  = 0;      // 表示開始時刻（秒）
+
+// Whisper 検出結果
+let voiceSegments = [];  // [{start, end, text}]
+
+let playing = false;
+let startAt = 0, pauseAt = 0;
+
+// 範囲選択・区間検出
+let selStart = null, selEnd = null;   // 秒。null = 未選択
+let selPlayEnd = null;                // 「範囲を再生」中の停止位置
+let segments = [];                    // [{start, end, peakDb, include}]
+
+// フィルタノード（buildGraph で生成、周波数だけ動的に変更）
+let hp1, hp2, lp1, lp2, bandComp, bandGain, bandLim, analyserNode;
+
+const BW_Q1 = 0.5412, BW_Q2 = 1.3066; // 4次Butterworth 分割Q値
+
+// ════════════════════════════════════════════
+//  Audio Graph（一度構築し、帯域は周波数更新で変更）
+// ════════════════════════════════════════════
+function buildGraph() {
+  analyserNode = actx.createAnalyser();
+  analyserNode.fftSize = 2048;
+
+  hp1 = actx.createBiquadFilter(); hp1.type = 'highpass'; hp1.Q.value = BW_Q1;
+  hp2 = actx.createBiquadFilter(); hp2.type = 'highpass'; hp2.Q.value = BW_Q2;
+  lp1 = actx.createBiquadFilter(); lp1.type = 'lowpass';  lp1.Q.value = BW_Q1;
+  lp2 = actx.createBiquadFilter(); lp2.type = 'lowpass';  lp2.Q.value = BW_Q2;
+
+  bandComp = actx.createDynamicsCompressor();
+  bandComp.threshold.value = -40; bandComp.ratio.value = 8;
+  bandComp.attack.value = 0.005; bandComp.release.value = 0.2; bandComp.knee.value = 6;
+
+  bandGain = actx.createGain();
+
+  bandLim = actx.createDynamicsCompressor();
+  bandLim.threshold.value = -1; bandLim.ratio.value = 20;
+  bandLim.attack.value = 0.001; bandLim.release.value = 0.05;
+
+  // 固定チェーン: hp1→hp2→lp1→lp2→comp→gain→lim→analyser→dest
+  hp1.connect(hp2); hp2.connect(lp1); lp1.connect(lp2);
+  lp2.connect(bandComp); bandComp.connect(bandGain);
+  bandGain.connect(bandLim); bandLim.connect(analyserNode);
+  analyserNode.connect(actx.destination);
+
+  applyFilters(); // 初期周波数を適用
+}
+
+// 帯域変更時にフィルタ周波数だけ更新（再生を止めない）
+function applyFilters() {
+  if (!hp1) return;
+  const lo = fullBandMode ? 20     : bandLow;
+  const hi = fullBandMode ? 20000  : bandHigh;
+  hp1.frequency.value = lo;  hp2.frequency.value = lo;
+  lp1.frequency.value = hi;  lp2.frequency.value = hi;
+  // ゲインスライダーのdB値を乗算（デフォルト0dB=変化なし）
+  const baseGain = fullBandMode ? 1.5 : 8;
+  const dbOffset = parseFloat(id('gainSlider')?.value ?? 0);
+  bandGain.gain.value = baseGain * Math.pow(10, dbOffset / 20);
+}
+
+function onGainChange() {
+  const db = parseFloat(id('gainSlider').value);
+  id('gainVal').textContent = (db >= 0 ? '+' : '') + db.toFixed(1) + ' dB';
+  applyFilters();
+}
+
+// ── AGC（自動ゲイン制御）──
+let agcEnabled = false;
+let agcTimer   = null;
+
+function toggleAgc() {
+  agcEnabled = !agcEnabled;
+  const btn = id('agcBtn');
+  if (agcEnabled) {
+    btn.style.background = '#1d4ed8';
+    btn.style.color = '#fff';
+    btn.style.borderColor = '#2563eb';
+    runAgc();
+  } else {
+    btn.style.background = '#1f2937';
+    btn.style.color = '#9ca3af';
+    btn.style.borderColor = '#374151';
+    clearTimeout(agcTimer);
+  }
+}
+
+function runAgc() {
+  if (!agcEnabled || !analyserNode) return;
+
+  // 周波数域データから帯域内の最大振幅を取得
+  const fd = new Uint8Array(analyserNode.frequencyBinCount);
+  analyserNode.getByteFrequencyData(fd);
+  const nyq = actx.sampleRate / 2;
+  let maxAmp = 0;
+  for (let i = 0; i < fd.length; i++) {
+    const freq = (i / fd.length) * nyq;
+    if (freq < bandLow || freq > bandHigh) continue;
+    if (fd[i] > maxAmp) maxAmp = fd[i];
+  }
+  // fd値は0〜255、スペクトラム棒の高さは amp * spH * 0.9
+  // 目標: 最大棒の高さ = spH * 0.5 → maxAmp/255 = 0.5/0.9 ≒ 0.556
+  const TARGET = 0.556;
+  const current = maxAmp / 255;
+
+  if (current > 0.01) {
+    const currentDb = parseFloat(id('gainSlider').value);
+    const errorDb   = 20 * Math.log10(TARGET / current);
+    // スムージング: 一度に最大1.5dBずつ
+    const step  = Math.max(-1.5, Math.min(1.5, errorDb));
+    const newDb = Math.max(-24, Math.min(24, currentDb + step * 0.25));
+    id('gainSlider').value = newDb;
+    onGainChange();
+  }
+
+  agcTimer = setTimeout(runAgc, 150);
+}
+
+// ════════════════════════════════════════════
+//  Band Settings
+// ════════════════════════════════════════════
+const LOG_MIN = Math.log10(20), LOG_MAX = Math.log10(20000);
+function sliderToFreq(v) { return Math.round(Math.pow(10, LOG_MIN + (v-1)/6*(LOG_MAX-LOG_MIN))); }
+function freqToSlider(f) { return (1 + (Math.log10(f)-LOG_MIN)/(LOG_MAX-LOG_MIN)*6).toFixed(2); }
+
+let bandLow = 20, bandHigh = 20000, fullBandMode = true;
+let spikeSensitivity = 50; // 0〜100
+
+document.getElementById('bandLow').value  = freqToSlider(20);
+document.getElementById('bandHigh').value = freqToSlider(20000);
+
+function setBandDisplay(lf, hf) {
+  id('bandLowV').textContent    = lf; id('bandHighV').textContent    = hf;
+  id('bandLowDisp').textContent = lf; id('bandHighDisp').textContent = hf;
+}
+
+function applyPreset(lo, hi, btn) {
+  fullBandMode = false; bandLow = lo; bandHigh = hi;
+  id('bandLow').value = freqToSlider(lo); id('bandHigh').value = freqToSlider(hi);
+  setBandDisplay(fmtFreq(lo), fmtFreq(hi));
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+  rerenderWaveformIfLoaded();
+  reScanIfStreaming();
+  if (playing) setStatus(`▶ 再生中: ${fmtFreq(lo)} 〜 ${fmtFreq(hi)}`);
+}
+
+function applyPresetFull(btn) {
+  fullBandMode = true; bandLow = 20; bandHigh = 20000;
+  id('bandLow').value = freqToSlider(20); id('bandHigh').value = freqToSlider(20000);
+  setBandDisplay('20 Hz', '20 kHz');
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  applyFilters();
+  rerenderWaveformIfLoaded();
+  reScanIfStreaming();
+  if (playing) setStatus('▶ 再生中: 全帯域');
+}
+
+function onBandChange() {
+  const lv = parseFloat(id('bandLow').value);
+  const hv = parseFloat(id('bandHigh').value);
+  if (lv >= hv) { id('bandLow').value = (hv - 0.05).toFixed(2); }
+  bandLow  = sliderToFreq(parseFloat(id('bandLow').value));
+  bandHigh = sliderToFreq(parseFloat(id('bandHigh').value));
+  fullBandMode = false;
+  setBandDisplay(fmtFreq(bandLow), fmtFreq(bandHigh));
+  applyFilters();
+  rerenderWaveformIfLoaded();
+  reScanIfStreaming();
+  if (playing) setStatus(`▶ 再生中: ${fmtFreq(bandLow)} 〜 ${fmtFreq(bandHigh)}`);
+}
+
+// ストリーミングモードの帯域変更時に再スキャン（スロットリング）
+let reScanTimer = null;
+function reScanIfStreaming() {
+  if (!streamMode || !bgScanUrl) return;
+  clearTimeout(reScanTimer);
+  reScanTimer = setTimeout(() => {
+    wvCache = null; wvOnset = null;
+    prerenderTimeline();
+    startBgScan(bgScanUrl);
+  }, 600);
+}
+
+// 帯域変更時に波形を再描画（スロットリングで連続操作中は間引く）
+let rerenderTimer = null;
+function rerenderWaveformIfLoaded() {
+  if (!audioBuf) return;
+  clearTimeout(rerenderTimer);
+  rerenderTimer = setTimeout(() => { wvCache = null; prerenderWaveform(); }, 300);
+}
+function onSensChange() {
+  spikeSensitivity = parseInt(id('spikesens').value);
+  id('spikesensV').textContent = spikeSensitivity;
+  const { yellowThr, redThr } = getSpikeThresholds([]);
+  id('sensitivityHint').textContent =
+    `黄: >${yellowThr.toFixed(1)}dB上昇  赤: >${redThr.toFixed(1)}dB上昇`;
+  rerenderWaveformIfLoaded();
+}
+
+// 感度から絶対閾値を計算
+// 感度0=強いスパイクのみ(yellow:12dB, red:20dB)
+// 感度50=中程度(yellow:3dB, red:8dB)
+// 感度100=微細な変化も検出(yellow:0.5dB, red:2dB)
+function getSpikeThresholds(onsetNonzero) {
+  const t = spikeSensitivity / 100;
+  // 対数スケールで補間
+  const yellowThr = Math.pow(10, Math.log10(12) - t * (Math.log10(12) - Math.log10(0.5)));
+  const redThr    = Math.pow(10, Math.log10(20) - t * (Math.log10(20) - Math.log10(2)));
+  return { yellowThr, redThr };
+}
+
+// 初期表示は全帯域
+setBandDisplay('20 Hz', '20 kHz');
+document.getElementById('presetFull').classList.add('active');
+
+// ════════════════════════════════════════════
+//  ズーム
+// ════════════════════════════════════════════
+const ZOOM_STEPS = [1, 2, 4, 8, 16, 32];
+
+function getCurrentTime() {
+  if (!audioDuration) return 0;
+  if (playing) return streamMode ? mediaAudio.currentTime : Math.min(actx.currentTime - startAt, audioDuration);
+  return pauseAt;
+}
+
+function applyZoom(newLevel, centerTime) {
+  zoomLevel = newLevel;
+  if (zoomLevel <= 1) { zoomLevel = 1; zoomStart = 0; }
+  else {
+    const visibleDur = audioDuration / zoomLevel;
+    zoomStart = Math.max(0, Math.min(audioDuration - visibleDur, centerTime - visibleDur / 2));
+  }
+  id('zoomLabel').textContent = zoomLevel + '×';
+  // ストリーミングモードはズームに合わせてキャッシュを再描画（棒幅が変わるため）
+  if (streamMode && rtOnset) redrawRtCache();
+  if (voiceSegments && voiceSegments.length) renderVoiceMarkers();
+}
+
+function zoomIn() {
+  const idx = ZOOM_STEPS.indexOf(zoomLevel);
+  if (idx < ZOOM_STEPS.length - 1) { applyZoom(ZOOM_STEPS[idx + 1], getCurrentTime()); updateScrollbar(); }
+}
+function zoomOut() {
+  const idx = ZOOM_STEPS.indexOf(zoomLevel);
+  if (idx > 0) { applyZoom(ZOOM_STEPS[idx - 1], getCurrentTime()); updateScrollbar(); }
+}
+
+// ── スクロールバー ──
+function updateScrollbar() {
+  const thumb = id('waveScrollThumb');
+  // thumbはズーム時のみ表示、ラップは常時表示
+  if (zoomLevel <= 1 || !audioDuration) {
+    thumb.style.display = 'none';
+    return;
+  }
+  thumb.style.display = 'block';
+  const trackW = id('waveScrollTrack').offsetWidth;
+  const thumbW = Math.max(16, Math.round(trackW / zoomLevel));
+  const maxLeft = trackW - thumbW;
+  const leftRatio = audioDuration > audioDuration / zoomLevel
+    ? zoomStart / (audioDuration - audioDuration / zoomLevel) : 0;
+  const thumbLeft = Math.round(Math.max(0, Math.min(maxLeft, leftRatio * maxLeft)));
+  thumb.style.width = thumbW + 'px';
+  thumb.style.left  = thumbLeft + 'px';
+}
+
+function updateBgScanProgress() {
+  if (!audioDuration || !bgWorkers.length) return;
+  // 全workerの蓄積済み秒数を合算
+  const coveredSec = rtCovered ? Array.from(rtCovered).filter(v => v).length : 0;
+  const pct = Math.min(100, coveredSec / audioDuration * 100);
+  id('bgScanBar').style.width = pct + '%';
+  if (pct < 100) {
+    const rate = bgWorkers[0].audio.playbackRate || 16;
+    const remaining = (audioDuration - coveredSec) / (rate * BG_WORKERS);
+    id('bgScanLabel').textContent = `波形読み込み中… ${Math.round(pct)}%（${rate}×${BG_WORKERS}並列　残り約${fmtTime(Math.max(0,remaining))}）`;
+  }
+}
+
+// スクロールバーのドラッグ
+let sbDragging = false, sbDragStartX = 0, sbDragStartLeft = 0;
+const thumb = id('waveScrollThumb');
+thumb.addEventListener('mousedown', e => {
+  sbDragging = true;
+  sbDragStartX = e.clientX;
+  sbDragStartLeft = parseInt(thumb.style.left) || 0;
+  thumb.classList.add('dragging');
+  e.stopPropagation();
+});
+document.addEventListener('mousemove', e => {
+  if (!sbDragging || !audioDuration) return;
+  const trackW = id('waveScrollTrack').offsetWidth;
+  const thumbW = thumb.offsetWidth;
+  const maxLeft = trackW - thumbW;
+  const newLeft = Math.max(0, Math.min(maxLeft, sbDragStartLeft + e.clientX - sbDragStartX));
+  thumb.style.left = newLeft + 'px';
+  const ratio = maxLeft > 0 ? newLeft / maxLeft : 0;
+  const visibleDur = audioDuration / zoomLevel;
+  zoomStart = ratio * (audioDuration - visibleDur);
+});
+document.addEventListener('mouseup', () => {
+  if (sbDragging) { sbDragging = false; thumb.classList.remove('dragging'); }
+});
+// トラッククリックでジャンプ
+id('waveScrollWrap').addEventListener('click', e => {
+  if (e.target === thumb) return;
+  const trackW = id('waveScrollTrack').offsetWidth;
+  const thumbW = thumb.offsetWidth;
+  const maxLeft = trackW - thumbW;
+  const rect = id('waveScrollTrack').getBoundingClientRect();
+  const newLeft = Math.max(0, Math.min(maxLeft, e.clientX - rect.left - thumbW / 2));
+  thumb.style.left = newLeft + 'px';
+  const ratio = maxLeft > 0 ? newLeft / maxLeft : 0;
+  const visibleDur = audioDuration / zoomLevel;
+  zoomStart = ratio * (audioDuration - visibleDur);
+});
+
+// マウスホイールでもズーム
+document.getElementById('waveformCanvas').addEventListener('wheel', e => {
+  if (!audioDuration) return;
+  e.preventDefault();
+  const r = document.getElementById('waveformCanvas').getBoundingClientRect();
+  const ratio = (e.clientX - r.left) / wvW;
+  const centerTime = zoomStart + ratio * (audioDuration / zoomLevel);
+  if (e.deltaY < 0) {
+    const idx = ZOOM_STEPS.indexOf(zoomLevel);
+    if (idx < ZOOM_STEPS.length - 1) applyZoom(ZOOM_STEPS[idx + 1], centerTime);
+  } else {
+    const idx = ZOOM_STEPS.indexOf(zoomLevel);
+    if (idx > 0) applyZoom(ZOOM_STEPS[idx - 1], centerTime);
+  }
+  updateScrollbar();
+}, { passive: false });
+
+// ════════════════════════════════════════════
+//  再生 / 一時停止 / 停止
+// ════════════════════════════════════════════
+function startFrom(t) {
+  if (srcNode) { try { srcNode.stop(); } catch(e){} }
+  const node = actx.createBufferSource();
+  srcNode = node;
+  node.buffer = audioBuf;
+  node.connect(hp1); // フィルタチェーンの先頭へ接続
+  node.start(0, t);
+  startAt = actx.currentTime - t;
+  playing = true;
+  node.onended = () => {
+    if (node !== srcNode) return; // シーク等で差し替え済みなら無視
+    playing = false; pauseAt = 0;
+    setStatus('⏹ 再生終了');
+  };
+}
+
+function play() {
+  if (!audioDuration) { setStatus('まずファイルを読み込んでください'); return; }
+  if (playing) return;
+  if (actx.state === 'suspended') actx.resume();
+  if (streamMode) {
+    mediaAudio.currentTime = pauseAt;
+    mediaAudio.play().then(() => {
+      playing = true;
+      if (actx.state === 'suspended') actx.resume();
+    }).catch(err => {
+      playing = false;
+      setStatus('❌ 再生失敗: ' + err.message);
+    });
+  } else {
+    startFrom(pauseAt);
+  }
+  setStatus(`▶ 再生中: ${fmtFreq(bandLow)} 〜 ${fmtFreq(bandHigh)}　—　波形クリックでシーク`);
+}
+
+function pause() {
+  if (!playing) return;
+  if (streamMode) {
+    pauseAt = mediaAudio.currentTime;
+    mediaAudio.pause();
+  } else {
+    pauseAt = Math.min(actx.currentTime - startAt, audioDuration);
+    if (srcNode) { try { srcNode.stop(); } catch(e){} }
+  }
+  playing = false;
+  setStatus(`⏸ 一時停止: ${fmt(pauseAt)}　—　▶ 再生で再開`);
+}
+
+function stop() {
+  if (streamMode) {
+    if (mediaAudio) { mediaAudio.pause(); mediaAudio.currentTime = 0; }
+  } else {
+    if (srcNode) { try { srcNode.stop(); } catch(e){} srcNode = null; }
+  }
+  playing = false; pauseAt = 0; selPlayEnd = null;
+  setStatus('');
+}
+
+// ════════════════════════════════════════════
+//  Extract & Download（オフラインレンダリング）
+// ════════════════════════════════════════════
+// 現在の帯域・ゲイン設定と同じチェーンをオフラインで組む
+function connectExtractChain(offline, src) {
+  if (fullBandMode) {
+    const comp = offline.createDynamicsCompressor();
+    comp.threshold.value = -30; comp.ratio.value = 4; comp.knee.value = 6;
+    const g = offline.createGain(); g.gain.value = 1.5;
+    src.connect(comp); comp.connect(g); g.connect(offline.destination);
+  } else {
+    // 同じフィルタ構成をオフラインで再現
+    const fh1 = offline.createBiquadFilter(); fh1.type='highpass'; fh1.frequency.value=bandLow;  fh1.Q.value=BW_Q1;
+    const fh2 = offline.createBiquadFilter(); fh2.type='highpass'; fh2.frequency.value=bandLow;  fh2.Q.value=BW_Q2;
+    const fl1 = offline.createBiquadFilter(); fl1.type='lowpass';  fl1.frequency.value=bandHigh; fl1.Q.value=BW_Q1;
+    const fl2 = offline.createBiquadFilter(); fl2.type='lowpass';  fl2.frequency.value=bandHigh; fl2.Q.value=BW_Q2;
+    const comp = offline.createDynamicsCompressor();
+    comp.threshold.value=-40; comp.ratio.value=8; comp.attack.value=0.005; comp.release.value=0.2; comp.knee.value=6;
+    const g = offline.createGain(); g.gain.value = 8;
+    const lim = offline.createDynamicsCompressor();
+    lim.threshold.value=-1; lim.ratio.value=20; lim.attack.value=0.001; lim.release.value=0.05;
+    src.connect(fh1); fh1.connect(fh2); fh2.connect(fl1); fl1.connect(fl2);
+    fl2.connect(comp); comp.connect(g); g.connect(lim); lim.connect(offline.destination);
+  }
+}
+
+// [start, end) 秒の範囲を現在の設定でレンダリングして AudioBuffer を返す
+async function renderRange(start, end) {
+  const sr  = audioBuf.sampleRate;
+  const s0  = Math.max(0, Math.min(audioBuf.duration, start));
+  const e0  = Math.max(s0 + 0.01, Math.min(audioBuf.duration, end));
+  const len = Math.max(1, Math.round((e0 - s0) * sr));
+  const offline = new OfflineAudioContext(audioBuf.numberOfChannels, len, sr);
+  const src = offline.createBufferSource();
+  src.buffer = audioBuf;
+  connectExtractChain(offline, src);
+  src.start(0, s0, e0 - s0);
+  return offline.startRendering();
+}
+
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a   = document.createElement('a');
+  a.href = url; a.download = name; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function bandLabel() {
+  return fullBandMode ? '全帯域' : `${fmtFreq(bandLow)}-${fmtFreq(bandHigh)}`;
+}
+
+function fmtTimeMs(t) {
+  // 0:12.3 のような表示
+  const m = Math.floor(t / 60), sec = t - m * 60;
+  return `${m}:${sec.toFixed(1).padStart(4, '0')}`;
+}
+function fmtTimeFile(t) {
+  // ファイル名用 00m12.3s
+  const m = Math.floor(t / 60), sec = t - m * 60;
+  return `${String(m).padStart(2,'0')}m${sec.toFixed(1).padStart(4,'0')}s`;
+}
+
+// 抽出・DL: 範囲が選択されていればその範囲、なければ全体
+async function extractAndDownload() {
+  if (!audioDuration) { setStatus('まずファイルを読み込んでください'); return; }
+  if (streamMode) {
+    setStatus('⚠ 大きなファイルはダウンロード非対応です。100MB未満のファイルを使用してください。');
+    return;
+  }
+  const hasSel = selStart != null && selEnd != null;
+  setStatus(hasSel ? '⏳ 選択範囲を抽出中...' : '⏳ 抽出処理中...');
+  const buf  = await renderRange(hasSel ? selStart : 0, hasSel ? selEnd : audioBuf.duration);
+  const name = hasSel
+    ? `抽出_${bandLabel()}_${fmtTimeFile(selStart)}-${fmtTimeFile(selEnd)}.wav`
+    : `抽出_${bandLabel()}.wav`;
+  downloadBlob(new Blob([encodeWAV(buf)], {type:'audio/wav'}), name);
+  setStatus(`✅ 保存しました: ${name}`);
+}
+
+// ════════════════════════════════════════════
+//  範囲選択
+// ════════════════════════════════════════════
+function updateRangeInfo() {
+  const el = id('rangeInfo');
+  if (selStart == null || selEnd == null) { el.textContent = '範囲: 未選択'; return; }
+  el.textContent = `範囲: ${fmtTimeMs(selStart)} – ${fmtTimeMs(selEnd)}（${(selEnd - selStart).toFixed(1)}秒）`;
+}
+function setSelection(a, b) {
+  if (!audioDuration) return;
+  selStart = Math.max(0, Math.min(a, b));
+  selEnd   = Math.min(audioDuration, Math.max(a, b));
+  if (selEnd - selStart < 0.05) { selStart = selEnd = null; }
+  updateRangeInfo();
+}
+function clearSelection() {
+  selStart = selEnd = null; selPlayEnd = null;
+  updateRangeInfo();
+}
+function playSelection() {
+  if (!audioDuration) { setStatus('まずファイルを読み込んでください'); return; }
+  if (selStart == null) { setStatus('波形をドラッグして範囲を選択してください'); return; }
+  if (playing) pause();
+  pauseAt = selStart;
+  selPlayEnd = selEnd;
+  play();
+  setStatus(`▶ 範囲を再生中: ${fmtTimeMs(selStart)} – ${fmtTimeMs(selEnd)}`);
+}
+function extractSelection() {
+  if (selStart == null) { setStatus('波形をドラッグして範囲を選択してください'); return; }
+  extractAndDownload();
+}
+// 「範囲を再生」の終端で止める（drawLoop から毎フレーム呼ぶ）
+function checkSelectionEnd() {
+  if (selPlayEnd == null || !playing) return;
+  if (getCurrentTime() >= selPlayEnd) {
+    pause();
+    pauseAt = selStart ?? 0;
+    selPlayEnd = null;
+    setStatus('⏹ 範囲の再生が終わりました');
+  }
+}
+
+// ════════════════════════════════════════════
+//  鳴き声区間の自動検出
+// ════════════════════════════════════════════
+function detectSegments() {
+  if (!audioDuration) { setStatus('まずファイルを読み込んでください'); return; }
+  if (streamMode || !audioBuf) {
+    id('segStatus').textContent = '⚠ 100MB以上のファイルでは自動検出・抽出は使えません';
+    return;
+  }
+  const minLen = Math.max(0.05, parseFloat(id('segMinLen').value) || 0.3);
+  const gapSec = Math.max(0,    parseFloat(id('segGap').value)    || 0);
+  const padSec = Math.max(0,    parseFloat(id('segPad').value)    || 0);
+  id('segStatus').textContent = '⏳ 検出中...';
+
+  // 波形表示と同じ 2 次バターワースで帯域を絞り、20ms ごとの RMS(dB) を求める
+  const L  = audioBuf.getChannelData(0);
+  const R  = audioBuf.numberOfChannels > 1 ? audioBuf.getChannelData(1) : L;
+  const sr = audioBuf.sampleRate;
+  const loHz = fullBandMode ? 0    : bandLow;
+  const hiHz = fullBandMode ? sr/2 : bandHigh;
+  const targetSR = fullBandMode ? sr : Math.min(sr, Math.max(4000, hiHz * 4));
+  const stride = Math.max(1, Math.floor(sr / targetSR));
+  const dsSR = sr / stride;
+  const mk = (type, fc) => {
+    const w0 = 2 * Math.PI * fc / dsSR, c = Math.cos(w0), a = Math.sin(w0) / (2 * 0.7071);
+    const a0 = 1 + a;
+    return type === 'hp'
+      ? { b0: (1 + c) / 2 / a0, b1: -(1 + c) / a0, b2: (1 + c) / 2 / a0, a1: -2 * c / a0, a2: (1 - a) / a0 }
+      : { b0: (1 - c) / 2 / a0, b1:  (1 - c) / a0, b2: (1 - c) / 2 / a0, a1: -2 * c / a0, a2: (1 - a) / a0 };
+  };
+  const hp = loHz > 10 ? mk('hp', loHz) : null;
+  const lp = hiHz < dsSR / 2 - 1 ? mk('lp', hiHz) : null;
+  let hx1=0,hx2=0,hy1=0,hy2=0, lx1=0,lx2=0,ly1=0,ly2=0;
+  const hop = 0.02; // 20ms
+  const frameLen = Math.max(1, Math.round(dsSR * hop));
+  const nFrames = Math.ceil(L.length / stride / frameLen);
+  const db = new Float32Array(nFrames);
+  let acc = 0, cnt = 0, fi = 0;
+  for (let di = 0, n = Math.floor(L.length / stride); di < n; di++) {
+    const i = di * stride;
+    let v = (L[i] + R[i]) * 0.5;
+    if (hp) { const y = hp.b0*v + hp.b1*hx1 + hp.b2*hx2 - hp.a1*hy1 - hp.a2*hy2; hx2=hx1; hx1=v; hy2=hy1; hy1=y; v=y; }
+    if (lp) { const y = lp.b0*v + lp.b1*lx1 + lp.b2*lx2 - lp.a1*ly1 - lp.a2*ly2; lx2=lx1; lx1=v; ly2=ly1; ly1=y; v=y; }
+    acc += v * v; cnt++;
+    if (cnt >= frameLen) { db[fi++] = 10 * Math.log10(acc / cnt + 1e-12); acc = 0; cnt = 0; }
+  }
+  if (cnt > 0 && fi < nFrames) db[fi++] = 10 * Math.log10(acc / cnt + 1e-12);
+  const frames = fi;
+
+  // ノイズ床 = 20 パーセンタイル。閾値はスパイク感度で 床+16dB（0）〜 床+4dB（100）
+  const sorted = Array.from(db.subarray(0, frames)).sort((a, b) => a - b);
+  const floor  = sorted[Math.floor(sorted.length * 0.2)] ?? -80;
+  const t = spikeSensitivity / 100;
+  const thr = floor + (16 - 12 * t);
+
+  // 閾値を超えたフレームを区間にまとめる
+  const raw = [];
+  let cur = null;
+  for (let f = 0; f < frames; f++) {
+    const on = db[f] > thr;
+    if (on && !cur) cur = { s: f, e: f + 1, peak: db[f] };
+    else if (on) { cur.e = f + 1; if (db[f] > cur.peak) cur.peak = db[f]; }
+    else if (cur) { raw.push(cur); cur = null; }
+  }
+  if (cur) raw.push(cur);
+
+  // 近い区間を結合 → 短い区間を捨てる → 余白を付ける
+  const merged = [];
+  for (const r of raw) {
+    const last = merged[merged.length - 1];
+    if (last && (r.s - last.e) * hop <= gapSec) { last.e = r.e; last.peak = Math.max(last.peak, r.peak); }
+    else merged.push({ ...r });
+  }
+  segments = merged
+    .filter(r => (r.e - r.s) * hop >= minLen)
+    .map(r => ({
+      start: Math.max(0, r.s * hop - padSec),
+      end:   Math.min(audioDuration, r.e * hop + padSec),
+      peakDb: r.peak - floor,
+      include: true,
+    }));
+  // 余白で重なったものをもう一度結合
+  for (let i = segments.length - 1; i > 0; i--) {
+    if (segments[i].start <= segments[i - 1].end) {
+      segments[i - 1].end = Math.max(segments[i - 1].end, segments[i].end);
+      segments[i - 1].peakDb = Math.max(segments[i - 1].peakDb, segments[i].peakDb);
+      segments.splice(i, 1);
+    }
+  }
+  const total = segments.reduce((a, g) => a + (g.end - g.start), 0);
+  id('segStatus').textContent = segments.length
+    ? `${segments.length} 区間（合計 ${total.toFixed(1)} 秒 / ${fmtTime(audioDuration)}）　閾値: ノイズ床 +${(thr - floor).toFixed(0)}dB`
+    : '区間が見つかりませんでした。スパイク感度を上げるか、帯域を見直してください';
+  renderSegmentList();
+}
+
+function renderSegmentList() {
+  const list = id('segList'), actions = id('segActions');
+  if (!segments.length) { list.style.display = 'none'; list.replaceChildren(); actions.style.display = 'none'; return; }
+  list.style.display = 'block'; actions.style.display = 'flex';
+  list.innerHTML = segments.map((g, i) => `
+    <div class="seg-row" id="segRow${i}">
+      <input type="checkbox" ${g.include ? 'checked' : ''} onchange="segments[${i}].include=this.checked" title="DL対象">
+      <span class="seg-idx">${String(i + 1).padStart(2, '0')}</span>
+      <span class="seg-time" onclick="seekTo(${g.start})" title="クリックでこの位置へ">${fmtTimeMs(g.start)} – ${fmtTimeMs(g.end)}${fmtClockAt(g.start)}</span>
+      <span class="seg-dur">${(g.end - g.start).toFixed(1)}s</span>
+      <span class="seg-lv">+${g.peakDb.toFixed(0)}dB</span>
+      <button onclick="playSegment(${i})">▶</button>
+      <button onclick="selectSegment(${i})">範囲に</button>
+    </div>`).join('');
+}
+function seekTo(t) {
+  if (!audioDuration) return;
+  pauseAt = t;
+  if (playing) { if (streamMode) mediaAudio.currentTime = t; else startFrom(t); }
+}
+function playSegment(i) {
+  const g = segments[i]; if (!g) return;
+  setSelection(g.start, g.end);
+  playSelection();
+}
+function selectSegment(i) {
+  const g = segments[i]; if (!g) return;
+  setSelection(g.start, g.end);
+  setStatus(`範囲に設定: ${fmtTimeMs(g.start)} – ${fmtTimeMs(g.end)}`);
+}
+function clearSegments() {
+  segments = [];
+  renderSegmentList();
+  id('segStatus').textContent = '帯域とスパイク感度の設定に連動して検出します';
+}
+function includedSegments() { return segments.filter(g => g.include); }
+
+// 区間をつなげて 1 本に（各区間の前後 20ms をフェード）
+async function downloadSegmentsJoined() {
+  if (streamMode || !audioBuf) return;
+  const segs = includedSegments();
+  if (!segs.length) { setStatus('DL対象の区間がありません'); return; }
+  setStatus(`⏳ ${segs.length} 区間をレンダリング中...`);
+  const parts = [];
+  for (const g of segs) parts.push(await renderRange(g.start, g.end));
+  const sr = audioBuf.sampleRate, ch = audioBuf.numberOfChannels;
+  const total = parts.reduce((a, b) => a + b.length, 0);
+  const out = new AudioBuffer({ numberOfChannels: ch, length: total, sampleRate: sr });
+  const fade = Math.min(Math.round(sr * 0.02), 2000);
+  let off = 0;
+  for (const b of parts) {
+    for (let c = 0; c < ch; c++) {
+      const src = b.getChannelData(c), dst = out.getChannelData(c);
+      const n = b.length;
+      for (let i = 0; i < n; i++) {
+        let v = src[i];
+        if (i < fade) v *= i / fade;
+        if (n - 1 - i < fade) v *= (n - 1 - i) / fade;
+        dst[off + i] = v;
+      }
+    }
+    off += b.length;
+  }
+  const name = `抽出_${bandLabel()}_区間${segs.length}件つなぎ.wav`;
+  downloadBlob(new Blob([encodeWAV(out)], {type:'audio/wav'}), name);
+  setStatus(`✅ 保存しました: ${name}（${fmtTime(total / sr)}）`);
+}
+
+// 区間ごとの WAV を ZIP（無圧縮）にまとめる
+async function downloadSegmentsZip() {
+  if (streamMode || !audioBuf) return;
+  const segs = includedSegments();
+  if (!segs.length) { setStatus('DL対象の区間がありません'); return; }
+  setStatus(`⏳ ${segs.length} 区間をレンダリング中...`);
+  const files = [];
+  for (let i = 0; i < segs.length; i++) {
+    const g = segs[i];
+    const buf = await renderRange(g.start, g.end);
+    files.push({ name: `seg_${String(i + 1).padStart(2, '0')}_${fmtTimeFile(g.start)}-${fmtTimeFile(g.end)}.wav`, data: new Uint8Array(encodeWAV(buf)) });
+  }
+  const name = `抽出_${bandLabel()}_区間${segs.length}件.zip`;
+  downloadBlob(new Blob([buildZip(files)], {type:'application/zip'}), name);
+  setStatus(`✅ 保存しました: ${name}`);
+}
+
+function downloadSegmentsCsv() {
+  if (!segments.length) return;
+  const rows = ['index,start_sec,end_sec,duration_sec,start_clock,peak_above_floor_db,included'];
+  segments.forEach((g, i) => rows.push([
+    i + 1, g.start.toFixed(2), g.end.toFixed(2), (g.end - g.start).toFixed(2),
+    fmtClockAt(g.start).replace(' @ ', ''), g.peakDb.toFixed(1), g.include ? 1 : 0,
+  ].join(',')));
+  downloadBlob(new Blob(['﻿' + rows.join('\n')], {type:'text/csv'}), `区間一覧_${bandLabel()}.csv`);
+}
+
+// 最小限の ZIP ライター（STORE、UTF-8 ファイル名）
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = c & 1 ? 0xEDB88320 ^ (c >>> 1) : c >>> 1; t[n] = c >>> 0; }
+  return t;
+})();
+function crc32(u8) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+function buildZip(files) {
+  const enc = new TextEncoder();
+  const locals = [], centrals = [];
+  let offset = 0;
+  const d = new Date();
+  const dosTime = ((d.getHours() << 11) | (d.getMinutes() << 5) | (d.getSeconds() >> 1)) & 0xFFFF;
+  const dosDate = (((d.getFullYear() - 1980) << 9) | ((d.getMonth() + 1) << 5) | d.getDate()) & 0xFFFF;
+  for (const f of files) {
+    const nameB = enc.encode(f.name), crc = crc32(f.data), size = f.data.length;
+    const lh = new DataView(new ArrayBuffer(30));
+    lh.setUint32(0, 0x04034b50, true); lh.setUint16(4, 20, true); lh.setUint16(6, 0x0800, true);
+    lh.setUint16(8, 0, true); lh.setUint16(10, dosTime, true); lh.setUint16(12, dosDate, true);
+    lh.setUint32(14, crc, true); lh.setUint32(18, size, true); lh.setUint32(22, size, true);
+    lh.setUint16(26, nameB.length, true); lh.setUint16(28, 0, true);
+    locals.push(new Uint8Array(lh.buffer), nameB, f.data);
+    const ch = new DataView(new ArrayBuffer(46));
+    ch.setUint32(0, 0x02014b50, true); ch.setUint16(4, 20, true); ch.setUint16(6, 20, true); ch.setUint16(8, 0x0800, true);
+    ch.setUint16(10, 0, true); ch.setUint16(12, dosTime, true); ch.setUint16(14, dosDate, true);
+    ch.setUint32(16, crc, true); ch.setUint32(20, size, true); ch.setUint32(24, size, true);
+    ch.setUint16(28, nameB.length, true); ch.setUint16(30, 0, true); ch.setUint16(32, 0, true);
+    ch.setUint16(34, 0, true); ch.setUint16(36, 0, true); ch.setUint32(38, 0, true); ch.setUint32(42, offset, true);
+    centrals.push(new Uint8Array(ch.buffer), nameB);
+    offset += 30 + nameB.length + size;
+  }
+  const cdSize = centrals.reduce((a, b) => a + b.length, 0);
+  const eocd = new DataView(new ArrayBuffer(22));
+  eocd.setUint32(0, 0x06054b50, true); eocd.setUint16(4, 0, true); eocd.setUint16(6, 0, true);
+  eocd.setUint16(8, files.length, true); eocd.setUint16(10, files.length, true);
+  eocd.setUint32(12, cdSize, true); eocd.setUint32(16, offset, true); eocd.setUint16(20, 0, true);
+  const parts = [...locals, ...centrals, new Uint8Array(eocd.buffer)];
+  const out = new Uint8Array(parts.reduce((a, b) => a + b.length, 0));
+  let o = 0; for (const p of parts) { out.set(p, o); o += p.length; }
+  return out;
+}
+
+// ════════════════════════════════════════════
+//  Waveform Canvas
+// ════════════════════════════════════════════
+const wvCanvas = document.getElementById('waveformCanvas');
+const wvCtx    = wvCanvas.getContext('2d');
+let wvW = 0, wvH = 90, wvCache = null;
+
+let streamSamples = null; // ストリーミング波形のサンプルデータを保持
+
+function resizeWaveform() {
+  const dpr = devicePixelRatio || 1;
+  wvW = wvCanvas.parentElement.offsetWidth;
+  wvCanvas.width  = wvW * dpr; wvCanvas.height = wvH * dpr;
+  wvCanvas.style.width = wvW + 'px'; wvCanvas.style.height = wvH + 'px';
+  wvCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (audioBuf) prerenderWaveform();
+  else if (rtOnset) redrawRtCache();
+  else if (streamSamples) prerenderStreamWaveform(streamSamples);
+  else if (audioDuration) prerenderTimeline();
+}
+
+// ストリーミング時：先頭から順に1MBずつデコードして波形を左から順次描画
+// 先頭から読むことでMP3/M4Aでもフレーム依存性の問題を回避できる
+async function buildStreamWaveform(file) {
+  const CHUNK_SIZE = 1 * 1024 * 1024; // 1MB ずつ
+  const totalSize  = file.size;
+  const numChunks  = Math.ceil(totalSize / CHUNK_SIZE);
+
+  // キャンバスを初期化（タイムラインだけ先に描く）
+  prerenderTimeline();
+  const progEl = id('waveProgress');
+  progEl.style.display = 'block'; progEl.style.width = '0%';
+
+  // onset蓄積用（全体ピクセル幅）
+  const onsetFull = new Float32Array(wvW);
+  let decodedSamples = 0; // これまでにデコードできたサンプル数（時刻推定用）
+  let lastPeakDb = null;  // チャンク間のonset連続性のため前チャンク末尾dbを保持
+  let failStreak = 0;     // 連続デコード失敗数（M4Aで後半失敗したら打ち切り）
+
+  for (let ci = 0; ci < numChunks; ci++) {
+    const start = ci * CHUNK_SIZE;
+    const ab = await file.slice(start, start + CHUNK_SIZE).arrayBuffer();
+    let decoded = null;
+    try { decoded = await actx.decodeAudioData(ab.slice(0)); } catch (e) {}
+
+    if (!decoded) {
+      failStreak++;
+      // 先頭チャンクが失敗 or 5連続失敗したら打ち切り
+      if (ci === 0 || failStreak >= 5) break;
+      continue;
+    }
+    failStreak = 0;
+
+    const ch  = decoded.getChannelData(0);
+    const sr  = decoded.sampleRate;
+    // このチャンクが全体のどの時間帯に対応するかを推定
+    // （先頭から順に読んでいるのでデコード済みサンプル数で計算）
+    const chunkDurSec = ch.length / sr;
+    const tStart = audioDuration > 0 ? (decodedSamples / (decodedSamples + ch.length)) * audioDuration : 0;
+    // より正確に：全体のビットレートからバイト位置→時刻を推定
+    const tStartEst = (start / totalSize) * audioDuration;
+    const tEndEst   = Math.min(audioDuration, ((start + CHUNK_SIZE) / totalSize) * audioDuration);
+
+    const xStart = (tStartEst / audioDuration) * wvW;
+    const xEnd   = (tEndEst   / audioDuration) * wvW;
+    const segW   = Math.max(1, xEnd - xStart);
+
+    // バンドパスフィルタ（prerenderWaveform と同じ係数）
+    function biquadHP(fc, sr) {
+      const w0 = 2*Math.PI*fc/sr, cos0 = Math.cos(w0), sin0 = Math.sin(w0);
+      const alpha = sin0/(2*0.7071);
+      const b0=(1+cos0)/2, b1=-(1+cos0), b2=b0, a0=1+alpha, a1=-2*cos0, a2=1-alpha;
+      return {b0:b0/a0,b1:b1/a0,b2:b2/a0,a1:a1/a0,a2:a2/a0};
+    }
+    function biquadLP(fc, sr) {
+      const w0 = 2*Math.PI*fc/sr, cos0 = Math.cos(w0), sin0 = Math.sin(w0);
+      const alpha = sin0/(2*0.7071);
+      const b0=(1-cos0)/2, b1=1-cos0, b2=b0, a0=1+alpha, a1=-2*cos0, a2=1-alpha;
+      return {b0:b0/a0,b1:b1/a0,b2:b2/a0,a1:a1/a0,a2:a2/a0};
+    }
+    const loHz = fullBandMode ? 0 : bandLow;
+    const hiHz = fullBandMode ? sr/2 : bandHigh;
+    const cfHP = loHz > 10       ? biquadHP(loHz, sr) : null;
+    const cfLP = hiHz < sr/2 - 1 ? biquadLP(hiHz, sr) : null;
+
+    // ピクセルバケツごとにpeakを集計
+    const buckets = Math.ceil(segW);
+    const peakBuf = new Float32Array(buckets);
+    let hpX1=0,hpX2=0,hpY1=0,hpY2=0, lpX1=0,lpX2=0,lpY1=0,lpY2=0;
+    const dsStride = Math.max(1, Math.floor(sr / Math.max(4000, hiHz * 4)));
+    const dsLen = Math.floor(ch.length / dsStride);
+
+    for (let di = 0; di < dsLen; di++) {
+      let v = ch[di * dsStride];
+      if (cfHP) {
+        const y = cfHP.b0*v+cfHP.b1*hpX1+cfHP.b2*hpX2-cfHP.a1*hpY1-cfHP.a2*hpY2;
+        hpX2=hpX1;hpX1=v;hpY2=hpY1;hpY1=y;v=y;
+      }
+      if (cfLP) {
+        const y = cfLP.b0*v+cfLP.b1*lpX1+cfLP.b2*lpX2-cfLP.a1*lpY1-cfLP.a2*lpY2;
+        lpX1=lpX1;lpX1=v;lpY2=lpY1;lpY1=y;v=y;
+      }
+      const bIdx = Math.min(buckets-1, Math.floor(di / dsLen * buckets));
+      const av = Math.abs(v);
+      if (av > peakBuf[bIdx]) peakBuf[bIdx] = av;
+    }
+
+    // peakをdBに変換してonset（前バケツとのdB差）を計算
+    const FLOOR_DB = -60;
+    const dbBuf = peakBuf.map(p => p > 0 ? Math.max(FLOOR_DB, 20*Math.log10(p)) : FLOOR_DB);
+    let prevDb = lastPeakDb !== null ? lastPeakDb : dbBuf[0];
+    for (let bi = 0; bi < buckets; bi++) {
+      const rise = Math.max(0, dbBuf[bi] - prevDb);
+      const px   = Math.round(xStart + bi);
+      if (px >= 0 && px < wvW) onsetFull[px] = Math.max(onsetFull[px], rise);
+      prevDb = dbBuf[bi];
+    }
+    lastPeakDb = dbBuf[dbBuf.length - 1];
+    decodedSamples += ch.length;
+
+    // チャンクごとに閾値を再計算して波形キャッシュを更新（プログレッシブ描画）
+    const nonzero = Array.from(onsetFull).filter(v => v > 0).sort((a, b) => a - b);
+    const { yellowThr: DB_YELLOW, redThr: DB_RED } = getSpikeThresholds(nonzero);
+    drawStreamBars(onsetFull, DB_YELLOW, DB_RED);
+    wvOnset = onsetFull; wvOnsetYellow = DB_YELLOW; wvOnsetRed = DB_RED;
+
+    const pct = Math.round((ci + 1) / numChunks * 100);
+    progEl.style.width = pct + '%';
+    setStatus(`波形生成中… ${pct}%　（${ci+1} / ${numChunks} チャンク）`);
+  }
+
+  progEl.style.width = '100%';
+  setTimeout(() => { progEl.style.display = 'none'; }, 600);
+  setStatus(`読み込み完了 ${fmtTime(audioDuration)} — ⚠ 大きなファイルのためダウンロード非対応`);
+  streamSamples = { onsetFull, wvW }; // リサイズ時の再描画用に保持
+}
+
+// onsetFull配列から棒グラフキャッシュを生成（ストリーミング用）
+function drawStreamBars(onsetFull, DB_YELLOW, DB_RED) {
+  if (!wvW) return;
+  const dpr = devicePixelRatio || 1;
+  const oc  = document.createElement('canvas');
+  oc.width  = wvW * dpr; oc.height = wvH * dpr;
+  const ox  = oc.getContext('2d');
+  ox.scale(dpr, dpr);
+  ox.fillStyle = '#080c14'; ox.fillRect(0, 0, wvW, wvH);
+
+  // 時間マーカー
+  const dur = audioDuration;
+  const step = dur <= 60 ? 5 : dur <= 300 ? 15 : dur <= 1800 ? 60 : 300;
+  for (let t = 0; t <= dur; t += step) {
+    const x = (t / dur) * wvW;
+    ox.strokeStyle = '#151b2e'; ox.lineWidth = 1;
+    ox.beginPath(); ox.moveTo(x, 0); ox.lineTo(x, wvH); ox.stroke();
+    ox.fillStyle = '#374151'; ox.font = '9px monospace';
+    ox.fillText(fmtTime(t), x + 2, wvH - 3);
+  }
+
+  // 棒グラフ描画（ストリーミング概算版）
+  const minH = 2, maxH = wvH - 12;
+  for (let px = 0; px < wvW; px++) {
+    const rise = onsetFull[px];
+    let norm = 0, hue, sat, lgt;
+    if (rise < DB_YELLOW) {
+      hue = 195; sat = 45; lgt = 16;
+    } else {
+      norm = Math.min(1, (rise - DB_YELLOW) / Math.max(0.1, DB_RED * 3 - DB_YELLOW));
+      hue = Math.round(60 - norm * 60); sat = 90; lgt = Math.round(38 + norm * 22);
+    }
+    const barH = Math.round(minH + norm * (maxH - minH));
+    // 背景輪郭
+    ox.fillStyle = `hsl(${hue},${sat}%,${Math.round(lgt * 0.4)}%)`;
+    ox.fillRect(px, wvH - maxH - 2, 1, maxH + 2);
+    // 前景バー
+    ox.fillStyle = `hsl(${hue},${sat}%,${lgt}%)`;
+    ox.fillRect(px, wvH - barH - 12, 1, barH);
+  }
+
+  ox.fillStyle = '#4b5563'; ox.font = '9px monospace';
+  ox.fillText('概算（サンプリング表示）', 4, 12);
+  wvCache = oc;
+}
+
+// リサイズ時にストリーミング波形を再描画
+function prerenderStreamWaveform({ onsetFull }) {
+  if (!wvW || !onsetFull) return;
+  const nonzero = Array.from(onsetFull).filter(v => v > 0).sort((a, b) => a - b);
+  const { yellowThr: DB_YELLOW, redThr: DB_RED } = getSpikeThresholds(nonzero);
+  drawStreamBars(onsetFull, DB_YELLOW, DB_RED);
+  wvOnset = onsetFull; wvOnsetYellow = DB_YELLOW; wvOnsetRed = DB_RED;
+}
+
+
+// ストリーミング時：波形なしでタイムラインだけ描画
+function prerenderTimeline() {
+  if (!audioDuration || !wvW) return;
+  const dpr = devicePixelRatio || 1;
+  const oc = document.createElement('canvas');
+  oc.width = wvW * dpr; oc.height = wvH * dpr;
+  const ox = oc.getContext('2d');
+  ox.scale(dpr, dpr);
+  ox.fillStyle = '#080c14'; ox.fillRect(0, 0, wvW, wvH);
+  // 中央ライン
+  ox.strokeStyle = '#1e293b'; ox.lineWidth = 1;
+  ox.beginPath(); ox.moveTo(0, wvH/2); ox.lineTo(wvW, wvH/2); ox.stroke();
+  // 時間マーカー
+  const dur = audioDuration;
+  const step = dur <= 60 ? 5 : dur <= 300 ? 15 : dur <= 1800 ? 60 : 300;
+  for (let t = 0; t <= dur; t += step) {
+    const x = (t / dur) * wvW;
+    ox.strokeStyle = '#151b2e'; ox.lineWidth = 1;
+    ox.beginPath(); ox.moveTo(x, 0); ox.lineTo(x, wvH); ox.stroke();
+    ox.fillStyle = '#374151'; ox.font = '9px monospace';
+    ox.fillText(fmtTime(t), x + 2, wvH - 3);
+  }
+  wvCache = oc;
+}
+
+function prerenderWaveform() {
+  if (!audioBuf || !wvW) return;
+  const dpr = devicePixelRatio || 1;
+  const oc = document.createElement('canvas');
+  oc.width = wvW * dpr; oc.height = wvH * dpr;
+  const ox = oc.getContext('2d');
+  ox.scale(dpr, dpr);
+  ox.fillStyle = '#080c14'; ox.fillRect(0, 0, wvW, wvH);
+  const dur = audioBuf.duration;
+  const step = dur <= 30 ? 5 : dur <= 120 ? 15 : 30;
+  for (let t = 0; t <= dur; t += step) {
+    const x = (t / dur) * wvW;
+    ox.strokeStyle = '#151b2e'; ox.lineWidth = 1;
+    ox.beginPath(); ox.moveTo(x, 0); ox.lineTo(x, wvH); ox.stroke();
+    ox.fillStyle = '#2d3748'; ox.font = '9px monospace';
+    ox.fillText(fmt(t), x + 2, wvH - 3);
+  }
+  const L = audioBuf.getChannelData(0);
+  const R = audioBuf.numberOfChannels > 1 ? audioBuf.getChannelData(1) : L;
+  const sr = audioBuf.sampleRate;
+  const spp = L.length / wvW; // samples per pixel
+
+  // 指定帯域の2次バターワースIIR係数を計算（帯域変更に動的対応）
+  // 全帯域モードのときはフィルタなし
+  function biquadHP(fc, sr) {
+    // 2次バターワース ハイパス
+    const w0 = 2 * Math.PI * fc / sr;
+    const cos0 = Math.cos(w0), sin0 = Math.sin(w0);
+    const alpha = sin0 / (2 * 0.7071); // Q=√2/2
+    const b0 =  (1 + cos0) / 2, b1 = -(1 + cos0), b2 = b0;
+    const a0 =   1 + alpha,     a1 = -2 * cos0,    a2 = 1 - alpha;
+    return { b0: b0/a0, b1: b1/a0, b2: b2/a0, a1: a1/a0, a2: a2/a0 };
+  }
+  function biquadLP(fc, sr) {
+    // 2次バターワース ローパス
+    const w0 = 2 * Math.PI * fc / sr;
+    const cos0 = Math.cos(w0), sin0 = Math.sin(w0);
+    const alpha = sin0 / (2 * 0.7071);
+    const b0 = (1 - cos0) / 2, b1 = 1 - cos0, b2 = b0;
+    const a0 = 1 + alpha,      a1 = -2 * cos0, a2 = 1 - alpha;
+    return { b0: b0/a0, b1: b1/a0, b2: b2/a0, a1: a1/a0, a2: a2/a0 };
+  }
+
+  const loHz = fullBandMode ? 0    : bandLow;
+  const hiHz = fullBandMode ? sr/2 : bandHigh;
+  const cfHP = loHz > 10  ? biquadHP(loHz, sr) : null;
+  const cfLP = hiHz < sr/2 - 1 ? biquadLP(hiHz, sr) : null;
+
+  const maxs = new Float32Array(wvW);
+  const mins = new Float32Array(wvW);
+  const peak = new Float32Array(wvW);
+
+  // biquadフィルタは全サンプルを順番に通す必要がある（間引き不可）
+  // 長い音声は重いため、まず帯域内の最大周波数の2倍でダウンサンプリングしてから処理
+  // （ナイキスト: hiHz*2 以上のサンプルレートがあれば帯域を正確に再現できる）
+  const targetSR = fullBandMode ? sr : Math.min(sr, Math.max(4000, hiHz * 4));
+  const dsStride = Math.max(1, Math.floor(sr / targetSR)); // 整数ダウンサンプル比
+  const dsSR = sr / dsStride;
+
+  // ダウンサンプル後のサンプルレートでフィルタ係数を再計算
+  const cfHP2 = loHz > 10        ? biquadHP(loHz, dsSR) : null;
+  const cfLP2 = hiHz < dsSR/2-1  ? biquadLP(hiHz, dsSR) : null;
+
+  let hpX1=0, hpX2=0, hpY1=0, hpY2=0;
+  let lpX1=0, lpX2=0, lpY1=0, lpY2=0;
+  let pxBucketMn = 1, pxBucketMx = -1, pxBucketPeak = 0;
+  let curPx = 0;
+  const dsLen = Math.floor(L.length / dsStride);
+
+  for (let di = 0; di < dsLen; di++) {
+    const i = di * dsStride;
+    const raw = (L[i] + R[i]) * 0.5;
+    let v = raw;
+    if (cfHP2) {
+      const y = cfHP2.b0*v + cfHP2.b1*hpX1 + cfHP2.b2*hpX2 - cfHP2.a1*hpY1 - cfHP2.a2*hpY2;
+      hpX2=hpX1; hpX1=v; hpY2=hpY1; hpY1=y; v=y;
+    }
+    if (cfLP2) {
+      const y = cfLP2.b0*v + cfLP2.b1*lpX1 + cfLP2.b2*lpX2 - cfLP2.a1*lpY1 - cfLP2.a2*lpY2;
+      lpX2=lpX1; lpX1=v; lpY2=lpY1; lpY1=y; v=y;
+    }
+
+    if (v < pxBucketMn) pxBucketMn = v;
+    if (v > pxBucketMx) pxBucketMx = v;
+    const av = Math.abs(v);
+    if (av > pxBucketPeak) pxBucketPeak = av;
+
+    const nextPx = Math.min(wvW - 1, Math.floor((di + 1) * wvW / dsLen));
+    if (nextPx !== curPx || di === dsLen - 1) {
+      maxs[curPx] = pxBucketMx === -1 ? 0 : pxBucketMx;
+      mins[curPx] = pxBucketMn ===  1 ? 0 : pxBucketMn;
+      peak[curPx] = pxBucketPeak;
+      curPx = nextPx;
+      pxBucketMn = 1; pxBucketMx = -1; pxBucketPeak = 0;
+    }
+  }
+
+  // peakをdBに変換（対数スケール）
+  // まずファイル全体の実際のノイズフロアを推定する（下位10%の中央値）
+  const allPeaks = Array.from(peak).filter(v => v > 0).sort((a, b) => a - b);
+  const estimatedFloor = allPeaks.length > 0
+    ? 20 * Math.log10(allPeaks[Math.floor(allPeaks.length * 0.10)] || allPeaks[0])
+    : -60;
+  const FLOOR_DB = Math.min(-20, estimatedFloor - 2); // フロアより少し下を無音扱いに
+
+  const db = new Float32Array(wvW);
+  for (let px = 0; px < wvW; px++) {
+    db[px] = peak[px] > 0 ? Math.max(FLOOR_DB, 20 * Math.log10(peak[px])) : FLOOR_DB;
+  }
+
+  // 「直近N px の最小値からの上昇量」でオンセット検出
+  // 1px差分ではノイズのゆらぎと区別できないため、
+  // 少し手前の谷（最小値）から現在のpeak dBがどれだけ上がったかを使う
+  // Nは感度に応じて変える：感度高=短い窓=短いスパイクも検出
+  const lookbackPx = Math.max(1, Math.round(wvW * (0.02 - spikeSensitivity / 100 * 0.019)));
+  const onset = new Float32Array(wvW);
+  for (let px = lookbackPx; px < wvW; px++) {
+    let minPrev = db[px - lookbackPx];
+    for (let k = 1; k < lookbackPx; k++) {
+      if (db[px - k] < minPrev) minPrev = db[px - k];
+    }
+    onset[px] = Math.max(0, db[px] - minPrev);
+  }
+
+  // 感度スライダーに応じた閾値
+  const onsetNonzero = Array.from(onset).filter(v => v > 0).sort((a, b) => a - b);
+  const { yellowThr: DB_YELLOW, redThr: DB_RED } = getSpikeThresholds(onsetNonzero);
+
+  // 絶対音量（dB）を 0〜1 に正規化（高さに使う）
+  const DB_TOP = 0;   // 0 dB = 最大高さ
+  const dbRange = Math.abs(FLOOR_DB - DB_TOP) || 60;
+  const normDb = new Float32Array(wvW);
+  for (let px = 0; px < wvW; px++) {
+    normDb[px] = Math.max(0, Math.min(1, (db[px] - FLOOR_DB) / dbRange));
+  }
+
+  // 棒グラフ描画:
+  //   高さ = 絶対音量（静かな区間は低く、音がある区間だけ高くなる）
+  //   色   = オンセット強度（立ち上がりが強いほど赤〜橙〜黄、弱ければ青緑で暗め）
+  const minH = 2;
+  const maxH = wvH - 12; // 時刻ラベル分の余白
+  for (let px = 0; px < wvW; px++) {
+    const rise = onset[px];
+    const volH = Math.round(minH + normDb[px] * (maxH - minH));
+
+    // オンセット強度で色を決定
+    let onsetNorm = 0;
+    if (rise >= DB_YELLOW) {
+      onsetNorm = Math.min(1, (rise - DB_YELLOW) / Math.max(0.1, DB_RED * 3 - DB_YELLOW));
+    }
+
+    let hue, sat, lgt;
+    if (normDb[px] < 0.04) {
+      // ほぼ無音 — 非常に暗い青
+      hue = 220; sat = 40; lgt = 12;
+    } else if (onsetNorm === 0) {
+      // 音はあるがオンセットなし — 暗い青緑（背景ノイズ）
+      hue = 195; sat = 50; lgt = Math.round(18 + normDb[px] * 14);
+    } else {
+      // オンセットあり — 黄〜橙〜赤（鳥声・音声の立ち上がり）
+      hue = Math.round(60 - onsetNorm * 60);
+      sat = 90;
+      lgt = Math.round(38 + onsetNorm * 22);
+    }
+
+    // 背景層（絶対音量の輪郭）を暗い色で描いてから前景を重ねる
+    ox.fillStyle = `hsl(${hue},${sat}%,${Math.round(lgt * 0.45)}%)`;
+    ox.fillRect(px, wvH - maxH - 2, 1, maxH + 2);
+    ox.fillStyle = `hsl(${hue},${sat}%,${lgt}%)`;
+    ox.fillRect(px, wvH - volH - 12, 1, volH);
+  }
+  wvCache = oc;
+  wvOnset = onset;
+  wvOnsetYellow = DB_YELLOW;
+  wvOnsetRed    = DB_RED;
+}
+
+// 波形描画時に計算したオンセット配列・閾値を再生バーで参照する
+let wvOnset = null, wvOnsetYellow = 1, wvOnsetRed = 5;
+
+let playbarSmooth = 0; // ピークホールド用（下降のみ）
+
+// ════════════════════════════════════════════
+//  ストリーミング時リアルタイムonset蓄積
+// ════════════════════════════════════════════
+// onset配列は時間解像度（1秒単位）で持つ — wvWに依存しない
+let rtOnset      = null;  // Float32Array(秒数分) — 蓄積済みonset
+let rtCovered    = null;  // Uint8Array(秒数分)
+let rtInterval   = null;
+let rtDirty      = false;
+let bgAudio      = null;
+let bgSrc        = null;
+let bgAnalyser   = null;
+let _bgLastTime  = 0;
+let bgScanUrl    = null;  // 再スキャン用にURLを保持
+
+function initRtOnset() {
+  if (!audioDuration || !isFinite(audioDuration)) return;
+  const slots = Math.ceil(audioDuration) + 1;
+  rtOnset   = new Float32Array(slots);
+  rtCovered = new Uint8Array(slots);
+  rtDirty   = false;
+  if (rtInterval) clearInterval(rtInterval);
+  rtInterval = setInterval(() => {
+    if (!rtDirty || !rtOnset) return;
+    rtDirty = false;
+    redrawRtCache();
+  }, 500);
+}
+
+const BG_WORKERS = 32; // 並列スキャン数
+let bgWorkers = []; // {audio, analyser, src, lastTime, startSec, endSec}
+
+function startBgScan(url) {
+  bgScanUrl = url;
+  // 既存スキャンを停止
+  bgWorkers.forEach(w => { w.audio.pause(); w.audio.src = ''; });
+  bgWorkers = [];
+  if (bgAudio) { bgAudio.pause(); bgAudio.src = ''; bgAudio = null; }
+
+  if (!audioDuration || !isFinite(audioDuration)) return;
+
+  // rtOnsetをリセット
+  initRtOnset();
+
+  const segDur = audioDuration / BG_WORKERS;
+
+  // 現在の帯域設定でbiquadフィルタ係数を計算
+  function mkHP(fc, sr) {
+    const w0 = 2*Math.PI*fc/sr, c = Math.cos(w0), s = Math.sin(w0), a = s/(2*0.7071);
+    const b0=(1+c)/2, b1=-(1+c), b2=b0, a0=1+a, a1=-2*c, a2=1-a;
+    return {b0:b0/a0,b1:b1/a0,b2:b2/a0,a1:a1/a0,a2:a2/a0};
+  }
+  function mkLP(fc, sr) {
+    const w0 = 2*Math.PI*fc/sr, c = Math.cos(w0), s = Math.sin(w0), a = s/(2*0.7071);
+    const b0=(1-c)/2, b1=1-c, b2=b0, a0=1+a, a1=-2*c, a2=1-a;
+    return {b0:b0/a0,b1:b1/a0,b2:b2/a0,a1:a1/a0,a2:a2/a0};
+  }
+
+  for (let wi = 0; wi < BG_WORKERS; wi++) {
+    const startSec = wi * segDur;
+    const endSec   = (wi + 1) * segDur;
+
+    const audio = document.createElement('audio');
+    audio.src     = url;
+    audio.muted   = false;
+    audio.volume  = 0;
+    audio.preload = 'auto';
+
+    // 帯域フィルタ（IIRFilterNode で実装）
+    const sr = actx.sampleRate;
+    const loHz = fullBandMode ? 0    : bandLow;
+    const hiHz = fullBandMode ? sr/2 : bandHigh;
+    let filterChain = null; // 接続先ノード
+    let lastNode;
+    const src = actx.createMediaElementSource(audio);
+    lastNode = src;
+
+    if (loHz > 10) {
+      const cf = mkHP(loHz, sr);
+      const hp = actx.createIIRFilter(
+        [cf.b0, cf.b1, cf.b2], [1, cf.a1, cf.a2]);
+      lastNode.connect(hp); lastNode = hp;
+    }
+    if (hiHz < sr/2 - 1) {
+      const cf = mkLP(hiHz, sr);
+      const lp = actx.createIIRFilter(
+        [cf.b0, cf.b1, cf.b2], [1, cf.a1, cf.a2]);
+      lastNode.connect(lp); lastNode = lp;
+    }
+
+    const analyser = actx.createAnalyser();
+    analyser.fftSize = 2048;
+    const silentGain = actx.createGain();
+    silentGain.gain.value = 0;
+    lastNode.connect(analyser);
+    analyser.connect(silentGain);
+    silentGain.connect(actx.destination);
+
+    const w = { audio, analyser, src, lastTime: startSec, startSec, endSec, wi };
+    bgWorkers.push(w);
+
+    audio.addEventListener('canplay', () => {
+      audio.playbackRate = 16;
+      audio.currentTime  = startSec;
+    }, {once: true});
+
+    audio.addEventListener('seeked', () => {
+      if (Math.abs(audio.currentTime - startSec) < 1) audio.play().catch(() => {});
+    }, {once: true});
+
+    audio.addEventListener('timeupdate', () => {
+      if (!rtOnset || !audioDuration) return;
+      const cur = audio.currentTime;
+
+      // セグメント末尾を超えたら停止
+      if (cur >= endSec) { audio.pause(); checkAllDone(); return; }
+
+      const slotFrom = Math.max(0, Math.floor(w.lastTime));
+      const slotTo   = Math.min(rtOnset.length - 1, Math.floor(cur));
+      const td = new Float32Array(analyser.fftSize);
+      analyser.getFloatTimeDomainData(td);
+      let peak = 0;
+      for (let i = 0; i < td.length; i++) { const a = Math.abs(td[i]); if (a > peak) peak = a; }
+      for (let s = slotFrom; s <= slotTo; s++) {
+        if (peak > (rtOnset[s] || 0)) rtOnset[s] = peak;
+        rtCovered[s] = 1;
+      }
+      w.lastTime = cur;
+      rtDirty = true;
+      updateBgScanProgress();
+    });
+
+    audio.addEventListener('ended', () => { checkAllDone(); });
+  }
+
+  // 最初のworkerをbgAudioとして参照（進捗表示用）
+  bgAudio = bgWorkers[0].audio;
+  _bgLastTime = 0;
+}
+
+function checkAllDone() {
+  if (!bgWorkers.length) return;
+  const allDone = bgWorkers.every(w => w.audio.paused || w.audio.ended);
+  if (!allDone) return;
+  id('bgScanBar').style.width = '100%';
+  id('bgScanLabel').textContent = '波形読み込み完了';
+  setTimeout(() => { id('bgScanLabel').textContent = ''; id('bgScanBar').style.width = '0%'; }, 2000);
+  rtDirty = true;
+}
+
+function accumOnset() {
+  // バックグラウンドスキャンで蓄積するため不要
+}
+
+function redrawRtCache() {
+  if (!wvW || !rtOnset || !audioDuration) return;
+
+  const slots = rtOnset.length;
+
+  // 閾値を秒単位配列の分布から計算
+  const nonzero = Array.from(rtOnset).filter(v => v > 0).sort((a, b) => a - b);
+  const t = spikeSensitivity / 100;
+  const pY = Math.round(90 - t * 50);
+  const pR = Math.round(98 - t * 33);
+  const DB_YELLOW = nonzero.length ? (nonzero[Math.floor(nonzero.length * pY / 100)] ?? nonzero[nonzero.length-1]) : 0.1;
+  const DB_RED    = nonzero.length ? (nonzero[Math.floor(nonzero.length * pR / 100)] ?? nonzero[nonzero.length-1]) : 0.3;
+
+  // wvOnset はピクセル配列として保持（再生バー用）— 秒→px にリサンプル
+  const pxOnset   = new Float32Array(wvW);
+  const pxCovered = new Uint8Array(wvW);
+  for (let s = 0; s < slots; s++) {
+    const px = Math.min(wvW - 1, Math.floor(s / audioDuration * wvW));
+    if (rtOnset[s] > pxOnset[px]) pxOnset[px] = rtOnset[s];
+    if (rtCovered[s]) pxCovered[px] = 1;
+  }
+  wvOnsetYellow = DB_YELLOW; wvOnsetRed = DB_RED;
+  wvOnset = pxOnset;
+
+  const dpr = devicePixelRatio || 1;
+  const oc  = document.createElement('canvas');
+  oc.width  = wvW * dpr; oc.height = wvH * dpr;
+  const ox  = oc.getContext('2d');
+  ox.scale(dpr, dpr);
+  ox.fillStyle = '#080c14'; ox.fillRect(0, 0, wvW, wvH);
+
+  // 時間マーカー
+  const dur  = audioDuration;
+  const step = dur <= 60 ? 5 : dur <= 300 ? 15 : dur <= 1800 ? 60 : 300;
+  for (let t = 0; t <= dur; t += step) {
+    const x = (t / dur) * wvW;
+    ox.strokeStyle = '#151b2e'; ox.lineWidth = 1;
+    ox.beginPath(); ox.moveTo(x, 0); ox.lineTo(x, wvH); ox.stroke();
+    ox.fillStyle = '#374151'; ox.font = '9px monospace';
+    ox.fillText(fmtTime(t), x + 2, wvH - 3);
+  }
+
+  // ズーム時は表示範囲のみを全幅で描画（棒が太く見える）
+  // 全体表示時は全体を描画
+  const visibleDur  = audioDuration / zoomLevel;
+  const drawStart   = zoomLevel > 1 ? zoomStart : 0;
+  const drawEnd     = zoomLevel > 1 ? zoomStart + visibleDur : audioDuration;
+  const drawDur     = drawEnd - drawStart;
+
+  const pxPerSec = wvW / drawDur;
+  const gap  = pxPerSec >= 3 ? Math.max(0.5, pxPerSec * 0.15) : 0;
+  const barW = Math.max(1, pxPerSec - gap);
+
+  for (let s = 0; s < slots; s++) {
+    const tSec = s; // スロット = 秒
+    if (tSec < drawStart - 1 || tSec > drawEnd + 1) continue;
+    const x = (tSec - drawStart) / drawDur * wvW;
+    if (!rtCovered[s]) {
+      ox.fillStyle = '#1a2030';
+      ox.fillRect(x, wvH - 2, Math.max(1, pxPerSec), 2);
+      continue;
+    }
+    const rise = rtOnset[s];
+    let norm = 0, hue, sat, lgt;
+    if (rise < DB_YELLOW) {
+      hue = 195; sat = 45; lgt = 18;
+    } else {
+      norm = Math.min(1, (rise - DB_YELLOW) / Math.max(0.001, DB_RED - DB_YELLOW));
+      hue = Math.round(60 - norm * 60); sat = 90; lgt = Math.round(38 + norm * 22);
+    }
+    const maxBarH = wvH - 12;
+    const barH = Math.round(maxBarH * 0.10 + norm * maxBarH * 0.90);
+    // 背景輪郭
+    ox.fillStyle = `hsl(${hue},${sat}%,${Math.round(lgt * 0.4)}%)`;
+    ox.fillRect(x, wvH - maxBarH - 2, barW, maxBarH + 2);
+    // 前景バー
+    ox.fillStyle = `hsl(${hue},${sat}%,${lgt}%)`;
+    ox.fillRect(x, wvH - barH - 12, barW, barH);
+  }
+
+  ox.fillStyle = '#4b5563'; ox.font = '9px monospace';
+  ox.fillText('リアルタイム蓄積（再生した範囲のみ）', 4, 12);
+  wvCache = oc;
+
+  // 即座に画面に反映
+  wvCtx.clearRect(0, 0, wvW, wvH);
+  wvCtx.drawImage(wvCache, 0, 0, wvW, wvH);
+}
+
+function drawWaveform() {
+  if (!wvW) return;
+  wvCtx.clearRect(0, 0, wvW, wvH);
+
+  if (wvCache) {
+    if (zoomLevel <= 1) {
+      // 全体表示：キャッシュをそのまま描画
+      wvCtx.drawImage(wvCache, 0, 0, wvW, wvH);
+    } else {
+      // ズーム表示：キャッシュの一部を切り出して拡大
+      // wvCacheは dpr 倍の実ピクセルで作られているので srcX/srcW/srcH も dpr 倍にする
+      const dpr = devicePixelRatio || 1;
+      const visibleDur = audioDuration / zoomLevel;
+      const srcX = Math.round((zoomStart / audioDuration) * wvW * dpr);
+      const srcW = Math.round((visibleDur / audioDuration) * wvW * dpr);
+      const srcH = wvH * dpr;
+      // ストリーミングモードはキャッシュ自体がズーム範囲で描かれているのでそのまま表示
+      if (streamMode && rtOnset) {
+        wvCtx.drawImage(wvCache, 0, 0, wvW, wvH);
+      } else {
+        wvCtx.drawImage(wvCache, srcX, 0, srcW, srcH, 0, 0, wvW, wvH);
+      }
+
+      // ズーム時の時間マーカーを上書き
+      wvCtx.fillStyle = '#080c14';
+      wvCtx.fillRect(0, wvH - 14, wvW, 14);
+      const step = visibleDur <= 10 ? 1 : visibleDur <= 60 ? 5 : visibleDur <= 300 ? 15 : 60;
+      const tStart = Math.ceil(zoomStart / step) * step;
+      for (let t = tStart; t <= zoomStart + visibleDur; t += step) {
+        const x = ((t - zoomStart) / visibleDur) * wvW;
+        wvCtx.strokeStyle = '#1e2535'; wvCtx.lineWidth = 1;
+        wvCtx.beginPath(); wvCtx.moveTo(x, 0); wvCtx.lineTo(x, wvH); wvCtx.stroke();
+        wvCtx.fillStyle = '#4b5563'; wvCtx.font = '9px monospace';
+        wvCtx.fillText(fmtTime(t), x + 2, wvH - 3);
+      }
+    }
+  } else {
+    wvCtx.fillStyle = '#080c14'; wvCtx.fillRect(0, 0, wvW, wvH);
+  }
+
+  if (!audioDuration) return;
+
+  // 再生中は現在位置がズーム表示範囲外なら自動スクロール
+  const cur = playing
+    ? (streamMode ? mediaAudio.currentTime : Math.min(actx.currentTime - startAt, audioDuration))
+    : pauseAt;
+
+  if (zoomLevel > 1 && playing) {
+    const visibleDur = audioDuration / zoomLevel;
+    if (cur < zoomStart || cur > zoomStart + visibleDur * 0.8) {
+      zoomStart = Math.max(0, Math.min(audioDuration - visibleDur, cur - visibleDur * 0.2));
+      updateScrollbar();
+    }
+  }
+
+  // 現在位置をズーム座標系のピクセルに変換
+  const visibleDur = audioDuration / zoomLevel;
+  const px = zoomLevel <= 1
+    ? (cur / audioDuration) * wvW
+    : ((cur - zoomStart) / visibleDur) * wvW;
+
+  // 未再生領域を少し暗くする（再生済み領域は明るいまま）
+  wvCtx.fillStyle = 'rgba(0,0,0,0.35)';
+  wvCtx.fillRect(Math.ceil(px), 0, wvW - Math.ceil(px), wvH);
+
+  // 検出した鳴き声区間（上端の緑の帯 + 薄い塗り）
+  const viewStart = zoomLevel <= 1 ? 0 : zoomStart;
+  const t2x = t => ((t - viewStart) / visibleDur) * wvW;
+  if (segments.length) {
+    for (const g of segments) {
+      const x0 = t2x(g.start), x1 = t2x(g.end);
+      if (x1 < 0 || x0 > wvW) continue;
+      wvCtx.fillStyle = g.include ? 'rgba(52,211,153,0.12)' : 'rgba(107,114,128,0.10)';
+      wvCtx.fillRect(x0, 0, Math.max(1, x1 - x0), wvH);
+      wvCtx.fillStyle = g.include ? 'rgba(52,211,153,0.9)' : 'rgba(107,114,128,0.7)';
+      wvCtx.fillRect(x0, 22, Math.max(1, x1 - x0), 4);
+    }
+  }
+  // 選択範囲
+  if (selStart != null && selEnd != null) {
+    const x0 = t2x(selStart), x1 = t2x(selEnd);
+    if (!(x1 < 0 || x0 > wvW)) {
+      wvCtx.fillStyle = 'rgba(59,130,246,0.22)';
+      wvCtx.fillRect(x0, 0, Math.max(1, x1 - x0), wvH);
+      wvCtx.fillStyle = 'rgba(147,197,253,0.95)';
+      wvCtx.fillRect(x0 - 1, 0, 2, wvH); wvCtx.fillRect(x1 - 1, 0, 2, wvH);
+    }
+  }
+
+  // 現在位置のonset強度（全体キャッシュ座標で引く）
+  const globalPx = (cur / audioDuration) * wvW;
+  let rise = 0;
+  if (wvOnset && wvOnset.length > 0) {
+    const opx = Math.round(globalPx);
+    for (let k = -2; k <= 2; k++) {
+      const v = wvOnset[Math.max(0, Math.min(wvOnset.length - 1, opx + k))];
+      if (v > rise) rise = v;
+    }
+  }
+  if (rise > playbarSmooth) playbarSmooth = rise;
+  else playbarSmooth *= 0.92;
+
+  const norm = (wvOnsetRed > wvOnsetYellow)
+    ? Math.min(1, Math.max(0, (playbarSmooth - wvOnsetYellow) / (wvOnsetRed - wvOnsetYellow)))
+    : 0;
+
+  const barW = 3;
+  const minH = Math.round(wvH * 0.4);
+  const barH = Math.round(minH + norm * (wvH - minH));
+  const barY = Math.round((wvH - barH) / 2);
+
+  const hue = Math.round(60 - norm * 60);
+  wvCtx.shadowColor = `hsl(${hue},100%,60%)`;
+  wvCtx.shadowBlur  = 6 + norm * 12;
+  const grad = wvCtx.createLinearGradient(0, barY, 0, barY + barH);
+  grad.addColorStop(0,   `hsla(${hue},100%,70%,0.5)`);
+  grad.addColorStop(0.5, `hsla(${hue},100%,62%,1.0)`);
+  grad.addColorStop(1,   `hsla(${hue},100%,70%,0.5)`);
+  wvCtx.fillStyle = grad;
+  wvCtx.fillRect(px - 1, barY, barW, barH);
+  wvCtx.shadowBlur = 0;
+
+  // 時刻ラベル
+  const label = `${fmtTime(cur)} / ${fmtTime(audioDuration)}${fmtClockAt(cur)}`;
+  wvCtx.font = 'bold 10px monospace';
+  const padX = 5;
+  const labelW = Math.ceil(wvCtx.measureText(label).width);
+  const boxW = Math.min(wvW - 4, labelW + padX * 2);
+  let labelX = px + 6;
+  if (labelX + boxW > wvW - 2) labelX = px - boxW - 6;
+  labelX = Math.max(2, Math.min(labelX, wvW - boxW - 2));
+  wvCtx.fillStyle = 'rgba(8,12,20,0.82)';
+  wvCtx.fillRect(labelX, 3, boxW, 16);
+  wvCtx.fillStyle = '#fbbf24';
+  wvCtx.fillText(label, labelX + padX, 15, boxW - padX * 2);
+}
+
+// 波形シーク
+let wvDragging = false;
+function wvTimeFromEvent(e) {
+  const r = wvCanvas.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - r.left) / wvW));
+  const visibleDur = audioDuration / zoomLevel;
+  return zoomLevel <= 1 ? ratio * audioDuration : zoomStart + ratio * visibleDur;
+}
+function wvSeek(e) {
+  if (!audioDuration) return;
+  const t = wvTimeFromEvent(e);
+  pauseAt = t;
+  if (playing) {
+    if (streamMode) { mediaAudio.currentTime = t; }
+    else { startFrom(t); }
+  }
+}
+// ドラッグ = 範囲選択、クリック（4px 未満の移動）= シーク。タッチも同じ扱い
+let wvDownX = 0, wvDownT = 0, wvMoved = false;
+const ptX = e => (e.touches && e.touches[0]) ? e.touches[0].clientX : (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0].clientX : e.clientX;
+function wvPointerDown(e) {
+  if (!audioDuration) return;
+  wvDragging = true; wvMoved = false;
+  wvDownX = ptX(e);
+  wvDownT = wvTimeFromEvent({ clientX: wvDownX });
+  wvCanvas.style.cursor = 'grabbing';
+}
+function wvPointerMove(e) {
+  if (!wvDragging) return;
+  const x = ptX(e);
+  if (!wvMoved && Math.abs(x - wvDownX) >= 4) wvMoved = true;
+  if (wvMoved) {
+    setSelection(wvDownT, wvTimeFromEvent({ clientX: x }));
+    if (e.cancelable) e.preventDefault();
+  }
+}
+function wvPointerUp(e) {
+  if (!wvDragging) return;
+  wvDragging = false;
+  wvCanvas.style.cursor = 'col-resize';
+  if (!wvMoved) { selPlayEnd = null; wvSeek({ clientX: ptX(e) }); }
+}
+wvCanvas.addEventListener('mousedown', wvPointerDown);
+document.addEventListener('mousemove', wvPointerMove);
+document.addEventListener('mouseup',   wvPointerUp);
+wvCanvas.addEventListener('touchstart', wvPointerDown, { passive: true });
+document.addEventListener('touchmove',  wvPointerMove, { passive: false });
+document.addEventListener('touchend',   wvPointerUp);
+wvCanvas.addEventListener('mousemove', e => {
+  if (wvDragging || !audioDuration) return;
+  const t = wvTimeFromEvent(e);
+  id('waveTip').textContent = `${fmtTime(t)} / ${fmtTime(audioDuration)}${fmtClockAt(t)}`;
+});
+wvCanvas.addEventListener('mouseleave', () => { id('waveTip').textContent = ''; });
+
+// ════════════════════════════════════════════
+//  Spectrogram Canvas（ファイル全体・時間軸）
+// ════════════════════════════════════════════
+const sgCanvas  = document.getElementById('sgramCanvas');
+const sgCtx     = sgCanvas.getContext('2d');
+let sgW = 0, sgH = 120, sgCache = null;
+const SG_F_MIN = 20, SG_F_MAX = 16000;
+// 対数周波数 → Y座標（上=高周波）
+function sgF2y(f) {
+  return sgH - sgH * Math.log10(f / SG_F_MIN) / Math.log10(SG_F_MAX / SG_F_MIN);
+}
+
+function resizeSgram() {
+  const dpr = devicePixelRatio || 1;
+  sgW = sgCanvas.parentElement.offsetWidth;
+  sgCanvas.width  = sgW * dpr; sgCanvas.height = sgH * dpr;
+  sgCanvas.style.width = sgW + 'px'; sgCanvas.style.height = sgH + 'px';
+  sgCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  if (sgCache) drawSgram();
+}
+
+// dB値をスペクトログラムの色に変換（黒→青→シアン→緑→黄→白）
+function sgColor(db, dbMin, dbMax) {
+  const t = Math.max(0, Math.min(1, (db - dbMin) / (dbMax - dbMin)));
+  // 5段階グラデーション
+  if (t < 0.25) {
+    const s = t / 0.25;
+    return [Math.round(s * 0), Math.round(s * 60), Math.round(80 + s * 120)];
+  } else if (t < 0.5) {
+    const s = (t - 0.25) / 0.25;
+    return [0, Math.round(60 + s * 180), Math.round(200 - s * 150)];
+  } else if (t < 0.75) {
+    const s = (t - 0.5) / 0.25;
+    return [Math.round(s * 220), Math.round(240 - s * 30), Math.round(50 - s * 40)];
+  } else {
+    const s = (t - 0.75) / 0.25;
+    return [Math.round(220 + s * 35), Math.round(210 + s * 45), Math.round(10 + s * 245)];
+  }
+}
+
+// ファイル全体をFFT解析してスペクトログラムキャッシュを生成
+async function prerenderSgram() {
+  if (!audioBuf || !sgW) return;
+  id('sgramWrap').style.display = 'block';
+  const sr       = audioBuf.sampleRate;
+  const samples  = audioBuf.getChannelData(0);
+  const totalLen = samples.length;
+
+  // 時間分解能：1列 = 約50ms（列数はキャンバス幅に合わせる）
+  const hopMs   = Math.max(20, audioBuf.duration * 1000 / (sgW * 2));
+  const hopSamp = Math.round(sr * hopMs / 1000);
+  const FFT_SIZE = 2048;
+  const halfFFT  = FFT_SIZE / 2;
+  const nCols    = Math.ceil(totalLen / hopSamp);
+
+  // Hann窓
+  const hann = new Float32Array(FFT_SIZE);
+  for (let i = 0; i < FFT_SIZE; i++) hann[i] = 0.5 * (1 - Math.cos(2 * Math.PI * i / (FFT_SIZE - 1)));
+
+  // OfflineAudioContext + AnalyserNodeでFFT（ブラウザネイティブ）
+  // → Web Audio APIのFFTは非同期で使いにくいため自前でDFTを計算
+  // Cooley-Tukey FFT（実数入力）
+  function fft(re, im) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) { [re[i], re[j]] = [re[j], re[i]]; [im[i], im[j]] = [im[j], im[i]]; }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const ang = -2 * Math.PI / len;
+      const wRe = Math.cos(ang), wIm = Math.sin(ang);
+      for (let i = 0; i < n; i += len) {
+        let curRe = 1, curIm = 0;
+        for (let j = 0; j < len / 2; j++) {
+          const uRe = re[i+j], uIm = im[i+j];
+          const vRe = re[i+j+len/2]*curRe - im[i+j+len/2]*curIm;
+          const vIm = re[i+j+len/2]*curIm + im[i+j+len/2]*curRe;
+          re[i+j] = uRe+vRe; im[i+j] = uIm+vIm;
+          re[i+j+len/2] = uRe-vRe; im[i+j+len/2] = uIm-vIm;
+          [curRe, curIm] = [curRe*wRe - curIm*wIm, curRe*wIm + curIm*wRe];
+        }
+      }
+    }
+  }
+
+  // 全列のdB行列を計算（間引きしながら処理）
+  const colsPerPx = Math.max(1, Math.ceil(nCols / sgW));
+  const nPxCols   = Math.ceil(nCols / colsPerPx);
+  // 各周波数ビンのY座標をキャッシュ
+  const binFreqs = new Float32Array(halfFFT);
+  for (let k = 0; k < halfFFT; k++) binFreqs[k] = k * sr / FFT_SIZE;
+
+  // ImageDataに直接書き込む（高速）
+  const dpr = devicePixelRatio || 1;
+  const imgW = Math.round(sgW * dpr), imgH = Math.round(sgH * dpr);
+  const imgData = sgCtx.createImageData(imgW, imgH);
+  const pix = imgData.data;
+
+  // まず背景を黒で塗る
+  for (let i = 0; i < pix.length; i += 4) { pix[i]=8; pix[i+1]=12; pix[i+2]=20; pix[i+3]=255; }
+
+  // dBの全体レンジ推定用に一部サンプリング
+  let dbGlobalMin = 0, dbGlobalMax = -120;
+  const sampleStep = Math.max(1, Math.floor(nCols / 200));
+  for (let ci = 0; ci < nCols; ci += sampleStep) {
+    const offset = ci * hopSamp;
+    const re = new Float32Array(FFT_SIZE), im = new Float32Array(FFT_SIZE);
+    for (let i = 0; i < FFT_SIZE && offset + i < totalLen; i++) re[i] = samples[offset + i] * hann[i];
+    fft(re, im);
+    for (let k = 1; k < halfFFT; k++) {
+      const mag = Math.sqrt(re[k]*re[k] + im[k]*im[k]) / halfFFT;
+      if (mag > 1e-9) { const db = 20 * Math.log10(mag); if (db > dbGlobalMax) dbGlobalMax = db; if (db < dbGlobalMin) dbGlobalMin = db; }
+    }
+  }
+  const dbMin = Math.max(dbGlobalMin, dbGlobalMax - 70); // 表示レンジを70dBに
+
+  // 各ピクセル列を描画
+  const re = new Float32Array(FFT_SIZE), im = new Float32Array(FFT_SIZE);
+  for (let px = 0; px < sgW; px++) {
+    const ci = Math.round(px / sgW * nCols);
+    const offset = ci * hopSamp;
+    re.fill(0); im.fill(0);
+    for (let i = 0; i < FFT_SIZE && offset + i < totalLen; i++) re[i] = samples[offset + i] * hann[i];
+    fft(re, im);
+
+    for (let k = 1; k < halfFFT; k++) {
+      const freq = binFreqs[k];
+      if (freq < SG_F_MIN || freq > SG_F_MAX) continue;
+      const mag = Math.sqrt(re[k]*re[k] + im[k]*im[k]) / halfFFT;
+      const db  = mag > 1e-9 ? 20 * Math.log10(mag) : dbMin;
+      const [r, g, b] = sgColor(db, dbMin, dbGlobalMax);
+
+      // このビンのY範囲を塗りつぶす
+      const y0 = Math.round(sgF2y(freq) * dpr);
+      const y1 = k + 1 < halfFFT ? Math.round(sgF2y(binFreqs[k + 1]) * dpr) : imgH;
+      const yTop = Math.max(0, Math.min(y0, y1));
+      const yBot = Math.min(imgH, Math.max(y0, y1) + 1);
+      for (let y = yTop; y < yBot; y++) {
+        for (let dx = 0; dx < dpr; dx++) {
+          const idx = (y * imgW + Math.min(imgW - 1, Math.round(px * dpr) + dx)) * 4;
+          pix[idx] = r; pix[idx+1] = g; pix[idx+2] = b; pix[idx+3] = 255;
+        }
+      }
+    }
+  }
+  sgCtx.putImageData(imgData, 0, 0);
+
+  // 周波数ラベルと人声・鳥声帯域マーカーを重ね描き
+  // 帯域ハイライト
+  const bandMarkers = [
+    { lo: 300,  hi: 3400,  label: '人声',  color: 'rgba(167,139,250,0.18)' },
+    { lo: 2000, hi: 8000,  label: '鳥声',  color: 'rgba(52,211,153,0.15)'  },
+  ];
+  bandMarkers.forEach(({ lo, hi, label, color }) => {
+    const yTop = sgF2y(Math.min(hi, SG_F_MAX));
+    const yBot = sgF2y(Math.max(lo, SG_F_MIN));
+    sgCtx.fillStyle = color;
+    sgCtx.fillRect(0, yTop, sgW, yBot - yTop);
+    sgCtx.fillStyle = color.replace(/[\d.]+\)$/, '0.9)').replace('rgba', 'rgba');
+    sgCtx.font = '8px monospace';
+    sgCtx.fillStyle = '#94a3b8';
+    sgCtx.fillText(label, 3, yTop + 10);
+  });
+
+  // 周波数グリッド
+  [100, 300, 500, 1000, 2000, 3400, 5000, 8000].forEach(f => {
+    if (f < SG_F_MIN || f > SG_F_MAX) return;
+    const y = Math.round(sgF2y(f));
+    sgCtx.strokeStyle = 'rgba(255,255,255,0.12)'; sgCtx.lineWidth = 1;
+    sgCtx.beginPath(); sgCtx.moveTo(0, y); sgCtx.lineTo(sgW, y); sgCtx.stroke();
+    const label = f >= 1000 ? (f/1000) + 'k' : f + '';
+    sgCtx.fillStyle = 'rgba(255,255,255,0.45)'; sgCtx.font = '8px monospace';
+    sgCtx.fillText(label, 3, y - 2);
+  });
+
+  sgCache = true;
+}
+
+// スペクトログラムに再生位置バーを描画（drawWaveformと同じロジック）
+function drawSgram() {
+  if (!sgCache || !sgW) return;
+  // キャッシュはsgramCanvas自体に書き込み済みなのでバー描画のみ別レイヤーで管理
+  // 再生位置バー
+  const bar = id('sgramPlaybar');
+  if (!audioDuration) { bar.style.display = 'none'; return; }
+  const cur = getCurrentTime();
+  const visibleDur = audioDuration / zoomLevel;
+  if (zoomLevel > 1 && (cur < zoomStart || cur > zoomStart + visibleDur)) {
+    bar.style.display = 'none'; return;
+  }
+  const px = zoomLevel <= 1
+    ? (cur / audioDuration) * sgW
+    : ((cur - zoomStart) / visibleDur) * sgW;
+  bar.style.display  = 'block';
+  bar.style.left     = Math.round(px) + 'px';
+}
+
+// スペクトログラムのシーク
+sgCanvas.addEventListener('mousedown', e => { wvDragging = true; wvSeek(e); sgCanvas.style.cursor = 'grabbing'; });
+sgCanvas.addEventListener('mousemove', e => {
+  if (!audioDuration) return;
+  const r = sgCanvas.getBoundingClientRect();
+  const ratio = Math.max(0, Math.min(1, (e.clientX - r.left) / sgW));
+  const visibleDur = audioDuration / zoomLevel;
+  const t = zoomLevel <= 1 ? ratio * audioDuration : zoomStart + ratio * visibleDur;
+  id('sgramTip').textContent = fmtTime(t);
+});
+sgCanvas.addEventListener('mouseleave', () => { id('sgramTip').textContent = ''; });
+
+// ════════════════════════════════════════════
+//  Spectrum Canvas
+// ════════════════════════════════════════════
+const spCanvas = document.getElementById('spectrumCanvas');
+const spCtx    = spCanvas.getContext('2d');
+let spW = 0, spH = 160;
+const F_MIN = 20, F_MAX = 20000;
+const f2x = f => (Math.log10(f/F_MIN) / Math.log10(F_MAX/F_MIN)) * spW;
+
+function resizeSpectrum() {
+  const dpr = devicePixelRatio || 1;
+  spW = spCanvas.parentElement.offsetWidth;
+  spCanvas.width  = spW * dpr; spCanvas.height = spH * dpr;
+  spCanvas.style.width = spW + 'px'; spCanvas.style.height = spH + 'px';
+  spCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+function drawSpectrum() {
+  if (!spW) return;
+  spCtx.fillStyle = '#080c14'; spCtx.fillRect(0, 0, spW, spH);
+  [50,100,200,500,1000,2000,5000,10000].forEach(f => {
+    const x = f2x(f);
+    spCtx.strokeStyle = '#131929'; spCtx.lineWidth = 1;
+    spCtx.beginPath(); spCtx.moveTo(x,0); spCtx.lineTo(x,spH); spCtx.stroke();
+    spCtx.fillStyle = '#2d3748'; spCtx.font = '9px monospace';
+    spCtx.fillText(f >= 1000 ? f/1000+'k' : f+'', x+2, spH-4);
+  });
+  // 帯域ハイライト
+  const bx1 = f2x(bandLow), bx2 = f2x(bandHigh);
+  spCtx.fillStyle = 'rgba(96,165,250,0.10)';
+  spCtx.fillRect(bx1, 0, bx2 - bx1, spH);
+  spCtx.strokeStyle = '#3b82f6'; spCtx.lineWidth = 1.5;
+  spCtx.setLineDash([4,3]);
+  [bx1, bx2].forEach(x => { spCtx.beginPath(); spCtx.moveTo(x,0); spCtx.lineTo(x,spH); spCtx.stroke(); });
+  spCtx.setLineDash([]);
+  spCtx.fillStyle = '#60a5fa'; spCtx.font = 'bold 10px monospace'; spCtx.textAlign = 'center';
+  spCtx.fillText(`${fmtFreq(bandLow)} 〜 ${fmtFreq(bandHigh)}`, (bx1+bx2)/2, 14);
+  spCtx.textAlign = 'left';
+  // スペクトラムバー（analyserNode はフィルタ後の音を見ている）
+  if (!analyserNode) return;
+  const fd = new Uint8Array(analyserNode.frequencyBinCount);
+  analyserNode.getByteFrequencyData(fd);
+  const nyq = actx?.sampleRate / 2 || 24000;
+  spCtx.save(); spCtx.globalAlpha = 0.75;
+  for (let i = 0; i < fd.length; i++) {
+    const freq = (i / fd.length) * nyq;
+    if (freq < F_MIN || freq > F_MAX) continue;
+    const amp = fd[i] / 255, barH = amp * spH * 0.9;
+    const inBand = freq >= bandLow && freq <= bandHigh;
+    spCtx.fillStyle = inBand ? `hsl(145,80%,${30+amp*40}%)` : `hsl(210,70%,${28+amp*35}%)`;
+    spCtx.fillRect(f2x(freq)-1, spH-barH, 2, barH);
+  }
+  spCtx.restore();
+}
+
+// ════════════════════════════════════════════
+//  Draw Loop
+// ════════════════════════════════════════════
+function drawLoop() {
+  requestAnimationFrame(drawLoop);
+  accumOnset(); // ストリーミング再生中のonset蓄積
+  checkSelectionEnd();
+  drawWaveform(); drawSgram(); drawSpectrum();
+  if (analyserNode) {
+    const fd = new Uint8Array(analyserNode.frequencyBinCount);
+    analyserNode.getByteFrequencyData(fd);
+    const lv = fd.reduce((s,v)=>s+v,0)/fd.length/255;
+    spCtx.fillStyle = `hsl(${120-lv*120},80%,40%)`;
+    spCtx.fillRect(0, spH-4, spW*lv, 4);
+  }
+}
+
+// ════════════════════════════════════════════
+//  File Loading
+// ════════════════════════════════════════════
+function loadFile(file) {
+  id('fileName').textContent = '⏳ 読み込み中...';
+  stop();
+  if (actx) { try{actx.close();}catch(ex){} }
+  actx = new AudioContext();
+  buildGraph();
+  audioBuf = null; pauseAt = 0; streamSamples = null;
+  rtOnset = null; rtCovered = null;
+  clearSelection(); clearSegments();
+  sgCache = null; id('sgramWrap').style.display = 'none';
+  bgWorkers.forEach(w => { w.audio.pause(); w.audio.src = ''; }); bgWorkers = [];
+  if (bgAudio) { bgAudio.pause(); bgAudio.src = ''; bgAudio = null; }
+  recordingStart = parseRecordingStart(file.name);
+
+  if (file.size > STREAM_THRESHOLD) {
+    // ─── ストリーミングモード（大きなファイル）───
+    streamMode = true;
+    if (mediaAudio) { mediaAudio.src = ''; }
+    mediaAudio = document.createElement('audio');
+    const url = URL.createObjectURL(file);
+    mediaAudio.src = url;
+    mediaAudio.preload = 'metadata';
+    let streamReady = false;
+    function onStreamReady() {
+      if (streamReady) return;
+      streamReady = true;
+      audioDuration = mediaAudio.duration;
+      const mediaSrc = actx.createMediaElementSource(mediaAudio);
+      mediaSrc.connect(hp1);
+      id('fileName').textContent = `✅ ${file.name}`;
+      wvCache = null; wvOnset = null;
+      resizeWaveform(); resizeSpectrum();
+      initRtOnset();
+      prerenderTimeline();
+      startBgScan(url);
+    }
+    mediaAudio.addEventListener('loadedmetadata', () => {
+      if (isFinite(mediaAudio.duration) && mediaAudio.duration > 0) onStreamReady();
+    });
+    mediaAudio.addEventListener('durationchange', () => {
+      if (isFinite(mediaAudio.duration) && mediaAudio.duration > 0) onStreamReady();
+    });
+    mediaAudio.addEventListener('ended', () => { playing = false; pauseAt = 0; setStatus('⏹ 再生終了'); }, {once: false});
+  } else {
+    // ─── バッファモード（通常ファイル）───
+    streamMode = false;
+    const reader = new FileReader();
+    reader.onload = async e => {
+      audioBuf = await actx.decodeAudioData(e.target.result);
+      audioDuration = audioBuf.duration;
+      id('fileName').textContent = '✅ ' + file.name;
+      setStatus('読み込み完了。帯域を指定して ▶ 再生してください。');
+      sgCache = null; id('sgramWrap').style.display = 'none';
+      voiceSegments = [];
+      id('whisperSegments').style.display = 'none';
+      id('whisperSegments').replaceChildren();
+      id('waveVoiceMarkers').replaceChildren();
+      id('sgramVoiceMarkers').replaceChildren();
+      if (whisperPipeline) id('whisperRunBtn').disabled = false;
+      resizeWaveform(); resizeSpectrum(); resizeSgram();
+      prerenderWaveform();
+      setStatus('スペクトログラム生成中...');
+      await prerenderSgram();
+      setStatus('読み込み完了。帯域を指定して ▶ 再生してください。');
+    };
+    reader.readAsArrayBuffer(file);
+  }
+}
+
+const dz = id('dropZone');
+dz.addEventListener('click', () => id('fileInput').click());
+dz.addEventListener('dragover',  e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', e => { e.preventDefault(); dz.classList.remove('drag-over'); loadFile(e.dataTransfer.files[0]); });
+id('fileInput').addEventListener('change', e => loadFile(e.target.files[0]));
+
+// ════════════════════════════════════════════
+//  Whisper 音声検出
+// ════════════════════════════════════════════
+let whisperPipeline = null;
+
+async function loadWhisper() {
+  const loadBtn = id('whisperLoadBtn');
+  const runBtn  = id('whisperRunBtn');
+  const statusEl = id('whisperStatus');
+  const progWrap = id('whisperProgress');
+  const progBar  = id('whisperProgressBar');
+
+  loadBtn.disabled = true;
+  progWrap.style.display = 'block';
+  statusEl.textContent = 'モデルをダウンロード中... (初回のみ数分かかります)';
+
+  try {
+    // @huggingface/transformers v3 を動的 import
+    const { pipeline, env } = await import(
+      'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.6.1/dist/transformers.min.js'
+    );
+    env.allowLocalModels = false;
+
+    whisperPipeline = await pipeline(
+      'automatic-speech-recognition',
+      'Xenova/whisper-base',   // 多言語・日本語対応・約145MB
+      {
+        dtype: 'q8',
+        device: 'wasm',
+        progress_callback: p => {
+          if (p.status === 'progress' && p.progress != null) {
+            const pct = Math.round(p.progress);
+            progBar.style.width = pct + '%';
+            statusEl.textContent = `ダウンロード中: ${pct}%（${p.file ?? ''}）`;
+          }
+        }
+      }
+    );
+    statusEl.textContent = '準備完了 ✓';
+    progWrap.style.display = 'none';
+    runBtn.disabled = !audioBuf;
+  } catch (err) {
+    statusEl.textContent = `エラー: ${err.message}`;
+    loadBtn.disabled = false;
+    progWrap.style.display = 'none';
+  }
+}
+
+async function runWhisper() {
+  if (!whisperPipeline || !audioBuf) return;
+  const runBtn   = id('whisperRunBtn');
+  const statusEl = id('whisperStatus');
+
+  runBtn.disabled = true;
+  statusEl.textContent = '解析中...';
+
+  try {
+    // 16kHz モノラル Float32Array を作成
+    const offCtx = new OfflineAudioContext(1, Math.ceil(audioBuf.duration * 16000), 16000);
+    const src = offCtx.createBufferSource();
+    src.buffer = audioBuf;
+    src.connect(offCtx.destination);
+    src.start(0);
+    const resampled = await offCtx.startRendering();
+    const audioData = resampled.getChannelData(0);
+
+    const result = await whisperPipeline(audioData, {
+      return_timestamps: true,
+      chunk_length_s: 30,
+      stride_length_s: 5,
+      language: 'japanese',
+    });
+
+    // ── フィルタリング ──────────────────────────────
+    // 1. ノイズタグ除去：(音楽)(笑)(拍手) など括弧系タグのみのセグメントを除外
+    const NOISE_TAG = /^[\s(（\[［【「『]*(音楽|笑|拍手|歓声|ざわめき|BGM|Music|music|\.\.\.|♪)[)\）\]］】」』\s]*$/;
+
+    // 2. ループ検出：同じ単語・フレーズが3回以上繰り返されたら幻覚とみなす
+    function isHallucination(text) {
+      // 「このように、」など句読点込みで繰り返すパターンを検出
+      const m = text.match(/(.{2,12})[、。,]\s*(?:\1[、。,]\s*){2,}/);
+      return !!m;
+    }
+
+    // 3. 極端に短い・長すぎるテキストを除外（音楽区間の幻覚は文字数が多い傾向）
+    const MAX_CHARS_PER_SEC = 12; // 日本語の自然な発話速度の上限
+
+    voiceSegments = (result.chunks || []).map(c => ({
+      start: c.timestamp[0] ?? 0,
+      end:   c.timestamp[1] ?? audioDuration,
+      text:  c.text.trim(),
+    })).filter(s => {
+      if (!s.text) return false;
+      if (NOISE_TAG.test(s.text)) return false;
+      if (isHallucination(s.text)) return false;
+      const dur = Math.max(0.1, s.end - s.start);
+      if (s.text.length / dur > MAX_CHARS_PER_SEC) return false;
+      return true;
+    });
+
+    const totalChunks = (result.chunks || []).length;
+    const filtered = totalChunks - voiceSegments.length;
+    statusEl.textContent = `検出完了: ${voiceSegments.length}件${filtered > 0 ? `（幻覚・ノイズ ${filtered}件除外）` : ''}`;
+    renderWhisperSegments();
+    renderVoiceMarkers();
+  } catch (err) {
+    statusEl.textContent = `解析エラー: ${err.message}`;
+    console.error(err);
+  } finally {
+    runBtn.disabled = false;
+  }
+}
+
+// セグメント一覧を描画
+function renderWhisperSegments() {
+  const wrap = id('whisperSegments');
+  if (!voiceSegments.length) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  wrap.innerHTML = voiceSegments.map((s, i) =>
+    `<div class="whisper-seg voice" onclick="seekToSeg(${i})">
+      <span class="seg-time">${fmtTime(s.start)} → ${fmtTime(s.end)}</span>
+      <span class="seg-text">${escHtml(s.text)}</span>
+    </div>`
+  ).join('');
+}
+
+function seekToSeg(i) {
+  const s = voiceSegments[i];
+  if (!s) return;
+  pauseAt = s.start;
+  if (playing) startFrom(s.start);
+}
+
+function escHtml(t) {
+  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// 波形・スペクトログラムにマーカーを重ねる
+function renderVoiceMarkers() {
+  ['waveVoiceMarkers','sgramVoiceMarkers'].forEach(wrapId => {
+    const wrap = id(wrapId);
+    if (!wrap || !audioDuration) return;
+    const containerW = wrap.parentElement.offsetWidth;
+    const visibleDur = audioDuration / zoomLevel;
+    const drawStart  = zoomLevel > 1 ? zoomStart : 0;
+
+    wrap.innerHTML = voiceSegments.map(s => {
+      const left  = ((s.start - drawStart) / visibleDur) * 100;
+      const width = ((s.end - s.start)     / visibleDur) * 100;
+      if (left + width < 0 || left > 100) return '';
+      return `<div style="position:absolute;top:0;bottom:0;left:${left.toFixed(2)}%;width:${width.toFixed(2)}%;
+        background:rgba(139,92,246,0.25);border-left:2px solid rgba(167,139,250,0.8);pointer-events:none;"></div>`;
+    }).join('');
+  });
+}
+
+// ════════════════════════════════════════════
+//  WAV Encoder
+// ════════════════════════════════════════════
+function encodeWAV(buf) {
+  const ch=buf.numberOfChannels,sr=buf.sampleRate,len=buf.length;
+  const ab=new ArrayBuffer(44+len*ch*2), v=new DataView(ab);
+  const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
+  ws(0,'RIFF');v.setUint32(4,36+len*ch*2,true);ws(8,'WAVE');ws(12,'fmt ');
+  v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,ch,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*ch*2,true);
+  v.setUint16(32,ch*2,true);v.setUint16(34,16,true);
+  ws(36,'data');v.setUint32(40,len*ch*2,true);
+  let off=44;
+  for(let i=0;i<len;i++) for(let c=0;c<ch;c++){
+    const s=Math.max(-1,Math.min(1,buf.getChannelData(c)[i]));
+    v.setInt16(off,s<0?s*0x8000:s*0x7FFF,true);off+=2;
+  }
+  return ab;
+}
+
+// ════════════════════════════════════════════
+//  Utilities
+// ════════════════════════════════════════════
+function id(s)     { return document.getElementById(s); }
+function fmtTime(s) {
+  s = Math.max(0, s || 0);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = String(Math.floor(s % 60)).padStart(2, '0');
+  return h ? `${h}:${String(m).padStart(2, '0')}:${sec}` : `${m}:${sec}`;
+}
+function fmt(s)    { return fmtTime(s); }
+function parseRecordingStart(name) {
+  // 各パターンを試して最初にマッチしたものを返す
+  // 戻り値: Date or null
+  const n = name.replace(/\.[^.]+$/, ''); // remove extension
+
+  const try_ = (y, mo, d, h, mi, s) => {
+    y = Number(y); mo = Number(mo); d = Number(d);
+    h = Number(h||0); mi = Number(mi||0); s = Number(s||0);
+    if (y < 100) y += 2000;
+    const dt = new Date(y, mo-1, d, h, mi, s, 0);
+    if (dt.getFullYear()!==y||dt.getMonth()!==mo-1||dt.getDate()!==d||
+        dt.getHours()!==h||dt.getMinutes()!==mi||dt.getSeconds()!==s) return null;
+    return dt;
+  };
+
+  let m;
+
+  // 1. YYYYMMDD_HHMMSS  例: 20250531_111600
+  if ((m = n.match(/(\d{4})(\d{2})(\d{2})[_\-T](\d{2})(\d{2})(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 2. YYYYMMDD_HHMM  例: 20250531_1116
+  if ((m = n.match(/(\d{4})(\d{2})(\d{2})[_\-T](\d{2})(\d{2})(?!\d)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  // 3. YYYY-MM-DD_HH-MM-SS  例: 2025-05-31_11-16-00
+  if ((m = n.match(/(\d{4})-(\d{2})-(\d{2})[_\-T ](\d{2})-(\d{2})-(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 4. YYYY-MM-DD_HH-MM  例: 2025-05-31_11-16
+  if ((m = n.match(/(\d{4})-(\d{2})-(\d{2})[_\-T ](\d{2})-(\d{2})(?!-\d)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  // 5. YYYY-MM-DD HH:MM:SS  例: 2025-05-31 11:16:00
+  if ((m = n.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 6. YYYY-MM-DD HH:MM  例: 2025-05-31 11:16
+  if ((m = n.match(/(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2})(?!:)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  // 7. YYMMDD_HHMMSS  例: 250531_111600
+  if ((m = n.match(/(?:^|[^\d])(\d{2})(\d{2})(\d{2})[_\-](\d{2})(\d{2})(\d{2})(?:[^\d]|$)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 8. YYMMDD-HHMM / YYMMDD_HHMM  例: 250531-1116, 260531_1116
+  if ((m = n.match(/(?:^|[^\d])(\d{2})(\d{2})(\d{2})[_\-](\d{2})(\d{2})(?!\d)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  // 9. YYMMDD_HH’MM’SS (シャープレコーダー等)  例: 250531_11’16’00
+  if ((m = n.match(/(\d{2})(\d{2})(\d{2})[_\-](\d{2})['\u2019\u2032](\d{2})['\u2019\u2032](\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 10. REC_YYYYMMDD_HHMMSS  例: REC_20250531_111600
+  if ((m = n.match(/[Rr][Ee][Cc][_\-]?(\d{4})(\d{2})(\d{2})[_\-](\d{2})(\d{2})(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 11. REC_YYMMDD_HHMM  例: REC_250531_1116
+  if ((m = n.match(/[Rr][Ee][Cc][_\-]?(\d{2})(\d{2})(\d{2})[_\-](\d{2})(\d{2})(?!\d)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  // 12. SONYレコーダー YYYYMMDD_HHMMSS  例: 20250531_111600 (上記1で対応済みだが念のため)
+  // 13. IC Recorder: YYMMDD_HHMM  (上記8で対応)
+
+  // 14. Olympus: YYYY_MMDD_HHMMSSms  例: 2025_0531_111600
+  if ((m = n.match(/(\d{4})[_\-](\d{2})(\d{2})[_\-](\d{2})(\d{2})(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 15. iPhone/Android: YYYY-MM-DD-HH-MM-SS  例: 2025-05-31-11-16-00
+  if ((m = n.match(/(\d{4})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 16. UnixTimestamp 10桁  例: 1748685360
+  if ((m = n.match(/(?:^|[^\d])(\d{10})(?:[^\d]|$)/))) {
+    const d = new Date(Number(m[1]) * 1000);
+    if (!isNaN(d.getTime()) && d.getFullYear() >= 2000 && d.getFullYear() <= 2099) return d;
+  }
+
+  // 17. YYYYMMDDHHMMSSなど区切りなし14桁  例: 20250531111600
+  if ((m = n.match(/(?:^|[^\d])(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})(?:[^\d]|$)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 18. DD-MM-YYYY_HHMMSS (欧州形式)  例: 31-05-2025_111600
+  if ((m = n.match(/(\d{2})-(\d{2})-(\d{4})[_\-](\d{2})(\d{2})(\d{2})/)))
+    return try_(m[3],m[2],m[1],m[4],m[5],m[6]);
+
+  // 19. YYYY.MM.DD HH.MM.SS  例: 2025.05.31 11.16.00
+  if ((m = n.match(/(\d{4})\.(\d{2})\.(\d{2})[ _\-](\d{2})\.(\d{2})\.(\d{2})/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],m[6]);
+
+  // 20. YYYY.MM.DD_HH.MM  例: 2025.05.31_11.16
+  if ((m = n.match(/(\d{4})\.(\d{2})\.(\d{2})[_ ](\d{2})\.(\d{2})(?!\.)/)))
+    return try_(m[1],m[2],m[3],m[4],m[5],0);
+
+  return null;
+}
+function fmtClockAt(offsetSec) {
+  if (!recordingStart) return '';
+  const d = new Date(recordingStart.getTime() + Math.max(0, offsetSec || 0) * 1000);
+  return ` @ ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}:${String(d.getSeconds()).padStart(2, '0')}`;
+}
+function fmtFreq(f){ return f>=1000?(f/1000).toFixed(f%1000===0?0:1)+'kHz':Math.round(f)+'Hz'; }
+function setStatus(m){ id('status').textContent=m; }
+
+window.addEventListener('resize', () => { resizeWaveform(); resizeSpectrum(); resizeSgram(); if (audioBuf) prerenderSgram(); });
+resizeWaveform(); resizeSpectrum(); resizeSgram();
+drawLoop();
+</script>
+</body>
+</html>
