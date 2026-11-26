@@ -24,7 +24,7 @@ async function loadResources() {
     const [regular, bold, wasm] = await Promise.all([
       fetchBytes('fonts/BIZUDPGothic-Regular.ttf'),
       fetchBytes('fonts/BIZUDPGothic-Bold.ttf'),
-      fetchBytes('vendor/harfbuzz-subset.wasm'),
+      fetchBytes('lib/harfbuzz-subset.wasm'),
     ]);
     const { instance } = await WebAssembly.instantiate(wasm);
     return { regular, bold, hb: instance.exports };
