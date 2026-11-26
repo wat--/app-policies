@@ -24,6 +24,25 @@
         </div>
     </header>
 
+    <aside class="ad" aria-label="広告">
+        <p class="ad-label">広告</p>
+        <!-- 楽天のウィジェットは読み込み時にその場へ書き出す方式なので、ここに直接置く。大きさは画面の幅で決める -->
+        <script>
+        rakuten_design = "slide";
+        rakuten_affiliateId = "139bac3e.b9acab06.139bac3f.67054985";
+        rakuten_items = "ctsmatch";
+        rakuten_genreId = "0";
+        rakuten_size = window.innerWidth >= 800 ? "728x90" : "300x160";
+        rakuten_target = "_blank";
+        rakuten_theme = "gray";
+        rakuten_border = "off";
+        rakuten_auto_mode = "on";
+        rakuten_genre_title = "off";
+        rakuten_recommend = "on";
+        </script>
+        <script src="https://xml.affiliate.rakuten.co.jp/widget/js/rakuten_widget.js?20230106"></script>
+    </aside>
+
     <p id="status" role="status" aria-live="polite"></p>
 
     <main>

@@ -46,6 +46,14 @@ button:disabled { opacity: 0.5; cursor: default; }
 button.primary { background: var(--accent); color: var(--accent-text); border-color: var(--accent); font-weight: 600; }
 :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
+/* 広告。操作するボタンから離して上に置き、読み込みで下の内容が動かないよう高さを先に取る */
+.ad { margin: 8px 0 4px; text-align: center; min-block-size: calc(160px + 1.4rem); }
+@media (width >= 800px) {
+    .ad { min-block-size: calc(90px + 1.4rem); }
+}
+.ad-label { margin: 0 0 2px; font-size: 0.72rem; letter-spacing: 0.04em; color: var(--muted); }
+.ad iframe { max-inline-size: 100%; }
+
 #status { min-height: 1.7em; margin: 4px 0; color: var(--muted); }
 #status.error { color: var(--danger); font-weight: 600; }
 
