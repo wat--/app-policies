@@ -598,10 +598,10 @@ const QUESTIONS = [
     category: '積立タイミング',
     reliability: 3,
     text: `25歳から10年だけ積立（月3万・年利5%）してその後放置 vs 35歳から30年間積立（月3万・年利5%）。65歳時点でどちらが多い？`,
-    choices: ['10年だけ積立して放置した方が多い', '30年間積立し続けた方が当然多い'],
+    choices: ['30年間積立し続けた方が多い（ただし差は元本の差より小さい）', '10年だけ積立して放置した方が多い'],
     correct: 0,
-    answer: `早期10年積立が約${fmt(Q.q4_a_final - Q.q4_b)}万円多い`,
-    calc: `25歳から10年積立: 35歳時点で${fmt(Math.round(Q.q4_a_final / Math.pow(1.05, 30)))}万円\nそこから30年放置（複利）: ≒ ${fmt(Q.q4_a_final)}万円\n35歳から30年積立: ≒ ${fmt(Q.q4_b)}万円`,
+    answer: `30年積立が約${fmt(Q.q4_b - Q.q4_a_final)}万円多い。ただし元本は360万円と1,080万円で、3分の1の元本で約${Math.round(Q.q4_a_final / Q.q4_b * 100)}%まで届く`,
+    calc: `25歳から10年積立: 35歳時点で${fmt(Math.round(Q.q4_a_final / Math.pow(1.05, 30)))}万円\nそこから30年放置（複利）: ≒ ${fmt(Q.q4_a_final)}万円（元本 360万円）\n35歳から30年積立: ≒ ${fmt(Q.q4_b)}万円（元本 1,080万円）`,
     assumption: `月次複利・年利5%・税引前。`,
     caveat: null,
     checklist: null,
@@ -1014,9 +1014,9 @@ const QUESTIONS = [
     category: '複利・運用',
     reliability: 3,
     text: `100万円を年利5%で運用した場合、10年・20年・30年後の「増加額（利息分のみ）」の比はおよそ？`,
-    choices: ['1：3：7（加速度的に増える）', '1：2：3（線形に増える）'],
+    choices: [`およそ 1：${(Math.round(fvCalc(100,0.05,20)-100)/Math.round(fvCalc(100,0.05,10)-100)).toFixed(1)}：${(Math.round(fvCalc(100,0.05,30)-100)/Math.round(fvCalc(100,0.05,10)-100)).toFixed(1)}（加速度的に増える）`, '1：2：3（線形に増える）'],
     correct: 0,
-    answer: `おおよそ 1：3：7 の比率`,
+    answer: `おおよそ 1：${(Math.round(fvCalc(100,0.05,20)-100)/Math.round(fvCalc(100,0.05,10)-100)).toFixed(1)}：${(Math.round(fvCalc(100,0.05,30)-100)/Math.round(fvCalc(100,0.05,10)-100)).toFixed(1)} の比率`,
     calc: `10年後: ${fmt(Math.round(fvCalc(100,0.05,10)))}万（増加 ${fmt(Math.round(fvCalc(100,0.05,10)-100))}万）\n20年後: ${fmt(Math.round(fvCalc(100,0.05,20)))}万（増加 ${fmt(Math.round(fvCalc(100,0.05,20)-100))}万）\n30年後: ${fmt(Math.round(fvCalc(100,0.05,30)))}万（増加 ${fmt(Math.round(fvCalc(100,0.05,30)-100))}万）\n増加比: 1 : ${(Math.round(fvCalc(100,0.05,20)-100)/Math.round(fvCalc(100,0.05,10)-100)).toFixed(1)} : ${(Math.round(fvCalc(100,0.05,30)-100)/Math.round(fvCalc(100,0.05,10)-100)).toFixed(1)}`,
     assumption: `年利5%・複利。`,
     caveat: null,
@@ -1159,10 +1159,15 @@ function renderQuestion() {
   document.getElementById('rel-dots').innerHTML = dots;
   document.getElementById('rel-label').textContent = r.label;
 
-  // 選択肢
+  // 選択肢。正解がいつも同じ位置にならないよう、出題のたびに並びを入れ替える
   const choicesEl = document.getElementById('q-choices');
-  choicesEl.innerHTML = q.choices.map((c, i) =>
-    `<button class="choice-btn" onclick="answer(${i})">${c}</button>`
+  const shown = q.choices.map((_, i) => i);
+  for (let i = shown.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shown[i], shown[j]] = [shown[j], shown[i]];
+  }
+  choicesEl.innerHTML = shown.map((i) =>
+    `<button class="choice-btn" data-choice="${i}" onclick="answer(${i})">${q.choices[i]}</button>`
   ).join('');
 
   // 解説を隠す
@@ -1179,7 +1184,8 @@ function answer(idx) {
 
   // 選択肢の色付け
   const btns = document.querySelectorAll('.choice-btn');
-  btns.forEach((btn, i) => {
+  btns.forEach((btn) => {
+    const i = Number(btn.dataset.choice);
     btn.disabled = true;
     if (i === q.correct) btn.classList.add('correct');
     else if (i === idx && !isCorrect) btn.classList.add('wrong');
@@ -1305,7 +1311,7 @@ start();
   <p>本アプリはCookieおよびローカルストレージを使用していません。スコアはページを閉じると保持されません。</p>
 
   <h3 style="font-size:0.9rem;font-weight:700;color:var(--text);margin:1.25rem 0 0.4rem;">4. 広告・アナリティクス</h3>
-  <p>本アプリは広告の掲載およびアクセス解析ツールを使用していません。</p>
+  <p>本アプリはアクセス解析ツールを使用していません。当サイトの広告については、<a href="../../privacy-policy.html">サイトのプライバシーポリシー</a>をご確認ください。</p>
 
   <h3 style="font-size:0.9rem;font-weight:700;color:var(--text);margin:1.25rem 0 0.4rem;">5. プライバシーポリシーの変更</h3>
   <p>本プライバシーポリシーは必要に応じて更新される場合があります。</p>
