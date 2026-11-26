@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>作業実績 Web 版 - 報告書・請求書の PDF 出力</title>
+    <meta name="description" content="iPhone・iPad アプリ「作業実績」の記録を、パソコンのブラウザから確認・修正し、作業実績報告書と請求書の PDF を出力できます。">
+    <link rel="stylesheet" href="style.css">
+    <script src="vendor/pdf-lib.min.js" defer></script>
+    <script src="vendor/fontkit.umd.min.js" defer></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script type="module" src="app.js"></script>
+</head>
+<body>
+    <header class="site-header">
+        <div>
+            <p class="breadcrumb"><a href="../../../index.html">Tail Studio</a> &gt; <a href="../index.html">作業実績</a> &gt; Web 版</p>
+            <h1>作業実績 <span class="badge">Web 版</span></h1>
+        </div>
+        <div class="account">
+            <button type="button" id="reload" hidden>読み込み直す</button>
+            <button type="button" id="signout" hidden>ログアウト</button>
+        </div>
+    </header>
+
+    <p id="status" role="status" aria-live="polite"></p>
+
+    <main>
+        <section id="welcome">
+            <h2>パソコンから報告書と請求書を PDF に</h2>
+            <p>iPhone・iPad アプリ「作業実績」で Google スプレッドシートと連携している記録を読み込み、アプリと同じ体裁の<strong>作業実績報告書</strong>と<strong>請求書</strong>の PDF を出力します。記録の修正もできます。</p>
+            <p><button type="button" id="signin" class="primary">Google でログイン</button></p>
+            <ul class="notes">
+                <li>アプリで連携しているのと同じ Google アカウントでログインしてください。</li>
+                <li>このページが読み書きするのは、アプリ「作業実績」が作成したスプレッドシートだけです。Google ドライブのほかのファイルにはアクセスしません。</li>
+                <li>記録はこのページを置いているサーバーには送られません。ブラウザと Google の間で直接やり取りします。</li>
+                <li>請求書は、アプリの「設定」→「請求書」をオンにしていると出力できます。</li>
+            </ul>
+            <p><a href="../privacy-policy.html">プライバシーポリシー</a></p>
+        </section>
+
+        <div id="workspace" hidden>
+            <section class="records" aria-labelledby="month-label">
+                <div class="month-bar">
+                    <button type="button" id="prev-month" aria-label="前の月">‹</button>
+                    <div class="month-title">
+                        <h2 id="month-label"></h2>
+                        <p id="month-total"></p>
+                    </div>
+                    <button type="button" id="next-month" aria-label="次の月">›</button>
+                </div>
+                <p id="month-note" class="hint" hidden></p>
+                <div class="table-wrapper" tabindex="0" role="region" aria-labelledby="month-label">
+                    <table id="days">
+                        <thead>
+                            <tr>
+                                <th scope="col">日付</th>
+                                <th scope="col">業務開始</th>
+                                <th scope="col">業務終了</th>
+                                <th scope="col">休憩</th>
+                                <th scope="col">合計</th>
+                                <th scope="col">稼働</th>
+                                <th scope="col">実施概要</th>
+                                <th scope="col"><span class="visually-hidden">操作</span></th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="export" aria-labelledby="export-title">
+                <h2 id="export-title">PDF の出力</h2>
+                <form id="options" action="#" method="get">
+                    <fieldset>
+                        <legend>表示する書類</legend>
+                        <input type="radio" id="kind-report" name="kind" value="report" checked><label for="kind-report">報告書</label>
+                        <input type="radio" id="kind-invoice" name="kind" value="invoice"><label for="kind-invoice">請求書</label>
+                    </fieldset>
+                    <div class="field">
+                        <label for="range">報告書の日付の範囲</label>
+                        <select id="range" name="range">
+                            <option value="month">当月のみ</option>
+                            <option value="sheet">前後の週も含める</option>
+                        </select>
+                    </div>
+                    <div class="field inline">
+                        <input type="checkbox" id="include-notes" name="notes" checked><label for="include-notes">注意書きを含める</label>
+                    </div>
+                </form>
+                <div class="actions">
+                    <button type="button" id="download-both" class="primary">PDF を 2 つダウンロード</button>
+                    <button type="button" id="download-report">報告書だけ</button>
+                    <button type="button" id="download-invoice">請求書だけ</button>
+                </div>
+                <p id="invoice-note" class="hint" hidden></p>
+                <iframe id="preview" title="PDF のプレビュー"></iframe>
+            </section>
+        </div>
+    </main>
+
+    <dialog id="edit" aria-labelledby="edit-title">
+        <form method="dialog" id="edit-form">
+            <h1 id="edit-title"></h1>
+            <div class="field inline">
+                <input type="checkbox" id="edit-working" name="working"><label for="edit-working">稼働した日</label>
+            </div>
+            <div class="row">
+                <div class="field">
+                    <label for="edit-start">業務開始</label>
+                    <input type="time" id="edit-start" name="start" required>
+                </div>
+                <div class="field">
+                    <label for="edit-end">業務終了</label>
+                    <input type="time" id="edit-end" name="end" required>
+                </div>
+                <div class="field">
+                    <label for="edit-break">休憩時間</label>
+                    <select id="edit-break" name="break"></select>
+                </div>
+            </div>
+            <div class="field">
+                <label for="edit-summary">実施概要</label>
+                <input type="text" id="edit-summary" name="summary" list="summaries" autocomplete="off" enterkeyhint="done">
+                <datalist id="summaries"></datalist>
+            </div>
+            <p id="edit-total" class="hint"></p>
+            <div class="dialog-actions">
+                <button type="submit" value="cancel" formnovalidate>キャンセル</button>
+                <button type="submit" value="save" class="primary">保存</button>
+            </div>
+        </form>
+    </dialog>
+
+    <footer>
+        <p>© 2026 Tail Studio ・ <a href="../privacy-policy.html">プライバシーポリシー</a> ・ <a href="../index.html">アプリの紹介</a></p>
+    </footer>
+</body>
+</html>
