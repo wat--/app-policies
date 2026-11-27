@@ -296,5 +296,27 @@
         "url": "apps/ai-usage/privacy-policy.html"
       }
     ]
+  },
+  {
+    "id": "work-report",
+    "name": "作業実績",
+    "type": "ios",
+    "icon": "🗓️",
+    "appStoreUrl": "https://apps.apple.com/jp/app/id6839434949",
+    "description": "日々の稼働時間を記録して、月次の作業実績報告書と請求書を PDF で出力するアプリ。出力する範囲や注意書きの有無を選べます。Google スプレッドシートと同期すれば、パソコンのブラウザ（Web 版）からも同じ記録を開いて PDF を出力できます。",
+    "links": [
+      {
+        "label": "アプリの紹介",
+        "url": "apps/work-report/"
+      },
+      {
+        "label": "Web 版を開く",
+        "url": "apps/work-report/web/"
+      },
+      {
+        "label": "プライバシーポリシー",
+        "url": "apps/work-report/privacy-policy.html"
+      }
+    ]
   }
 ]
